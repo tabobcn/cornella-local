@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(start http://localhost:3001)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\tabob\\\\Desktop\\\\Proyecto cornella\\\\*.html\")",
+      "Bash(dir:*)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\tabob\\\\Desktop\\\\Proyecto cornella\\\\*.js\")",
+      "Bash(powershell -command \"$input | select -last 20\")",
+      "Bash(npx eslint:*)",
+      "Bash(du -sh:*)",
+      "Bash(ls:*)",
+      "Bash(powershell -command:*)",
+      "Bash(ping:*)",
+      "Bash(npm run build:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(netstat:*)",
+      "Bash(ipconfig:*)"
+    ]
+  }
+}

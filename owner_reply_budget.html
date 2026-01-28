@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Responder Presupuesto (Negocio)</title>
+<!-- Fonts and Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#195ae6",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Hide scrollbar for clean mobile look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-white antialiased h-screen flex justify-center overflow-hidden">
+<!-- Mobile Screen Container -->
+<div class="relative flex h-full w-full max-w-md flex-col bg-white dark:bg-background-dark shadow-2xl overflow-hidden group/design-root">
+<!-- TopAppBar -->
+<div class="flex items-center justify-between bg-white/95 dark:bg-background-dark/95 backdrop-blur-sm p-4 pb-2 z-20 sticky top-0 border-b border-gray-100 dark:border-gray-800">
+<button class="text-[#111318] dark:text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-[#111318] dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Detalle de Solicitud</h2>
+</div>
+<!-- Main Content Area -->
+<div class="flex-1 overflow-y-auto no-scrollbar bg-white dark:bg-background-dark pb-[100px]"> <!-- Padding bottom for sticky footer -->
+<!-- Customer Profile Card -->
+<div class="px-4 py-6">
+<div class="flex items-start justify-between bg-white dark:bg-gray-900">
+<div class="flex gap-4">
+<!-- Avatar -->
+<div class="relative">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-14 w-14 shadow-sm border border-gray-100 dark:border-gray-800" data-alt="Portrait of customer Maria G" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA7nzKJ7jI_67xW84vfN_WxPE9PrjsgodpwB4J-P3cF2j3jU-P5sfcKkiO19cyp6EMitrntfmZK2UD3icJksE9Ij2V5t0NPWV8372uGlDDiCKGZVLhQVs09raI-Layxi_2PktAvobLEHRufmAkRwyCCJTU7CVF66iUJ_DqP46AdGWmrEXIkmEWF-av97g-Mje6vMz9xnH7EtEc_arYOEFBgedW0vxvr5RIxHVB76VO_aSuMDcpe8gav4O83DhKIu7Kzxm22SUK_4Ohu");'>
+</div>
+<!-- Online/Status Indicator -->
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-900 rounded-full p-0.5">
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+</div>
+</div>
+<!-- Info -->
+<div class="flex flex-col justify-center">
+<h3 class="text-[#111318] dark:text-white text-lg font-bold leading-tight">Maria G.</h3>
+<p class="text-[#636e88] dark:text-gray-400 text-sm font-medium leading-normal mt-0.5">Hace 2h • 14 Oct, 10:30 AM</p>
+</div>
+</div>
+<!-- Rating -->
+<div class="flex flex-col items-end gap-1">
+<div class="flex items-center gap-1 bg-background-light dark:bg-gray-800 px-2 py-1 rounded-lg">
+<span class="material-symbols-outlined text-yellow-500 text-[18px] fill-1" style="font-variation-settings: 'FILL' 1;">star</span>
+<p class="text-[#111318] dark:text-white text-sm font-bold">4.8</p>
+</div>
+</div>
+</div>
+</div>
+<div class="h-px w-full bg-gray-100 dark:bg-gray-800 mb-6"></div>
+<!-- Request Details -->
+<div class="px-4 space-y-6">
+<!-- Message Section -->
+<div>
+<h3 class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-3 px-1">Mensaje del cliente</h3>
+<div class="bg-[#f6f6f8] dark:bg-gray-800/50 rounded-2xl rounded-tl-none p-5 text-[#111318] dark:text-gray-200 text-base leading-relaxed relative">
+<p>Hola, necesito reparar la persiana del comedor, se ha quedado atascada a mitad y no sube ni baja. ¿Podrían darme un precio aproximado?</p>
+</div>
+</div>
+<!-- Attachments Section -->
+<div>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Adjuntos (3)</h3>
+</div>
+<!-- Horizontal Scroll Images -->
+<div class="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 no-scrollbar snap-x">
+<div class="shrink-0 snap-center first:pl-0">
+<div class="h-32 w-32 rounded-xl bg-cover bg-center shadow-sm border border-gray-200 dark:border-gray-700" data-alt="Close-up of a broken white roller blind" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAuDKFsWxc-NJs2qz_oHAbLmJU-9lh0pZpNBjJ5lPdDx5DwgiwFaofwINM8_98j9VkWfbfED_kVo0b-HUZMuvx8rwbxnkIkYZhLrKGgUeXiMyLlz3lada8NfLwOyw4mRFWoy8aQjCLP-r4t5QR7rcBFCCQchcrGedaf8LwvxH_N4yz_ggzmLRuaENdxtKtQXBqxZYphlW2Iib6Z3-TGLSh78qi_4GOa6mtaA-DwsGxahsENL1FG8vsJxZWiocNv4esDfO2RA9OSfiyx");'>
+</div>
+</div>
+<div class="shrink-0 snap-center">
+<div class="h-32 w-32 rounded-xl bg-cover bg-center shadow-sm border border-gray-200 dark:border-gray-700" data-alt="Wide view of a living room window with stuck blinds" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCjzRBSOuFXw1Nh9mMAAw2HNERXe4rd6PAi7rEQ9zikB-Y0yNvQAULvOAtnlnG8u0pknzWuYW6n2ZkNKTO75BLXw8CyZAJzBrYmZiwk7pEMzdhuUZeSmMGEeWhXFXVViJBGbSim_M8ejBquw8lMgTnTo5SdEVc7oyesrugRVnMaLH5XjNDo7KuT0P_LRLunmPWLiXHwmhscS3nK9jmZGaQTtGq-y3Swi22qXRFvxIwPqSsw-b50ZDDEV3LST1RGwVrA7Tfc2sDeX6X9");'>
+</div>
+</div>
+<div class="shrink-0 snap-center">
+<div class="h-32 w-32 rounded-xl bg-cover bg-center shadow-sm border border-gray-200 dark:border-gray-700" data-alt="Detail of the broken strap mechanism" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA_j4mJ0rMGNrsKPhTvZIepzz5izGS9VZW6N55cVL7DhTJMs6rsKLzvHRnJNxIdTJLAozR-qXl2NZMPaC0Uk8jRZr_o_hCv97gCo9VSM_o_jnRqXR3USRylV2a-Eicd8EFrdbP1XXN1tGLVexpqCfA51Oh61B7PilH3eqroZqespnBS5AN9SvrenaPaqAgTtepNBbN1NTJ4SB8pGO2R3Vozia-XPbp-zuoQA_0kX_TFUbV--JsdTBQYgBVidGlWlVbhn4xe6O1CmRy3");'>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Response Form Section -->
+<div class="mt-4 px-4 pt-6 pb-4 bg-white dark:bg-background-dark">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary text-2xl">edit_document</span>
+<h3 class="text-[#111318] dark:text-white text-xl font-bold">Tu Propuesta</h3>
+</div>
+<form class="space-y-6" onsubmit="event.preventDefault();">
+<!-- Budget Input -->
+<div class="group">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Presupuesto estimado</label>
+<div class="relative flex items-center">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+<span class="text-gray-400 dark:text-gray-500 text-2xl font-medium">€</span>
+</div>
+<input class="block w-full rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-4 pl-10 pr-12 text-3xl font-bold text-gray-900 dark:text-white placeholder:text-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="price" name="price" placeholder="0.00" type="number"/>
+</div>
+</div>
+<!-- Message Textarea -->
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción de la propuesta</label>
+<div class="relative">
+<textarea class="block w-full rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-3 px-4 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm resize-none leading-relaxed" id="description" name="description" placeholder="Hola Maria, he visto las fotos y puedo pasarme mañana por la tarde para arreglarlo. El precio incluye piezas y mano de obra..." rows="5"></textarea>
+</div>
+</div>
+</form>
+</div>
+</div>
+<!-- Sticky Bottom Action Button -->
+<div class="absolute bottom-0 left-0 right-0 z-30 bg-white/80 dark:bg-background-dark/90 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 px-4 py-4 safe-area-bottom">
+<button class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-white shadow-lg shadow-primary/25 transition-transform active:scale-[0.98] hover:bg-blue-700">
+<span class="text-base font-bold tracking-wide">Enviar Propuesta</span>
+<span class="material-symbols-outlined text-[20px]">send</span>
+</button>
+</div>
+</div>
+</body></html>

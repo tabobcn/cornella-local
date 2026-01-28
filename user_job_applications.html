@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mis Candidaturas</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#195ae6",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom timeline line */
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            bottom: -16px;
+            left: 11px; /* Center of the 24px icon/circle */
+            width: 2px;
+            background-color: #e5e7eb;
+            z-index: 0;
+        }
+        .timeline-line:last-child::before {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#111318] dark:text-white overflow-x-hidden">
+<div class="relative flex h-full min-h-screen w-full flex-col max-w-md mx-auto bg-white dark:bg-[#111621] shadow-xl">
+<!-- Header -->
+<div class="flex items-center bg-white dark:bg-[#111621] px-6 py-4 justify-between sticky top-0 z-20 border-b border-gray-100 dark:border-gray-800">
+<h2 class="text-[#111318] dark:text-white text-xl font-bold leading-tight tracking-tight flex-1">Mis Candidaturas</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex items-center justify-center rounded-full size-10 bg-transparent text-[#111318] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Stats Summary -->
+<div class="flex w-full overflow-x-auto gap-3 px-6 py-6 pb-2 no-scrollbar">
+<!-- Active Stats -->
+<div class="flex min-w-[140px] flex-1 flex-col gap-1 rounded-xl p-4 border border-[#e5e7eb] dark:border-gray-700 bg-white dark:bg-[#1a202e] shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">description</span>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Activas</p>
+</div>
+<p class="text-[#111318] dark:text-white text-2xl font-bold leading-tight">5</p>
+</div>
+<!-- Interviews Stats -->
+<div class="flex min-w-[140px] flex-1 flex-col gap-1 rounded-xl p-4 border border-primary/20 bg-primary/5 dark:bg-primary/10 shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">person_search</span>
+<p class="text-primary text-sm font-medium">Entrevistas</p>
+</div>
+<p class="text-primary text-2xl font-bold leading-tight">2</p>
+</div>
+<!-- Finished Stats -->
+<div class="flex min-w-[140px] flex-1 flex-col gap-1 rounded-xl p-4 border border-[#e5e7eb] dark:border-gray-700 bg-white dark:bg-[#1a202e] shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-gray-400 text-xl">archive</span>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Finalizadas</p>
+</div>
+<p class="text-[#111318] dark:text-white text-2xl font-bold leading-tight">12</p>
+</div>
+</div>
+<div class="flex-1 px-6 py-4 flex flex-col gap-5">
+<h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recientes</h3>
+<!-- Card 1: En Revisión -->
+<div class="group relative flex flex-col rounded-xl border border-[#e5e7eb] dark:border-gray-700 bg-white dark:bg-[#1a202e] shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+<div class="flex items-start gap-4 p-4">
+<div class="bg-center bg-no-repeat bg-cover rounded-lg size-12 shrink-0 border border-gray-100 dark:border-gray-700" data-alt="Logotipo del Ayuntamiento de Cornellà, escudo rojo y amarillo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAm72KyjWdQCXlo75y2H3WSdLQY_I7ZugcrFH1Twj7W7dRQwTfLmNVSDBaZ0rkg6rj1HGeNP58stXb9l-yaOrD2JpFpdHcCpsTtKV5Gl5ofn2-5Mmx1k_Xsk-NaoFPg_j8I2vF__c_9deDK3dNJlVoLZjcBFwcubMIM_l1MbbYy4aQAhx8ltVf8ST4neGcY_YQv_cuN3dEpzX0Z49g_BpTa4wmyBOumRsJz528DI64kmp1Yde5D7sbNGumhVvmo8S8VLWoAtYM-rjlG");'></div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h4 class="text-[#111318] dark:text-white text-base font-bold leading-tight truncate pr-2">Administrativo/a</h4>
+<span class="inline-flex shrink-0 items-center rounded-full bg-orange-50 dark:bg-orange-900/30 px-2.5 py-0.5 text-xs font-medium text-orange-700 dark:text-orange-300 ring-1 ring-inset ring-orange-600/10">
+                                En revisión
+                            </span>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal mt-1 truncate">Ajuntament de Cornellà</p>
+<p class="text-gray-400 dark:text-gray-500 text-xs mt-2">Aplicado el 12 Oct</p>
+</div>
+</div>
+</div>
+<!-- Card 2: Entrevista (Expanded View) -->
+<div class="group relative flex flex-col rounded-xl border border-primary/30 dark:border-primary/20 bg-white dark:bg-[#1a202e] shadow-md ring-1 ring-primary/10">
+<!-- Header part -->
+<div class="flex items-start gap-4 p-4 pb-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-lg size-12 shrink-0 border border-gray-100 dark:border-gray-700" data-alt="Logotipo abstracto de empresa tecnológica, formas geométricas azules" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCvkM0WeY4cMPpZY6mc4XzCTXUZcWnFDSKKAnq1ag1fRDLAS4FLcQs-LOqEGpjJklqjoXdxfbhbznbHKpaU1dbmgSwTf75wESJ68xVXLBLwPT6vB4SozHUipswiWpqQxxOm1H9b4nZf9YTi5PvX-NzIeP0js5_xQhnCcPgqdkHjL6XWHw3fc3Q_p0CsnMNUAVMdGlURORr1rt3s_3-p8d-BRuE9xMNleDwm7apX8kX7yIN82dOD7s4DgQeKubos54gZ-IkkthyAWhFE");'></div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h4 class="text-[#111318] dark:text-white text-base font-bold leading-tight truncate pr-2">Desarrollador Frontend</h4>
+<span class="inline-flex shrink-0 items-center rounded-full bg-primary/10 dark:bg-primary/20 px-2.5 py-0.5 text-xs font-medium text-primary dark:text-blue-300 ring-1 ring-inset ring-primary/20">
+                                Entrevista
+                            </span>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal mt-1 truncate">TechLocal Solutions</p>
+<p class="text-gray-400 dark:text-gray-500 text-xs mt-2">Aplicado el 10 Oct</p>
+</div>
+</div>
+<!-- Expanded Timeline Area -->
+<div class="px-4 pb-5 pt-2">
+<div class="my-3 h-px w-full bg-gray-100 dark:bg-gray-700"></div>
+<div class="flex flex-col gap-0 pl-1">
+<!-- Step 1: Completed -->
+<div class="relative flex gap-4 timeline-line pb-6">
+<div class="z-10 flex size-6 shrink-0 items-center justify-center rounded-full bg-green-500">
+<span class="material-symbols-outlined text-white text-[14px] font-bold">check</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-medium text-[#111318] dark:text-white leading-none">Solicitud enviada</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">10 Oct, 09:30</p>
+</div>
+</div>
+<!-- Step 2: Completed -->
+<div class="relative flex gap-4 timeline-line pb-6">
+<div class="z-10 flex size-6 shrink-0 items-center justify-center rounded-full bg-green-500">
+<span class="material-symbols-outlined text-white text-[14px] font-bold">check</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-medium text-[#111318] dark:text-white leading-none">CV revisado</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">11 Oct, 14:15</p>
+</div>
+</div>
+<!-- Step 3: Current -->
+<div class="relative flex gap-4 timeline-line pb-6">
+<div class="z-10 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary ring-4 ring-blue-100 dark:ring-blue-900/30">
+<span class="material-symbols-outlined text-white text-[14px]">groups</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-primary dark:text-blue-400 leading-none">Entrevista programada</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Mañana, 10:00 AM</p>
+<div class="mt-2 flex">
+<button class="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                        Ver detalles
+                                    </button>
+</div>
+</div>
+</div>
+<!-- Step 4: Pending -->
+<div class="relative flex gap-4 timeline-line">
+<div class="z-10 flex size-6 shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+<div class="size-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-medium text-gray-400 dark:text-gray-500 leading-none">Decisión final</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Finalizado -->
+<div class="group relative flex flex-col rounded-xl border border-[#e5e7eb] dark:border-gray-700 bg-white dark:bg-[#1a202e] shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+<div class="flex items-start gap-4 p-4">
+<div class="bg-center bg-no-repeat bg-cover rounded-lg size-12 shrink-0 border border-gray-100 dark:border-gray-700 grayscale" data-alt="Foto de interior de una librería acogedora con estanterías de madera" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAuL29CsaEGvWZufhapXTY2mzgWUvas8nunx24oScPBqc-u7kjt4dRHXGDzb5kDPQt4ejy64EEko5ykamfzZtOlWpClkFwiR5UAgRrQpArR2Z5E8Kjt8S9Am0FJ54E-ZUbJ27L43i6U8PkjszhHtpk1NQVgJYOIKZ6spbZQqc3sdIhKP_n-4VJ00S8WOGjksPEbZR8myfLp1Uvr_v_b27UpSqIHhfBbZh95WY32s2aiUG4-gCOA0UEYkbSogV36PbnCo41NVT99D8ST");'></div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h4 class="text-[#111318] dark:text-white text-base font-bold leading-tight truncate pr-2">Atención al Cliente</h4>
+<span class="inline-flex shrink-0 items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 ring-1 ring-inset ring-gray-500/10">
+                                Finalizado
+                            </span>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal mt-1 truncate">Librería Central</p>
+<p class="text-gray-400 dark:text-gray-500 text-xs mt-2">Aplicado el 28 Sep</p>
+</div>
+</div>
+</div>
+<!-- Empty State / Promo -->
+<div class="mt-4 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-6 text-center border border-blue-100 dark:border-gray-700 border-dashed">
+<div class="mb-3 rounded-full bg-white dark:bg-gray-800 p-3 shadow-sm">
+<span class="material-symbols-outlined text-primary text-2xl">search</span>
+</div>
+<h3 class="text-sm font-bold text-[#111318] dark:text-white">¿Buscas algo más?</h3>
+<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Hay 15 ofertas nuevas que coinciden con tu perfil.</p>
+<button class="mt-3 text-xs font-semibold text-primary hover:text-blue-700">Ver ofertas recomendadas</button>
+</div>
+</div>
+<div class="h-20"></div> <!-- Spacer for bottom nav if needed -->
+</div>
+</body></html>

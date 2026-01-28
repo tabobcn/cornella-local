@@ -1,0 +1,1063 @@
+// ==============================================
+// MOCK DATA - Cornellà Local App
+// ==============================================
+
+// Usuario actual
+export const currentUser = {
+  id: 1,
+  name: "Maria Garcia",
+  avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCma0pLhF94yVeImjkbSiP5R2Fqr2s4ayzu3uF0kQQzL8UUbV6qv3-iXXtTRRCnJzVXOyAIDF4u4r2m_L29MOrp1W85ICI07CpaYmgZ_32RiM-PyuUp5l5p84WYuKGfZ3oJr_gc0y2k3yNCo_-g8-mLlPykL0u8VBBTYbW4BLE2SEyX81zBSGNOgCOxRAg7OXo2MbsHe8XdwIn1XHMhRX5HLd4nPTybQRxYjeWm_HG1UzDDS589F1hy--pP0vS_fg8R2Eu2m4jXxgPz",
+  badge: "Eco-Ciudadana",
+  memberSince: 2023,
+  level: 4,
+  maxLevel: 5,
+  xp: 1200,
+  xpToNextLevel: 1500,
+  totalSavings: 45.00,
+  savingsThisMonth: 5,
+  commercesVisited: 12,
+  couponsUsed: 8,
+  badges: {
+    total: 12,
+    max: 50
+  },
+  points: 2400,
+};
+
+// Categorías con subcategorías
+export const categories = [
+  {
+    id: 1,
+    name: "Oficios",
+    icon: "Wrench",
+    color: "blue",
+    description: "Profesionales y servicios para el hogar",
+    subcategories: [
+      { id: 101, name: "Albañil y reformas", icon: "Hammer", count: 18 },
+      { id: 102, name: "Carpintero", icon: "TreePine", count: 12 },
+      { id: 103, name: "Cerrajero", icon: "Key", count: 8 },
+      { id: 104, name: "Climatización y calefacción", icon: "Snowflake", count: 10 },
+      { id: 105, name: "Electricista", icon: "Zap", count: 15 },
+      { id: 106, name: "Fontanero", icon: "Droplet", count: 14 },
+      { id: 107, name: "Jardinería", icon: "Flower2", count: 9 },
+      { id: 108, name: "Limpieza", icon: "Sparkles", count: 20 },
+      { id: 109, name: "Mudanzas", icon: "Truck", count: 6 },
+      { id: 110, name: "Pintor", icon: "Paintbrush", count: 11 },
+      { id: 111, name: "Reparación de móviles y PC", icon: "Smartphone", count: 16 },
+    ]
+  },
+  {
+    id: 2,
+    name: "Alimentación",
+    icon: "ShoppingBasket",
+    color: "green",
+    description: "Tiendas de alimentación y productos frescos",
+    subcategories: [
+      { id: 201, name: "Bodega y vinos", icon: "Wine", count: 8 },
+      { id: 202, name: "Carnicería y charcutería", icon: "Beef", count: 14 },
+      { id: 203, name: "Frutería", icon: "Apple", count: 22 },
+      { id: 204, name: "Panadería", icon: "Croissant", count: 16 },
+      { id: 205, name: "Pastelería", icon: "Cake", count: 12 },
+      { id: 206, name: "Pescadería", icon: "Fish", count: 9 },
+      { id: 207, name: "Supermercado", icon: "ShoppingCart", count: 18 },
+    ]
+  },
+  {
+    id: 3,
+    name: "Restauración",
+    icon: "UtensilsCrossed",
+    color: "orange",
+    description: "Restaurantes, bares y cafeterías de Cornellà",
+    subcategories: [
+      { id: 301, name: "Asiático", icon: "Utensils", count: 12 },
+      { id: 302, name: "Bar y cafetería", icon: "Coffee", count: 45 },
+      { id: 303, name: "Heladería y churrería", icon: "IceCream", count: 10 },
+      { id: 304, name: "Hamburguesería", icon: "Sandwich", count: 15 },
+      { id: 305, name: "Kebab", icon: "Utensils", count: 8 },
+      { id: 306, name: "Pizzería", icon: "Pizza", count: 14 },
+      { id: 307, name: "Restaurante", icon: "UtensilsCrossed", count: 38 },
+      { id: 308, name: "Tapas", icon: "Wine", count: 20 },
+    ]
+  },
+  {
+    id: 4,
+    name: "Moda y complementos",
+    icon: "Shirt",
+    color: "purple",
+    description: "Tiendas de ropa, calzado y accesorios",
+    subcategories: [
+      { id: 401, name: "Arreglos y sastrería", icon: "Scissors", count: 10 },
+      { id: 402, name: "Calzado", icon: "Footprints", count: 18 },
+      { id: 403, name: "Deporte", icon: "Dumbbell", count: 12 },
+      { id: 404, name: "Bolsos y accesorios", icon: "ShoppingBag", count: 14 },
+      { id: 405, name: "Joyería y relojería", icon: "Gem", count: 10 },
+      { id: 406, name: "Lencería", icon: "Heart", count: 6 },
+      { id: 407, name: "Óptica", icon: "Eye", count: 12 },
+      { id: 408, name: "Ropa", icon: "Shirt", count: 35 },
+    ]
+  },
+  {
+    id: 5,
+    name: "Belleza",
+    icon: "Sparkles",
+    color: "pink",
+    description: "Estética, peluquerías y cuidado personal",
+    subcategories: [
+      { id: 501, name: "Barbería", icon: "Scissors", count: 15 },
+      { id: 502, name: "Depilación", icon: "Sparkles", count: 8 },
+      { id: 503, name: "Estética", icon: "Flower", count: 18 },
+      { id: 504, name: "Maquillaje", icon: "Paintbrush", count: 6 },
+      { id: 505, name: "Masajes y spa", icon: "Heart", count: 10 },
+      { id: 506, name: "Peluquería", icon: "Scissors", count: 42 },
+      { id: 507, name: "Perfumería", icon: "Droplets", count: 8 },
+      { id: 508, name: "Uñas", icon: "Hand", count: 12 },
+    ]
+  },
+  {
+    id: 6,
+    name: "Salud y bienestar",
+    icon: "HeartPulse",
+    color: "red",
+    description: "Farmacias, clínicas y centros de salud",
+    subcategories: [
+      { id: 601, name: "Farmacia", icon: "Pill", count: 25 },
+      { id: 602, name: "Fisioterapia", icon: "Activity", count: 15 },
+      { id: 603, name: "Odontología", icon: "Smile", count: 18 },
+      { id: 604, name: "Podología", icon: "Footprints", count: 8 },
+    ]
+  },
+  {
+    id: 7,
+    name: "Automoción",
+    icon: "Car",
+    color: "slate",
+    description: "Talleres, neumáticos y servicios para tu vehículo",
+    subcategories: [
+      { id: 701, name: "Lavado", icon: "Droplets", count: 6 },
+      { id: 702, name: "Neumáticos", icon: "Circle", count: 8 },
+      { id: 703, name: "Taller", icon: "Wrench", count: 18 },
+    ]
+  },
+  {
+    id: 8,
+    name: "Mercados",
+    icon: "Store",
+    color: "teal",
+    description: "Mercados municipales de Cornellà",
+    subcategories: [
+      { id: 801, name: "Mercado del Centro", icon: "Store", count: 45 },
+      { id: 802, name: "Mercado Marsans", icon: "Store", count: 38 },
+      { id: 803, name: "Mercado de San Ildefonso", icon: "Store", count: 32 },
+    ]
+  },
+];
+
+// Ofertas Flash
+export const flashOffers = [
+  {
+    id: 1,
+    title: "Menú Saludable - Poke House",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuC-0Kwjtq98h7YmPNWduOF1KlBBweWVoodpogcrWv-NRfEe8LT6zxOq99UG4cBOiEyrLTWoq1nwazZ7wj0pc8sIQ2OlZxI1mAPzH1jw8qNqESXfBVA32y2FZnb33SR-BliHzKpSUKymtJ-YzwuAgdHFHiUVwkA7nbfwG85SBZjkgcohiF6HOUxp7XQXcz35XBzf9vFA7UIs-TRi446PVB7coVmh-GSqxRTbrpjSNdJ0gSovKpfpxarwu4_QkzpannJ0wGqhFrVKHXEz",
+    originalPrice: 12.50,
+    discountedPrice: 8.75,
+    discount: "-30%",
+    timeLeft: "02:15:30",
+  },
+  {
+    id: 2,
+    title: "Camisetas Básicas - Moda Local",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuB1CRIKkGIygIlYIBKCvLJHISbQlfXwZ1c4rbiYK9JGHujoEHvo4T2a6h2Uk_4Yxr6mcUYN-JyhAlD372pr_xqkYk5j8udE6OfdlMwMD8WP21H0v3g4IydtSvK8uEFziR-MH_aK02BNwg-LhGelGdjIs40GVghbotTtvmtK19wVNm2jBuQAMqU4ZXu4GORQWiTGQkke1BP3xRdBSHJ_CzNfaTXnOmj3aIxE2e0Tl4s70efBs8UefKZrXm8pE6ViRzp8392SXfbLCXd9",
+    originalPrice: 20.00,
+    discountedPrice: 10.00,
+    discount: "-50%",
+    timeLeft: "04:00:00",
+  },
+  {
+    id: 3,
+    title: "Cesta Ecológica - Mercat Central",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAF97afd4qC0RAo1F8neFU-4xWfrMtSpAwtLmEpPmTs7YXp-U4EmNUKARioedyUp3hNwN3okeeKjekb5KGfxv4NiAH-2CsL2Yug_CNWqAaJiv178dIuvI_dF9TxBkKSz25F9OHdwWDaw6BNzWxMlqtsvvVvUhBcQtrWGWhi5bJMPK49dSqQGPT2Kgdcjrk0xm4OY34W6qj9poL_VZk8OApfGwDlH2P6IcVhjMUKvyj3Gl_3C1CcKcEx8zsWKpC2bG_34jMKN6IZaKfI",
+    originalPrice: 30.00,
+    discountedPrice: 15.00,
+    discount: "2x1",
+    timeLeft: "01:30:00",
+  },
+];
+
+// Negocios destacados
+export const businesses = [
+  {
+    id: 1,
+    name: "La Forneria Artesana",
+    category: "Panadería",
+    address: "C/ Av. del Parc, 12",
+    barrio: "centre-riera",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBf6hHiF6kNdmxquifzJhmuFHxbd3ndJPhqiaOqGetOm2QIgbBfckEChXCvaV82g1TD6zfhyHlEjofAUklIDkO26P5fVYGBL-Uef5U3lM6vEWRCzsgDlj4WxCUuje5M4TKWuXCYi7ZLbsJgAmMXETp4j7DfpbQyXwg2ZQMyI-ZhwcMmweWJPygt6gE0aCXxN1YjrPxHJUFOy0_ZTaRO__qzmZAqDXVqkpRXr9UNGlzpXhj8AYvmIUfcOTgiByIj5GSoNyrIZdEAneoU",
+    rating: 4.9,
+    reviews: 120,
+    distance: "300m",
+    isNew: true,
+    isOpen: true,
+    description: "Pan de masa madre horneado diariamente con harinas ecológicas. ¡Ven a probar nuestros croissants de mantequilla!",
+  },
+  {
+    id: 2,
+    name: "Cinefòrum Cornellà",
+    category: "Ocio",
+    address: "Plaça de l'Església",
+    barrio: "centre-riera",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAKPFe_V6R2o8QizD9v0UOPqQAl5UU3hCOcjw3kROGfxJLHUJQ2VxAP3G6H0NgWJDmlngReZqTrW5xZwi_MY9YU5j8E5QZ8UHVtync23Pv5iEsQuRNTL6I442TdQZbiS04osx6SCqITjhVV3Ep0hQ_4Ca2MEddZAKlyZiZoDhVqQq2aLPayYStbPCBfPO-D9jrLgq0VGdK1vrRLjNZQLhB-zkZVZqnz2KqFb3kP3X0SIykwKFQ4Ezm3ddjyXGWlpS3Y75ChVhk5nTsI",
+    rating: 4.7,
+    reviews: 85,
+    distance: "1.2km",
+    isNew: true,
+    isOpen: false,
+    closingSoon: true,
+    description: "El nuevo espacio cultural para los amantes del cine independiente y local.",
+  },
+  {
+    id: 3,
+    name: "Ferretería García",
+    category: "Tienda local",
+    address: "Carrer de Mossèn Andreu, 15",
+    barrio: "almeda",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAQ0zf8Za514A3KgZEynsA2haozdk6dfBKL8ZJ3NDF-dYtklL2GOAEeIohqtO-JEK5J2AeDl8C7VP8_AEv1TzxlR8v39YtODpfw1A65xpEvnuWUuLjEMNKgmK19vHncEZPEg5QXgHVsGpuoEvSc5MQbcug_kUbzV_LeF6kc6b5761P_M4GWrKYCy8VNyy-yrDhrSViK9W5kUqKXoLMVztgyjlLDMLmRkN7ZHyJahBpBrQvY5XSb6xzihePZqeekQL3jh-b8KgmLSsL8",
+    rating: 4.8,
+    reviews: 120,
+    distance: "500m",
+    isNew: false,
+    isOpen: true,
+    isVerified: true,
+    tags: ["Hogar", "Bricolaje"],
+    description: "Somos una ferretería familiar en el centro de Cornellà desde 1985. Ofrecemos asesoramiento personalizado, duplicado de llaves, pintura a medida y todo lo necesario para tus reparaciones del hogar. ¡Apoya el comercio local!",
+    services: [
+      { name: "Herramientas", icon: "Hammer" },
+      { name: "Pinturas", icon: "Paintbrush" },
+      { name: "Duplicados", icon: "Key" },
+      { name: "Electricidad", icon: "Lightbulb" },
+      { name: "Fontanería", icon: "Droplet" },
+    ],
+    schedule: {
+      isOpenNow: true,
+      closesAt: "20:00",
+      hours: [
+        { day: "Lunes", hours: "09:00 - 20:00" },
+        { day: "Martes", hours: "09:00 - 20:00" },
+        { day: "Miércoles", hours: "09:00 - 20:00" },
+        { day: "Jueves", hours: "09:00 - 20:00" },
+        { day: "Viernes", hours: "09:00 - 20:00" },
+        { day: "Sábado", hours: "10:00 - 14:00" },
+        { day: "Domingo", hours: "Cerrado", closed: true },
+      ],
+    },
+    fullAddress: "Carrer de Mossèn Andreu, 15, 08940 Cornellà de Llobregat, Barcelona",
+    relatedBusinesses: [
+      { id: 10, name: "Ferretería El Sol", category: "Hogar y Jardín", rating: 4.5, image: "https://lh3.googleusercontent.com/aida-public/AB6AXuC67qDr1w3iSplxjkUW_HguxPFQsJOYFrEeyuSIQ92MUbwW5c7ON3aK1YqvMdNZv-2fLDD2N8sgytyMgAdi_bOXzqLJm5zkJDeK8u8sRwkhlsq-BgYilTLqVNfKCr8yysQmiZj2j0bl2IdeulD-irjrYothKFdQfbUNcWloN1ntjPjNZTuPv4LYRwL4MW6VzpA7DbxY3yvtZpzwmEZa9JgiP3rdNV3yEZtmAcs2c4DxCI_WQqRTrsr7dIS1Fv1oyRB2v07oupd7Y7Iq" },
+      { id: 11, name: "Decoración Ruiz", category: "Interiorismo", rating: 4.9, image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDmK0HAYqCqKsxuFJLjixuNLIBGg_g-ml4fBiF3_A74EClOfJ5J8EJAbZt7g0xW5qU9d0mj24dbMhwKOks-6zoRrMwSU9gzgpYy8gh6n5bmRJYAlhjERfbbM3L4kgozMidKMICkhik7oGYQIbKeBKKsMXft-JT5mZGPdagTsZvFLGn5CvDwDnsdKnwG6wjsga_dQhr778TyZ3OZmwrdm68DodGmcL1-PHX9QIt0M3MgAsGv9zk8ZW7CBTEZAkxYga7Wm56hvqy_25pc" },
+      { id: 12, name: "Electro Cornellà", category: "Electricidad", rating: 4.2, image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBSjNuJZqVscImElnlBnKfTFeGrMhZqepiYF3twj_hz141TFm1iPY8PsAV9scefk_T3zTDaOjfNhQnoK2qKNBwADlR21use1uUIw0IJkEcV-QayVRGGktL6i7CfS5wSmpsExHRBwGhDdea9wGf_DiQoWQ00dLoYxkCPWPNmKuoSKFFzos1W1Ck1eRLdIJ0iw-CGz3_ttjCxELMJrg5Xga17uWhWbgcnap4CxzInlzlyeQvgFk9Z4TMNynmE4stk9DAzkPpfziMI-LKQ" },
+    ],
+  },
+  {
+    id: 4,
+    name: "Panadería García",
+    category: "Artesanal",
+    address: "C/ Sant Joan, 45",
+    barrio: "sant-ildefons",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuA_kuU0L9ht4GXRuEd769AZVrCjtbMtx1SVgR1fpQ3oxy8uNEqemmKQeUkcLtGGFA2aE7A2yC7rDVjSalmk461U2SE65eGp6-jSItAJXvw-UhFNZOYixwcc4w6fs5Er6RMk2IvUEjmtmeXHEA1gP9pnZ5FycihwfT8Qs3R8QBh7nCVZK6Mv4PneTGZ-zXoiCi_Sm_dFsdBQXR6Mspw881RjzqnxLH-aTB4gplGHH6GOVt5Ywz8ukxfhC-aEUlHR0i36xlJM6D9eFu47",
+    rating: 4.8,
+    priceRange: "€€",
+    isOpen: true,
+    distance: "120m",
+  },
+];
+
+// Favoritos
+export const favorites = [
+  {
+    id: 1,
+    name: "Cafetería Central",
+    category: "Hostelería • Café",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDPLUBzzGaHn6-DIEUJXSfRwT2LgdnlUKScR73901ogifSZ8yED_xmvTe4qpVbSQPjcbcUokZrrewtEXn_21ro9N4EKtRFQDe25DJ2ztXwj-T_AXCIIKonNPYjllPpKr1CaoHOOF7dCdkvuTf-FWeJ3SavGCZ3B5rd6Ush9I7Xa_ckdPteIrjRRKbaEq2zRBou4XX4O0N6VOpA77MnSgnCyx3-Ut63I4m5Qk0N6_RIX--4wTrHRez8DvIjAeJHZbg8sdAxGxv7LCraI",
+    rating: 4.8,
+    reviews: 124,
+    distance: "0.5 km",
+    isOpen: true,
+  },
+  {
+    id: 2,
+    name: "Librería El Rincón",
+    category: "Comercio • Libros",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDB_P-PgXMi5zJViIl7K3lfcCvSe4J55upZmWFFgSWns-3P9eEuWnQooKx4rz5_REv4PScfKLjuVMKLQ6Q4eAHj1qHHAtSNEmsXNxoEu3ZPlnOsmXySsh9AoWFaF2boqFOZHDJLGqNRf7rAQ4PPNGdyrehuq_G3-29ZBRULaKLHpYDLH7KIyRjVxOE8veIRS_AQNXYSGJAloavhibsya9fo4ZNTL6T-rZi3WecGjSgyVrcA85nwicS47ezCD48I15g5ouec0XHI3h-s",
+    rating: 4.9,
+    reviews: 86,
+    distance: "1.2 km",
+    isOpen: true,
+  },
+  {
+    id: 3,
+    name: "Restaurante La Plaza",
+    category: "Gastronomía",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuD_85K6VIzH6aKvWrKBwf7qzABJLJ74qngzVCMICRdE5rQ3Zdhtu9am6iVOQ01zrrVFfBiRUEMANOMzxSF-A5hDx_N7y14CriFog0oSLFE5VaTDQLjkboLNax-5Vwnf6AyGvOUoAOeeRAbbC2KZ1G-V5901I0ZtKyPjw4Z6sw__jVK4OOaz7EiHDdR_LYMgJLj2FVzfa43lViVvZ-aEb6BPEIdMNiG7_nxyiWX2C9plHWqhesBusYpO4Ua747ABahB77VNn_tSANZ1x",
+    rating: 4.5,
+    reviews: 312,
+    distance: "0.2 km",
+    isOpen: false,
+  },
+];
+
+// Ofertas y cupones
+export const offers = [
+  {
+    id: 1,
+    title: "Menú Burger Gourmet",
+    business: "Restaurante El Pont",
+    businessIcon: "UtensilsCrossed",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAAxlwntzWPfYPTnx8ycGiNp_42G4F_a0qcPWSutMCg0rtIcqKHtVIalCyZ0MQKpEI8AcEHWbazoooy_7NijgNr_dVLCWay5iEZs3TAP-YCyVxn9OSI1fMkA3AUzgI8QpPge6pxUsLX17qNppkUkUApBafsk6T7xPFSxGoVdCRTWRAB2sDz8TspYKNnWuWAJlOJEfSE4ka-ehiX-RydjRhd7k3ksn8rs4sN4Fp2SlX4aZl6eqp2ArsNnEOqEDQpii74V__5RBLfYeFY",
+    discount: "2x1 Oferta",
+    savings: "12€",
+    expiresIn: "2 días",
+    featured: true,
+  },
+  {
+    id: 2,
+    title: "Revisión General",
+    business: "Talleres Cornellà",
+    businessIcon: "Wrench",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuC2olniTAib1T0Io6edU4sN3GDs7YN0s63brHgvM4WDvz2_urNqv9o68yuPSddYTHMhx6LLLFtDdbV8LuxxTj1XXEl6m_uHytQEfp2UY3mhGP1wK4MhQXU6m1E4u-CiWv1iBXsUNKXe5xcH2xxcEIxCL39Y-HzyWLZr9lNRh5jPvXyQRCDtkxytsXN7WQrf60pGmwgLvLKjgHEM02ia6UxUAPVkXU_9qvsL0JY28_PN1nCgSOwpqmgvB8LnV5QffqVsV_SlpGwZf-sf",
+    discount: "-15% Descuento",
+    distance: "1.2km",
+    availableToday: true,
+    featured: true,
+  },
+  {
+    id: 3,
+    title: "Frutería La Huerta",
+    business: "Frutería La Huerta",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCMyIMDyCRD_T7-Zhpdb6suroAZ2__NTBwdGteO_3cpwEwcOrHXqGqTVxgVr1GWrVR75GrRn7GoKQyeREvhA-LWfGyWWIHsgtamwqKteeEo1C1J3NQKTTJvCFt1Ye6blb_AKdNEM8I0gsn9xs_7QvuoPnaqcj7s-4jIbhpGKZjbEkH4k-RJ7uyZvwdopSoDyZt-DNtS66vEXKT8vaSOKfexDlpLaaP0mzqjBnIXmA-3WeWGwV1Y-_BdV9sOwJYSJFuF3eklcRkTaeuZ",
+    discount: "-5€ Frescos",
+    validToday: true,
+    small: true,
+  },
+  {
+    id: 4,
+    title: "Salón Style",
+    business: "Salón Style",
+    subtitle: "Corte + Peinado",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8pqypGA1T2eANLFkgBbwRtgGD6hvMM7hJ0UiKRyO24xShJV8dMPxyLrqw5OdOwlVphIsc4l8dx1cIJRcW-lKBsEfhbWfzyMPDuLpz5dKDqkuUj-XyRYNRG8RBmyNs276ssKXLy_kVHKrRF59_6Snz4Kj7N7rGOhcGc4bWmmj0US3gkh1aHStmsOzG_u61iWTvJpjI5tvUvOc-H-Gjez8bAAKg_kUr2-FLa_PB8JQqs4musFP1OhnpnNDeQP9O61_1Q3z4NV-6AKqh",
+    discount: "Pack 25€",
+    small: true,
+  },
+];
+
+// Trabajos
+export const jobs = [
+  {
+    id: 1,
+    title: "Camarero/a de Sala",
+    company: "Cafetería Central",
+    icon: "UtensilsCrossed",
+    iconBg: "orange",
+    salary: "18k - 20k",
+    salaryMin: 18000,
+    salaryMax: 20000,
+    salaryNote: "Según experiencia",
+    type: "Completa",
+    postedAgo: "2h",
+    location: "Cornellà Centro",
+    contract: "Indefinido",
+    modality: "Presencial",
+    description: "Buscamos una persona dinámica y con don de gentes para unirse a nuestro equipo en Cafetería Central, un local emblemático en el corazón de Cornellà de Llobregat.\n\nComo camarero/a, serás la cara visible de nuestro negocio, atendiendo a los clientes y manteniendo el buen ambiente que nos caracteriza desde hace más de 15 años en el barrio.",
+    requirements: [
+      "Experiencia mínima de 1 año en hostelería",
+      "Idiomas: Catalán y Castellano nativos o nivel alto",
+      "Disponibilidad para trabajar fines de semana",
+      "Residencia en Cornellà o alrededores (Baix Llobregat)"
+    ],
+    benefits: [
+      { icon: "Percent", title: "Descuentos", description: "En productos de la cafetería" },
+      { icon: "BookOpen", title: "Formación Continua", description: "Cursos de barista y atención al cliente" }
+    ],
+    address: "Av. del Parc, 12, Cornellà de Llobregat, Barcelona",
+    coordinates: { lat: 41.3545, lng: 2.0701 }
+  },
+  {
+    id: 2,
+    title: "Dependiente de Comercio",
+    company: "Comercios García",
+    icon: "Store",
+    iconBg: "blue",
+    salary: "24k - 28k",
+    salaryMin: 24000,
+    salaryMax: 28000,
+    salaryNote: "Según valía del candidato",
+    type: "Completa",
+    postedAgo: "2 días",
+    location: "Cornellà Centro",
+    contract: "Indefinido",
+    modality: "Presencial",
+    description: "Buscamos una persona dinámica y con don de gentes para unirse a nuestro equipo en Comercios García, una tienda emblemática en el corazón de Cornellà de Llobregat.\n\nComo dependiente, serás la cara visible de nuestro negocio, asesorando a los clientes y manteniendo el buen ambiente que nos caracteriza desde hace más de 20 años en el barrio.",
+    requirements: [
+      "Experiencia mínima de 2 años en atención al cliente o ventas",
+      "Idiomas: Catalán y Castellano nativos o nivel alto",
+      "Disponibilidad para trabajar sábados alternos",
+      "Residencia en Cornellà o alrededores (Baix Llobregat)"
+    ],
+    benefits: [
+      { icon: "Percent", title: "Descuentos", description: "En productos de la tienda y socios locales" },
+      { icon: "BookOpen", title: "Formación Continua", description: "Cursos de ventas y escaparatismo" }
+    ],
+    address: "Av. del Parc, Cornellà de Llobregat, Barcelona",
+    coordinates: { lat: 41.3545, lng: 2.0701 }
+  },
+  {
+    id: 3,
+    title: "Repartidor con moto",
+    company: "Logística Express",
+    icon: "Truck",
+    iconBg: "green",
+    salary: "1.400€ - 1.800€",
+    salaryMin: 1400,
+    salaryMax: 1800,
+    salaryNote: "Mensual + incentivos por entrega",
+    type: "Completa",
+    postedAgo: "3d",
+    urgent: true,
+    location: "Zona Baix Llobregat",
+    contract: "Temporal",
+    modality: "Presencial",
+    description: "Empresa líder en logística de última milla busca repartidores con moto propia para cubrir la zona del Baix Llobregat.\n\nOfrecemos flexibilidad horaria y la posibilidad de generar ingresos extra según el número de entregas realizadas.",
+    requirements: [
+      "Moto propia (mínimo 125cc)",
+      "Carnet de conducir en vigor",
+      "Smartphone con datos móviles",
+      "Conocimiento de la zona del Baix Llobregat"
+    ],
+    benefits: [
+      { icon: "Fuel", title: "Gasolina", description: "Compensación por kilometraje" },
+      { icon: "Clock", title: "Flexibilidad", description: "Elige tus propios horarios" },
+      { icon: "TrendingUp", title: "Incentivos", description: "Bonos por entregas completadas" }
+    ],
+    address: "Polígono Industrial Almeda, Cornellà de Llobregat",
+    coordinates: { lat: 41.3512, lng: 2.0756 }
+  },
+];
+
+// Cupón detalle
+export const couponDetail = {
+  id: 1,
+  title: "20% en toda la tienda",
+  business: "Cafetería Cornellà Central",
+  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuC6J_i3Xnr83UJ4osOZ_O71m-i0kWRDz9upJwXqYlY6Em-bhaFPZ1WhLJpxgutb6BTJ1-5VQhmcMiR2ovds8zbBPZcrVdcZYgYJYxOjybqlRzBhSnRMDd9h98PWa1kKAjtxRX21XxA_W4AogDp-OCAfl_oUFHUSZl0hCEeTVz-rmAEUinODQ6odI9HtW9FxFFe_n9gX38JngUUbLT6FAnJ2LFvjSvTKYoUN8uvnmqA505cmfWrxKkJagTI2j4Y2-z-d0we00E98oli7",
+  validUntil: "30 Oct 2023",
+  type: "Oferta Flash",
+  code: "CORN-20",
+  qrCode: "https://lh3.googleusercontent.com/aida-public/AB6AXuD0jom60OnHcuowvLKZuATverW-eUBRUHfasU3AZj2Q-cl-UAL7k7GFkRakRhE2MYvTIgGPTpW1Ry09VjFqABtqYis4US-8w5b5Miw5-NxnYc3iObWn2iPIiQ94abCXS_uGEpmijjSI18FXfQJm7oOBlv1uZElr0vO2vzFab-CFXoEhAXiaQy5pYLxbVO03BsU43_ewgdRx3zMG5EXSLVP7Ti7GAF4eE3QMsJQUDKOu5OkrwMfBC8_ZwwQNHW-XOpa-a9-fHcOvbuaV",
+  description: "Disfruta de un 20% de descuento en todos los productos de nuestra cafetería. Esta oferta incluye bebidas calientes, pastelería artesanal y nuestra selección de cafés en grano.",
+  conditions: [
+    "Válido solo de lunes a viernes.",
+    "No acumulable con otras promociones o tarjetas de fidelidad.",
+    "Un uso por persona y día.",
+    "El código debe presentarse antes de solicitar la cuenta.",
+  ],
+  location: {
+    address: "C/ de Mossèn Andreu, 14",
+    city: "08940 Cornellà de Llobregat, Barcelona",
+    distance: "300m",
+  },
+};
+
+// Medallas y logros
+export const badges = [
+  {
+    id: 1,
+    name: "Primera Compra",
+    icon: "ShoppingBag",
+    gradient: "from-yellow-100 to-yellow-50",
+    iconColor: "text-yellow-600",
+    borderColor: "border-yellow-200",
+    unlocked: true,
+  },
+  {
+    id: 2,
+    name: "Héroe Local",
+    icon: "Building2",
+    gradient: "from-blue-100 to-blue-50",
+    iconColor: "text-blue-600",
+    borderColor: "border-blue-200",
+    unlocked: true,
+  },
+  {
+    id: 3,
+    name: "Crítico Experto",
+    icon: "MessageSquare",
+    progress: "3/5 Reseñas",
+    unlocked: false,
+  },
+  {
+    id: 4,
+    name: "Sociable",
+    icon: "Share2",
+    progress: "Compartir 5 veces",
+    unlocked: false,
+  },
+];
+
+// Trofeos (badges page)
+export const trophies = [
+  {
+    id: 1,
+    name: "Primer Canje",
+    icon: "ShoppingBag",
+    gradient: "from-primary to-[#ffb36b]",
+    unlocked: true,
+  },
+  {
+    id: 2,
+    name: "Cafetero",
+    icon: "Coffee",
+    gradient: "from-purple-600 to-pink-500",
+    unlocked: true,
+  },
+  {
+    id: 3,
+    name: "Visitante",
+    icon: "Store",
+    gradient: "from-blue-600 to-cyan-400",
+    unlocked: true,
+  },
+  {
+    id: 4,
+    name: "Ahorrador",
+    icon: "PiggyBank",
+    unlocked: false,
+    hint: "Canjea 5 cupones para desbloquear.",
+  },
+  {
+    id: 5,
+    name: "Crítico Top",
+    icon: "Star",
+    unlocked: false,
+  },
+  {
+    id: 6,
+    name: "Fiestero",
+    icon: "Calendar",
+    unlocked: false,
+  },
+];
+
+// Desafíos activos
+export const activeChallenges = [
+  {
+    id: 1,
+    title: "Visita el Mercado Municipal",
+    reward: 'Gana la insignia "Explorador"',
+    icon: "MapPin",
+    action: "Ir al mapa",
+  },
+  {
+    id: 2,
+    title: "Canjea 3 Cupones",
+    progress: { current: 1, total: 3 },
+    icon: "Ticket",
+  },
+];
+
+// Mapa
+export const mapData = {
+  backgroundImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuA3M0Ip0NZzMRHmjLMqMeyPP314zqy5zh8-wTuuUsyqFeXBBdNVnEU6btqAyos9PVAwogsIHxCspGzhKRotJR1tqm6yG0IuCWcV8ihosx7uZ8_XJ_4RBQMdTTLXICxwxztNwOZuK6Lz8ZwGdxVlCOuNEG-DcNwgRrBPIiAbuw4EWICgMLvdipFPjGxzFjDZV_2kDpVqcn1gP3kfpydGFoqcxmfQzUmuMFDaUg07ccro9E5Zvj0VFo5SdR6GLjXEbf7Ap-TFOwzax9EI",
+  markers: [
+    { id: 1, type: "main", icon: "Store", position: { top: "50%", left: "50%" } },
+    { id: 2, type: "restaurant", icon: "UtensilsCrossed", position: { top: "35%", left: "20%" } },
+    { id: 3, type: "laundry", icon: "Shirt", position: { top: "42%", right: "15%" } },
+    { id: 4, type: "shop", icon: "ShoppingBag", position: { top: "60%", left: "30%" } },
+  ],
+  selectedBusiness: {
+    name: "Panadería García",
+    rating: 4.8,
+    type: "Artesanal",
+    distance: "120m",
+    isOpen: true,
+    priceRange: "€€",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuA_kuU0L9ht4GXRuEd769AZVrCjtbMtx1SVgR1fpQ3oxy8uNEqemmKQeUkcLtGGFA2aE7A2yC7rDVjSalmk461U2SE65eGp6-jSItAJXvw-UhFNZOYixwcc4w6fs5Er6RMk2IvUEjmtmeXHEA1gP9pnZ5FycihwfT8Qs3R8QBh7nCVZK6Mv4PneTGZ-zXoiCi_Sm_dFsdBQXR6Mspw881RjzqnxLH-aTB4gplGHH6GOVt5Ywz8ukxfhC-aEUlHR0i36xlJM6D9eFu47",
+  },
+};
+
+// Navegación items
+export const navItems = [
+  { id: "home", label: "Inicio", icon: "Home", path: "/" },
+  { id: "budget-request", label: "Presupuesto", icon: "ClipboardList", path: "/presupuesto" },
+  { id: "offers", label: "Ofertas", icon: "Tag", path: "/offers" },
+  { id: "favorites", label: "Favoritos", icon: "Heart", path: "/favorites" },
+  { id: "profile", label: "Perfil", icon: "User", path: "/profile" },
+];
+
+// Reseñas del usuario
+export const userReviews = [
+  {
+    id: 1,
+    businessName: "Cafetería La Plaza",
+    businessImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuDrf5Tz0_21w4a9PJyJbrXy0rw9AtnV-5IRHh8EQEWnQMDJ6P1AwG3GvY7Bfe7QtkssX-5fJciFBbhXfNI6b6ekp2TwH7Mwp6HWBRfYiF9G0DUVokbZpyCHSJRUIyNsh0UWvw59CyQepIsdCNAPAqsndpki_1X92rEfS11P8m_zwuyNmtvVzSL1fzxS-0PcdI7dZg7F9kHo8NQepkAvf2AxwYlmSv2QXulR7DyZ_fbJRtfOb57cA_B1Oix18xqW_rho97lEcxwb1_ZN",
+    date: "12 Oct 2023",
+    rating: 5,
+    text: "El mejor café de Cornellà, el servicio es muy rápido y amable. Las tostadas con tomate son espectaculares. Volveré seguro con amigos.",
+  },
+  {
+    id: 2,
+    businessName: "Biblioteca Central",
+    businessImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuC4s_LYkV96e3BeKYVAZIxLoAssWMX7uj0MDaSfO6Ju8w_50WZLHlskI3HsVw-BV-D9gLqg1gpsXF8SsTj9Kw2yw3lhMWJ2gPjoSFTyel9rdKHj71lz5FKykpU25Nu39Q44XijTYW5GxkT8va0Kl6zl7DWb8LS9ZJ8QF3BIr-8BM2c4LP7nWrHd22_Bb8i3rXAbY_YabTJy6hWP4QnCgtyV4RrxZRUIHRozt5A-cXq7FW9QKiGX66XW9jbpvsBw9EUjMn_s4PVvinHN",
+    date: "05 Sep 2023",
+    rating: 4,
+    text: "Muy tranquila para estudiar, pero el wifi fallaba un poco en la segunda planta durante la tarde. Por lo demás, excelente colección de libros.",
+  },
+  {
+    id: 3,
+    businessName: "Polideportivo Municipal",
+    businessImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuBd4R0V-5JfkYo6He3rb-83U2ZilWGQB5OHM9xx0h0YApb4pRl-ZsxtU4-d9BGFriHxBHqNU31nsLvd6YF3z2En9sFLHEenwNL2AgtALMTEhMoZhfnPDSCJ3ZnaogCdKBP7ExmS4it6KX4b5xe1T1eQzRuB5T914P6-Gz4meNxIEienZ0VD3Eb0NqUK1f3F4-KQwoMEZVDWPBrk5QgrgbwLi1zBWaF1fSh9ORl9iKCHzzShqvplK7QsJ9G3g6zb6Yo7cdDjB9H0zYaR",
+    date: "20 Ago 2023",
+    rating: 5,
+    text: "Instalaciones renovadas, muy limpio. Los vestuarios están impecables y el personal de recepción es muy atento con las reservas.",
+  },
+  {
+    id: 4,
+    businessName: "Parque de Can Mercader",
+    businessImage: null,
+    date: "15 Jul 2023",
+    rating: 3,
+    text: "Un espacio verde genial para pasear, aunque los fines de semana se llena demasiado.",
+  },
+];
+
+// Candidaturas del usuario
+export const userJobApplications = {
+  stats: {
+    active: 5,
+    interviews: 2,
+    finished: 12,
+  },
+  applications: [
+    {
+      id: 1,
+      position: "Administrativo/a",
+      company: "Ajuntament de Cornellà",
+      companyLogo: "https://lh3.googleusercontent.com/aida-public/AB6AXuAm72KyjWdQCXlo75y2H3WSdLQY_I7ZugcrFH1Twj7W7dRQwTfLmNVSDBaZ0rkg6rj1HGeNP58stXb9l-yaOrD2JpFpdHcCpsTtKV5Gl5ofn2-5Mmx1k_Xsk-NaoFPg_j8I2vF__c_9deDK3dNJlVoLZjcBFwcubMIM_l1MbbYy4aQAhx8ltVf8ST4neGcY_YQv_cuN3dEpzX0Z49g_BpTa4wmyBOumRsJz528DI64kmp1Yde5D7sbNGumhVvmo8S8VLWoAtYM-rjlG",
+      appliedDate: "12 Oct",
+      status: "review", // review, interview, finished
+    },
+    {
+      id: 2,
+      position: "Desarrollador Frontend",
+      company: "TechLocal Solutions",
+      companyLogo: "https://lh3.googleusercontent.com/aida-public/AB6AXuCvkM0WeY4cMPpZY6mc4XzCTXUZcWnFDSKKAnq1ag1fRDLAS4FLcQs-LOqEGpjJklqjoXdxfbhbznbHKpaU1dbmgSwTf75wESJ68xVXLBLwPT6vB4SozHUipswiWpqQxxOm1H9b4nZf9YTi5PvX-NzIeP0js5_xQhnCcPgqdkHjL6XWHw3fc3Q_p0CsnMNUAVMdGlURORr1rt3s_3-p8d-BRuE9xMNleDwm7apX8kX7yIN82dOD7s4DgQeKubos54gZ-IkkthyAWhFE",
+      appliedDate: "10 Oct",
+      status: "interview",
+      timeline: [
+        { step: "Solicitud enviada", date: "10 Oct, 09:30", completed: true },
+        { step: "CV revisado", date: "11 Oct, 14:15", completed: true },
+        { step: "Entrevista programada", date: "Mañana, 10:00 AM", current: true },
+        { step: "Decisión final", date: null, pending: true },
+      ],
+    },
+    {
+      id: 3,
+      position: "Atención al Cliente",
+      company: "Librería Central",
+      companyLogo: "https://lh3.googleusercontent.com/aida-public/AB6AXuAuL29CsaEGvWZufhapXTY2mzgWUvas8nunx24oScPBqc-u7kjt4dRHXGDzb5kDPQt4ejy64EEko5ykamfzZtOlWpClkFwiR5UAgRrQpArR2Z5E8Kjt8S9Am0FJ54E-ZUbJ27L43i6U8PkjszhHtpk1NQVgJYOIKZ6spbZQqc3sdIhKP_n-4VJ00S8WOGjksPEbZR8myfLp1Uvr_v_b27UpSqIHhfBbZh95WY32s2aiUG4-gCOA0UEYkbSogV36PbnCo41NVT99D8ST",
+      appliedDate: "28 Sep",
+      status: "finished",
+    },
+  ],
+};
+
+// Solicitudes de presupuesto (para dueños de negocio)
+export const budgetRequests = [
+  {
+    id: 1,
+    customerName: "Maria G.",
+    customerAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuA7nzKJ7jI_67xW84vfN_WxPE9PrjsgodpwB4J-P3cF2j3jU-P5sfcKkiO19cyp6EMitrntfmZK2UD3icJksE9Ij2V5t0NPWV8372uGlDDiCKGZVLhQVs09raI-Layxi_2PktAvobLEHRufmAkRwyCCJTU7CVF66iUJ_DqP46AdGWmrEXIkmEWF-av97g-Mje6vMz9xnH7EtEc_arYOEFBgedW0vxvr5RIxHVB76VO_aSuMDcpe8gav4O83DhKIu7Kzxm22SUK_4Ohu",
+    customerRating: 4.8,
+    isVerified: true,
+    requestDate: "Hace 2h • 14 Oct, 10:30 AM",
+    message: "Hola, necesito reparar la persiana del comedor, se ha quedado atascada a mitad y no sube ni baja. ¿Podrían darme un precio aproximado?",
+    attachments: [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAuDKFsWxc-NJs2qz_oHAbLmJU-9lh0pZpNBjJ5lPdDx5DwgiwFaofwINM8_98j9VkWfbfED_kVo0b-HUZMuvx8rwbxnkIkYZhLrKGgUeXiMyLlz3lada8NfLwOyw4mRFWoy8aQjCLP-r4t5QR7rcBFCCQchcrGedaf8LwvxH_N4yz_ggzmLRuaENdxtKtQXBqxZYphlW2Iib6Z3-TGLSh78qi_4GOa6mtaA-DwsGxahsENL1FG8vsJxZWiocNv4esDfO2RA9OSfiyx",
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCjzRBSOuFXw1Nh9mMAAw2HNERXe4rd6PAi7rEQ9zikB-Y0yNvQAULvOAtnlnG8u0pknzWuYW6n2ZkNKTO75BLXw8CyZAJzBrYmZiwk7pEMzdhuUZeSmMGEeWhXFXVViJBGbSim_M8ejBquw8lMgTnTo5SdEVc7oyesrugRVnMaLH5XjNDo7KuT0P_LRLunmPWLiXHwmhscS3nK9jmZGaQTtGq-y3Swi22qXRFvxIwPqSsw-b50ZDDEV3LST1RGwVrA7Tfc2sDeX6X9",
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuA_j4mJ0rMGNrsKPhTvZIepzz5izGS9VZW6N55cVL7DhTJMs6rsKLzvHRnJNxIdTJLAozR-qXl2NZMPaC0Uk8jRZr_o_hCv97gCo9VSM_o_jnRqXR3USRylV2a-Eicd8EFrdbP1XXN1tGLVexpqCfA51Oh61B7PilH3eqroZqespnBS5AN9SvrenaPaqAgTtepNBbN1NTJ4SB8pGO2R3Vozia-XPbp-zuoQA_0kX_TFUbV--JsdTBQYgBVidGlWlVbhn4xe6O1CmRy3",
+    ],
+  },
+];
+
+// Ofertas del negocio (para dueños)
+export const businessOffers = [
+  {
+    id: 1,
+    title: "2x1 Hamburguesas Gourmet",
+    discount: "50% DTO",
+    status: "active",
+    timeLeft: "2h 15m",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBxOb7ln_mDeAiUzOAUEVL7kik4Z5IWRkxKRjfRH9ZCZzYZ2jcI9xiRkh3Z-0TkmsOdrkg2pxruC9fxoaJtivi0ND8pxLy_qOzlaNZA1XPqWduXtrRozSumpA88PCELXvqZllot98dmzxLIk-JonGfdfyR503TI__KAQ8K_DCLCCRREvJ-GzupC6b-yYPmWgYKoFmECVOfE1zlgPpKasWA5IrdupSM8LQpYjrUjmbYUN7FrkrW6TAqFhaiUesXHdqE9kFDVXZwqKFz2",
+    isVisible: true,
+  },
+  {
+    id: 2,
+    title: "Desayuno Completo",
+    discount: "15% DTO",
+    status: "paused",
+    timeLeft: null,
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBqPbQWVsnNhABrkhgWl3hVRsqROGW4YGrp9yGNFOufco0fCWSg6eIuUzH2m7XIJga36FBXBgIvgmpyX3GJCkyANZWYCgAbESupsnkIeyPyyhNs5vdJNppQN-Fp1sDCxlmFmVo2WsrP1J_mEN4Doc4R_r0kpaSvrwLXfrtnNBR1u3nizUaJc6Dl9Qlueru2PIJpHaFAPdYaJAW7Xv3BAk360fLeZg4bVVSujR-XGh4oLUvWnf1orQagPcv1EE5VYesV3MhMyXx4JuqV",
+    isVisible: false,
+  },
+  {
+    id: 3,
+    title: "Postre Gratis",
+    discount: "100% DTO",
+    status: "active",
+    timeLeft: "15m",
+    expiresSoon: true,
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAojMerqqzceNopAu_nIuAfIQr7TlEvwqqB1rfTTNZR54Tq26s06ydBS3oI37wYxxKM5HwECjZQHUy-TREnT-L6KL02FCdxLbp40zur3iECnlwehVgdlR5RfVRzQq4cl2K6PTlOk6jw0GGL2AoOgRyDvAuyzhBN2UKyyFaQfziAhKPcqPpG4pnT3PNwvAHIwULEcJuxqReBYqj8v2lg2BHv_oRfiZWdaSF44dbTCa8glTeK-VQJIgb4ZSV7-p11X3wdZeqVcHtV4Z0k",
+    isVisible: true,
+  },
+];
+
+// Términos y condiciones
+export const termsAndConditions = {
+  lastUpdate: "24 de Octubre, 2023",
+  sections: [
+    {
+      id: 1,
+      title: "Uso de la plataforma",
+      icon: "Smartphone",
+      content: "El usuario se compromete a utilizar la plataforma de conformidad con la ley, la moral, las buenas costumbres generalmente aceptadas y el orden público. Queda prohibido el uso con fines ilícitos o lesivos contra Cornellà Local o terceros.",
+      bullets: [
+        "No compartir cuentas con terceros.",
+        "Mantener la información de perfil actualizada.",
+      ],
+    },
+    {
+      id: 2,
+      title: "Protección de datos",
+      icon: "Shield",
+      content: "Nos tomamos muy en serio su privacidad. Todos los datos personales recopilados se tratan de acuerdo con el Reglamento General de Protección de Datos (RGPD) y nuestra Política de Privacidad. Sus datos no serán vendidos a terceros.",
+    },
+    {
+      id: 3,
+      title: "Propiedad intelectual",
+      icon: "Copyright",
+      content: "Todo el contenido de esta aplicación, incluyendo textos, gráficos, logotipos, iconos de botones, imágenes y software, es propiedad de Cornellà Local o de sus proveedores de contenido y está protegido por las leyes internacionales de derechos de autor.",
+    },
+    {
+      id: 4,
+      title: "Modificaciones",
+      icon: "RefreshCw",
+      content: "Cornellà Local se reserva el derecho de modificar estos términos en cualquier momento. Las modificaciones entrarán en vigor inmediatamente después de su publicación en la plataforma. Se le notificará de cualquier cambio significativo.",
+    },
+  ],
+};
+
+// Notificaciones
+export const notifications = [
+  {
+    id: 1,
+    type: "offer",
+    title: "Nueva oferta cerca de ti",
+    message: "La Forneria Artesana tiene un 20% de descuento en bollería",
+    time: "Hace 5 min",
+    isRead: false,
+    icon: "Tag",
+    iconBg: "bg-primary",
+    actionRoute: "coupon",
+    actionParams: { id: 1 },
+  },
+  {
+    id: 2,
+    type: "job",
+    title: "¡Entrevista programada!",
+    message: "TechLocal Solutions quiere entrevistarte mañana a las 10:00",
+    time: "Hace 2 horas",
+    isRead: false,
+    icon: "Briefcase",
+    iconBg: "bg-green-500",
+    actionRoute: "user-jobs",
+  },
+  {
+    id: 3,
+    type: "badge",
+    title: "¡Nueva medalla desbloqueada!",
+    message: "Has conseguido la medalla 'Explorador' por visitar 10 comercios",
+    time: "Hace 1 día",
+    isRead: false,
+    icon: "Award",
+    iconBg: "bg-yellow-500",
+    actionRoute: "badges",
+  },
+  {
+    id: 4,
+    type: "budget",
+    title: "Nueva solicitud de presupuesto",
+    message: "Maria G. solicita presupuesto para reparación de persiana",
+    time: "Hace 2 horas",
+    isRead: true,
+    icon: "ClipboardList",
+    iconBg: "bg-purple-500",
+    actionRoute: "incoming-budget-requests",
+  },
+  {
+    id: 5,
+    type: "review",
+    title: "Respuesta a tu reseña",
+    message: "Cafetería La Plaza ha respondido a tu reseña",
+    time: "Hace 3 días",
+    isRead: true,
+    icon: "MessageSquare",
+    iconBg: "bg-blue-500",
+    actionRoute: "user-reviews",
+  },
+  {
+    id: 6,
+    type: "promo",
+    title: "Oferta flash disponible",
+    message: "2x1 en hamburguesas gourmet - Solo quedan 2 horas",
+    time: "Hace 4 horas",
+    isRead: true,
+    icon: "Zap",
+    iconBg: "bg-orange-500",
+    actionRoute: "coupon",
+    actionParams: { id: 2 },
+  },
+  {
+    id: 7,
+    type: "system",
+    title: "Bienvenido a Cornellà Local",
+    message: "Completa tu perfil para desbloquear todas las funcionalidades",
+    time: "Hace 1 semana",
+    isRead: true,
+    icon: "User",
+    iconBg: "bg-slate-500",
+    actionRoute: "profile",
+  },
+];
+
+// Candidaturas recibidas por la empresa
+export const businessCandidates = [
+  {
+    id: 1,
+    jobOfferId: 1,
+    jobTitle: "Camarero/a con experiencia",
+    candidate: {
+      id: 101,
+      name: "Laura Martínez",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+      email: "laura.martinez@email.com",
+      phone: "612 345 678",
+      age: 28,
+      experience: "3 años en hostelería",
+      location: "Cornellà de Llobregat",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-22",
+    appliedAgo: "Hace 2 días",
+    status: "new", // new, reviewing, interview, hired, rejected
+    coverLetter: "Me apasiona el mundo de la hostelería y tengo amplia experiencia en atención al cliente. Busco un ambiente de trabajo dinámico donde pueda crecer profesionalmente.",
+    interviewDate: null,
+    interviewConfirmed: null,
+  },
+  {
+    id: 2,
+    jobOfferId: 1,
+    jobTitle: "Camarero/a con experiencia",
+    candidate: {
+      id: 102,
+      name: "Carlos Rodríguez",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+      email: "carlos.rod@email.com",
+      phone: "623 456 789",
+      age: 32,
+      experience: "5 años en restauración",
+      location: "L'Hospitalet",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-21",
+    appliedAgo: "Hace 3 días",
+    status: "interview",
+    coverLetter: "Profesional con 5 años de experiencia en restaurantes de alto nivel. Domino inglés y francés para atención a clientes internacionales.",
+    interviewDate: "2026-01-25, 10:00",
+    interviewConfirmed: true,
+  },
+  {
+    id: 3,
+    jobOfferId: 1,
+    jobTitle: "Camarero/a con experiencia",
+    candidate: {
+      id: 103,
+      name: "Ana García",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
+      email: "ana.garcia@email.com",
+      phone: "634 567 890",
+      age: 24,
+      experience: "1 año en cafetería",
+      location: "Cornellà de Llobregat",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-20",
+    appliedAgo: "Hace 4 días",
+    status: "reviewing",
+    coverLetter: "Recién graduada en turismo con ganas de aprender y crecer en el sector. Persona responsable y con buena actitud.",
+    interviewDate: null,
+    interviewConfirmed: null,
+  },
+  {
+    id: 4,
+    jobOfferId: 1,
+    jobTitle: "Camarero/a con experiencia",
+    candidate: {
+      id: 104,
+      name: "Miguel Fernández",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
+      email: "miguel.f@email.com",
+      phone: "645 678 901",
+      age: 35,
+      experience: "8 años en hostelería",
+      location: "Barcelona",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-19",
+    appliedAgo: "Hace 5 días",
+    status: "rejected",
+    coverLetter: "Amplia experiencia en el sector. Busco nuevas oportunidades cerca de mi zona de residencia.",
+    interviewDate: null,
+    interviewConfirmed: null,
+    rejectionReason: "Ubicación demasiado lejos",
+  },
+  {
+    id: 5,
+    jobOfferId: 1,
+    jobTitle: "Camarero/a con experiencia",
+    candidate: {
+      id: 105,
+      name: "Patricia López",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      email: "patricia.l@email.com",
+      phone: "656 789 012",
+      age: 26,
+      experience: "2 años en bar de copas",
+      location: "Sant Joan Despí",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-23",
+    appliedAgo: "Hace 1 día",
+    status: "new",
+    coverLetter: "Experiencia en coctelería y atención nocturna. Busco horarios de mañana para compatibilizar con estudios.",
+    interviewDate: null,
+    interviewConfirmed: null,
+  },
+  {
+    id: 6,
+    jobOfferId: 1,
+    jobTitle: "Camarero/a con experiencia",
+    candidate: {
+      id: 106,
+      name: "David Sánchez",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+      email: "david.s@email.com",
+      phone: "667 890 123",
+      age: 29,
+      experience: "4 años en restaurante",
+      location: "Cornellà de Llobregat",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-18",
+    appliedAgo: "Hace 6 días",
+    status: "hired",
+    coverLetter: "Profesional comprometido con la excelencia en el servicio. Tengo disponibilidad inmediata.",
+    interviewDate: "2026-01-20, 11:00",
+    interviewConfirmed: true,
+    hiredDate: "2026-01-22",
+  },
+  {
+    id: 7,
+    jobOfferId: 2,
+    jobTitle: "Ayudante de cocina",
+    candidate: {
+      id: 107,
+      name: "Elena Torres",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
+      email: "elena.t@email.com",
+      phone: "678 901 234",
+      age: 22,
+      experience: "Sin experiencia previa",
+      location: "Cornellà de Llobregat",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-22",
+    appliedAgo: "Hace 2 días",
+    status: "new",
+    coverLetter: "Aunque no tengo experiencia profesional, he cocinado toda mi vida en casa y tengo muchas ganas de aprender en un entorno profesional.",
+    interviewDate: null,
+    interviewConfirmed: null,
+  },
+  {
+    id: 8,
+    jobOfferId: 2,
+    jobTitle: "Ayudante de cocina",
+    candidate: {
+      id: 108,
+      name: "Roberto Jiménez",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
+      email: "roberto.j@email.com",
+      phone: "689 012 345",
+      age: 31,
+      experience: "2 años como ayudante",
+      location: "Esplugues",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-21",
+    appliedAgo: "Hace 3 días",
+    status: "interview",
+    coverLetter: "Experiencia previa en cocina de restaurante italiano. Conozco las normas de higiene y manipulación de alimentos.",
+    interviewDate: "2026-01-26, 09:30",
+    interviewConfirmed: null,
+  },
+  {
+    id: 9,
+    jobOfferId: 2,
+    jobTitle: "Ayudante de cocina",
+    candidate: {
+      id: 109,
+      name: "María Ruiz",
+      avatar: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150",
+      email: "maria.r@email.com",
+      phone: "690 123 456",
+      age: 27,
+      experience: "3 años en catering",
+      location: "Cornellà de Llobregat",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-20",
+    appliedAgo: "Hace 4 días",
+    status: "reviewing",
+    coverLetter: "He trabajado en empresas de catering para eventos. Me adapto bien a ritmos intensos de trabajo.",
+    interviewDate: null,
+    interviewConfirmed: null,
+  },
+  {
+    id: 10,
+    jobOfferId: 2,
+    jobTitle: "Ayudante de cocina",
+    candidate: {
+      id: 110,
+      name: "Javier Moreno",
+      avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150",
+      email: "javier.m@email.com",
+      phone: "601 234 567",
+      age: 23,
+      experience: "1 año en fast food",
+      location: "Sant Boi",
+      cv: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/img/table-word.pdf",
+    },
+    appliedDate: "2026-01-23",
+    appliedAgo: "Hace 1 día",
+    status: "new",
+    coverLetter: "Busco dar el salto a cocina tradicional. Soy rápido, limpio y aprendo rápido.",
+    interviewDate: null,
+    interviewConfirmed: null,
+  },
+];

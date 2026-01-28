@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mis Favoritos</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#577ac7",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#14171e",
+                        "heart-red": "#F04C4C",
+                        "star-gold": "#FFC107",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                    boxShadow: {
+                        'premium': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'premium-hover': '0 10px 25px -5px rgba(0, 0, 0, 0.08)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom tweaks for material symbols to ensure they align perfectly */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Hide scrollbar for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased selection:bg-primary/20">
+<!-- Mobile Container -->
+<div class="relative mx-auto flex h-screen w-full max-w-md flex-col overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl">
+<!-- Status Bar Placeholder -->
+<div class="h-12 w-full shrink-0 bg-background-light/90 backdrop-blur-md dark:bg-background-dark/90 sticky top-0 z-30 flex items-end px-6 pb-2">
+<!-- Time/Signal would go here in a real app -->
+</div>
+<!-- Header -->
+<header class="flex shrink-0 flex-col bg-background-light/95 px-6 pb-4 pt-2 backdrop-blur-sm dark:bg-background-dark/95 z-20">
+<div class="flex items-center justify-between">
+<h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Mis Favoritos</h1>
+<div class="rounded-full bg-slate-200/50 p-2 dark:bg-slate-800">
+<span class="material-symbols-outlined text-slate-500">filter_list</span>
+</div>
+</div>
+<p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">3 lugares guardados</p>
+</header>
+<!-- Scrollable Content -->
+<main class="flex-1 overflow-y-auto px-4 pb-24 pt-2 no-scrollbar">
+<div class="flex flex-col gap-4">
+<!-- Card 1 -->
+<article class="group relative flex w-full flex-row gap-4 rounded-2xl bg-white p-3 shadow-premium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-premium-hover dark:bg-[#1e232e]">
+<!-- Image -->
+<div class="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl">
+<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+<img alt="Interior of a cozy modern coffee shop with warm lighting" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Interior of a cozy modern coffee shop with warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPLUBzzGaHn6-DIEUJXSfRwT2LgdnlUKScR73901ogifSZ8yED_xmvTe4qpVbSQPjcbcUokZrrewtEXn_21ro9N4EKtRFQDe25DJ2ztXwj-T_AXCIIKonNPYjllPpKr1CaoHOOF7dCdkvuTf-FWeJ3SavGCZ3B5rd6Ush9I7Xa_ckdPteIrjRRKbaEq2zRBou4XX4O0N6VOpA77MnSgnCyx3-Ut63I4m5Qk0N6_RIX--4wTrHRez8DvIjAeJHZbg8sdAxGxv7LCraI"/>
+<div class="absolute bottom-1 right-1 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-slate-800 backdrop-blur-sm">
+                            ABIERTO
+                        </div>
+</div>
+<!-- Content -->
+<div class="flex flex-1 flex-col justify-between py-1 pr-1">
+<div class="flex justify-between items-start gap-2">
+<div>
+<h2 class="font-bold leading-tight text-slate-900 dark:text-white text-lg">Cafetería Central</h2>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Hostelería • Café</p>
+</div>
+<button class="group/heart relative -mr-2 -mt-2 p-3 active:scale-90 transition-transform">
+<span class="material-symbols-outlined filled text-heart-red text-2xl drop-shadow-sm transition-transform group-hover/heart:scale-110">favorite</span>
+</button>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1 dark:bg-slate-700/50">
+<span class="material-symbols-outlined filled text-star-gold text-[16px]">star</span>
+<span class="text-xs font-bold text-slate-700 dark:text-slate-200">4.8</span>
+<span class="text-[10px] text-slate-400">(124)</span>
+</div>
+<div class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="text-xs font-medium">0.5 km</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="group relative flex w-full flex-row gap-4 rounded-2xl bg-white p-3 shadow-premium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-premium-hover dark:bg-[#1e232e]">
+<div class="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl">
+<img alt="Shelves full of colorful books in a quiet library" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Shelves full of colorful books in a quiet library" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDB_P-PgXMi5zJViIl7K3lfcCvSe4J55upZmWFFgSWns-3P9eEuWnQooKx4rz5_REv4PScfKLjuVMKLQ6Q4eAHj1qHHAtSNEmsXNxoEu3ZPlnOsmXySsh9AoWFaF2boqFOZHDJLGqNRf7rAQ4PPNGdyrehuq_G3-29ZBRULaKLHpYDLH7KIyRjVxOE8veIRS_AQNXYSGJAloavhibsya9fo4ZNTL6T-rZi3WecGjSgyVrcA85nwicS47ezCD48I15g5ouec0XHI3h-s"/>
+</div>
+<div class="flex flex-1 flex-col justify-between py-1 pr-1">
+<div class="flex justify-between items-start gap-2">
+<div>
+<h2 class="font-bold leading-tight text-slate-900 dark:text-white text-lg">Librería El Rincón</h2>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Comercio • Libros</p>
+</div>
+<button class="group/heart relative -mr-2 -mt-2 p-3 active:scale-90 transition-transform">
+<span class="material-symbols-outlined filled text-heart-red text-2xl drop-shadow-sm transition-transform group-hover/heart:scale-110">favorite</span>
+</button>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1 dark:bg-slate-700/50">
+<span class="material-symbols-outlined filled text-star-gold text-[16px]">star</span>
+<span class="text-xs font-bold text-slate-700 dark:text-slate-200">4.9</span>
+<span class="text-[10px] text-slate-400">(86)</span>
+</div>
+<div class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="text-xs font-medium">1.2 km</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="group relative flex w-full flex-row gap-4 rounded-2xl bg-white p-3 shadow-premium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-premium-hover dark:bg-[#1e232e]">
+<div class="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl">
+<div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+<img alt="Elegant restaurant table setting with warm ambiance" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Elegant restaurant table setting with warm ambiance" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_85K6VIzH6aKvWrKBwf7qzABJLJ74qngzVCMICRdE5rQ3Zdhtu9am6iVOQ01zrrVFfBiRUEMANOMzxSF-A5hDx_N7y14CriFog0oSLFE5VaTDQLjkboLNax-5Vwnf6AyGvOUoAOeeRAbbC2KZ1G-V5901I0ZtKyPjw4Z6sw__jVK4OOaz7EiHDdR_LYMgJLj2FVzfa43lViVvZ-aEb6BPEIdMNiG7_nxyiWX2C9plHWqhesBusYpO4Ua747ABahB77VNn_tSANZ1x"/>
+<div class="absolute bottom-1 right-1 rounded bg-slate-800/90 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+                            CERRADO
+                        </div>
+</div>
+<div class="flex flex-1 flex-col justify-between py-1 pr-1">
+<div class="flex justify-between items-start gap-2">
+<div>
+<h2 class="font-bold leading-tight text-slate-900 dark:text-white text-lg">Restaurante La Plaza</h2>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Gastronomía</p>
+</div>
+<button class="group/heart relative -mr-2 -mt-2 p-3 active:scale-90 transition-transform">
+<span class="material-symbols-outlined filled text-heart-red text-2xl drop-shadow-sm transition-transform group-hover/heart:scale-110">favorite</span>
+</button>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1 dark:bg-slate-700/50">
+<span class="material-symbols-outlined filled text-star-gold text-[16px]">star</span>
+<span class="text-xs font-bold text-slate-700 dark:text-slate-200">4.5</span>
+<span class="text-[10px] text-slate-400">(312)</span>
+</div>
+<div class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="text-xs font-medium">0.2 km</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Empty State Suggestion (Visual separator) -->
+<div class="mt-4 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 dark:border-slate-700 dark:bg-slate-800/30">
+<div class="mb-3 rounded-full bg-slate-100 p-4 dark:bg-slate-700">
+<span class="material-symbols-outlined text-3xl text-slate-400">explore</span>
+</div>
+<p class="text-center text-sm font-medium text-slate-500">¿Buscas algo nuevo?</p>
+<button class="mt-3 rounded-full bg-primary/10 px-6 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary hover:text-white">
+                        Explorar mapa
+                    </button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="shrink-0 border-t border-slate-100 bg-white pb-6 pt-2 dark:border-slate-800 dark:bg-[#1e232e]">
+<ul class="grid grid-cols-5 items-center justify-items-center">
+<li>
+<button class="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Inicio</span>
+</button>
+</li>
+<li>
+<button class="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined" data-location="Cornellà">map</span>
+<span class="text-[10px] font-medium">Mapa</span>
+</button>
+</li>
+<li>
+<button class="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">local_offer</span>
+<span class="text-[10px] font-medium">Ofertas</span>
+</button>
+</li>
+<li>
+<button class="flex flex-col items-center gap-1 p-2 text-primary transition-colors">
+<span class="material-symbols-outlined filled">favorite</span>
+<span class="text-[10px] font-bold">Favoritos</span>
+</button>
+</li>
+<li>
+<button class="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Perfil</span>
+</button>
+</li>
+</ul>
+</nav>
+</div>
+</body></html>

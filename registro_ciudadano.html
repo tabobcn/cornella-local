@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Registro de Ciudadano</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#195ae6",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#111621",
+                        "input-light": "#f0f2f4",
+                        "input-dark": "#1a2230",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-light dark:bg-background-dark font-display text-[#111318] dark:text-white antialiased transition-colors duration-200">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto shadow-sm">
+<!-- TopAppBar -->
+<div class="flex items-center p-4 pb-2 justify-between">
+<button class="text-[#111318] dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 24px;">arrow_back</span>
+</button>
+</div>
+<!-- Headline & Subtitle -->
+<div class="px-4 pb-6 pt-2">
+<h1 class="text-[#111318] dark:text-white tracking-tight text-[32px] font-bold leading-tight pb-3">Crea tu cuenta</h1>
+<p class="text-[#636e88] dark:text-gray-400 text-base font-normal leading-normal">Únete a la comunidad y apoya al comercio de Cornellà.</p>
+</div>
+<!-- Form Fields -->
+<form class="flex flex-col gap-4 px-4 pb-4">
+<!-- Name Input -->
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-[#111318] dark:text-gray-200 text-sm font-medium leading-normal pb-2">Nombre completo</p>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#636e88] dark:text-gray-500" style="font-size: 20px;">person</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#111318] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-input-light dark:bg-input-dark focus:border-none h-14 placeholder:text-[#636e88] dark:placeholder:text-gray-500 pl-12 pr-4 text-base font-normal leading-normal transition-all" placeholder="Ej. Maria Garcia" type="text"/>
+</div>
+</label>
+<!-- Email Input -->
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-[#111318] dark:text-gray-200 text-sm font-medium leading-normal pb-2">Email</p>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#636e88] dark:text-gray-500" style="font-size: 20px;">mail</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#111318] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-input-light dark:bg-input-dark focus:border-none h-14 placeholder:text-[#636e88] dark:placeholder:text-gray-500 pl-12 pr-4 text-base font-normal leading-normal transition-all" placeholder="ejemplo@correo.com" type="email"/>
+</div>
+</label>
+<!-- Password Input -->
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-[#111318] dark:text-gray-200 text-sm font-medium leading-normal pb-2">Contraseña</p>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#636e88] dark:text-gray-500" style="font-size: 20px;">lock</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#111318] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-input-light dark:bg-input-dark focus:border-none h-14 placeholder:text-[#636e88] dark:placeholder:text-gray-500 pl-12 pr-12 text-base font-normal leading-normal transition-all" placeholder="••••••••" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-4 flex items-center text-[#636e88] hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+</button>
+</div>
+</label>
+<!-- Repeat Password Input -->
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-[#111318] dark:text-gray-200 text-sm font-medium leading-normal pb-2">Repetir contraseña</p>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#636e88] dark:text-gray-500" style="font-size: 20px;">lock_reset</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#111318] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-input-light dark:bg-input-dark focus:border-none h-14 placeholder:text-[#636e88] dark:placeholder:text-gray-500 pl-12 pr-12 text-base font-normal leading-normal transition-all" placeholder="••••••••" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-4 flex items-center text-[#636e88] hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+</button>
+</div>
+</label>
+<!-- Terms Checkbox -->
+<label class="flex items-start gap-3 py-2 cursor-pointer group">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-[#ced4da] dark:border-gray-600 bg-white dark:bg-input-dark checked:border-primary checked:bg-primary transition-all" type="checkbox"/>
+<span class="material-symbols-outlined absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" style="font-size: 16px;">check</span>
+</div>
+<p class="text-[#636e88] dark:text-gray-400 text-sm font-normal leading-tight">
+                    Acepto los <a class="text-primary font-medium hover:underline" href="#">términos y condiciones</a> y la política de privacidad.
+                </p>
+</label>
+<!-- Action Button -->
+<div class="pt-4">
+<button class="w-full rounded-lg bg-primary hover:bg-blue-700 text-white h-12 text-base font-bold leading-normal transition-colors flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    Registrarme
+                </button>
+</div>
+</form>
+<!-- Footer Link -->
+<div class="flex-1 flex flex-col justify-end pb-8 pt-4">
+<p class="text-center text-[#636e88] dark:text-gray-400 text-sm">
+                ¿Ya tienes cuenta? 
+                <a class="text-primary font-semibold hover:underline ml-1" href="#">Inicia sesión</a>
+</p>
+</div>
+</div>
+</body></html>

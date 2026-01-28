@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mis Reseñas - Cornellà Local</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#195ae6",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                        "gold": "#F59E0B", // Added for star ratings
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom utility to ensure material symbols fit nicely */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 24px; 
+            line-height: 1;
+        }
+        /* Unfilled star variant */
+        .material-symbols-outlined.unfilled {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#111318] dark:text-white transition-colors duration-200">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto shadow-2xl bg-background-light dark:bg-background-dark">
+<!-- Header -->
+<header class="sticky top-0 z-10 flex items-center bg-white/90 dark:bg-[#111621]/90 backdrop-blur-md p-4 pb-2 border-b border-gray-100 dark:border-gray-800 justify-between">
+<button class="text-[#111318] dark:text-white flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back_ios_new</span>
+</button>
+<h2 class="text-[#111318] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10">
+                Mis Reseñas
+            </h2>
+</header>
+<!-- Summary Section -->
+<div class="px-4 py-6 bg-white dark:bg-background-dark">
+<div class="flex flex-col items-center justify-center gap-2">
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase">
+                    Tu impacto
+                </div>
+<h3 class="text-[#111318] dark:text-white tracking-tight text-3xl font-bold leading-tight text-center">
+                    Has escrito <span class="text-primary">12</span> reseñas
+                </h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm text-center max-w-[280px]">
+                    Gracias por ayudar a mejorar los servicios de Cornellà con tus opiniones.
+                </p>
+</div>
+</div>
+<!-- Reviews List -->
+<main class="flex-1 px-4 py-2 space-y-4 pb-8">
+<!-- Card 1 -->
+<article class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none border border-transparent dark:border-gray-700 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-lg h-12 w-12 shrink-0 shadow-sm" data-alt="Logo of Cafetería La Plaza showing a coffee cup" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDrf5Tz0_21w4a9PJyJbrXy0rw9AtnV-5IRHh8EQEWnQMDJ6P1AwG3GvY7Bfe7QtkssX-5fJciFBbhXfNI6b6ekp2TwH7Mwp6HWBRfYiF9G0DUVokbZpyCHSJRUIyNsh0UWvw59CyQepIsdCNAPAqsndpki_1X92rEfS11P8m_zwuyNmtvVzSL1fzxS-0PcdI7dZg7F9kHo8NQepkAvf2AxwYlmSv2QXulR7DyZ_fbJRtfOb57cA_B1Oix18xqW_rho97lEcxwb1_ZN");'>
+</div>
+<div class="flex flex-col">
+<h4 class="text-[#111318] dark:text-white text-base font-bold leading-snug">Cafetería La Plaza</h4>
+<span class="text-gray-500 dark:text-gray-400 text-xs font-medium">12 Oct 2023</span>
+</div>
+</div>
+<div class="flex items-center gap-1 -mr-2">
+<button class="p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-primary/5">
+<span class="material-symbols-outlined !text-[20px]">edit</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full hover:bg-red-50">
+<span class="material-symbols-outlined !text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-1 mb-3 text-gold">
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+</div>
+<p class="text-gray-600 dark:text-gray-300 text-sm font-normal leading-relaxed">
+                    El mejor café de Cornellà, el servicio es muy rápido y amable. Las tostadas con tomate son espectaculares. Volveré seguro con amigos.
+                </p>
+</article>
+<!-- Card 2 -->
+<article class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none border border-transparent dark:border-gray-700 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-lg h-12 w-12 shrink-0 shadow-sm" data-alt="Interior of a library with books" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC4s_LYkV96e3BeKYVAZIxLoAssWMX7uj0MDaSfO6Ju8w_50WZLHlskI3HsVw-BV-D9gLqg1gpsXF8SsTj9Kw2yw3lhMWJ2gPjoSFTyel9rdKHj71lz5FKykpU25Nu39Q44XijTYW5GxkT8va0Kl6zl7DWb8LS9ZJ8QF3BIr-8BM2c4LP7nWrHd22_Bb8i3rXAbY_YabTJy6hWP4QnCgtyV4RrxZRUIHRozt5A-cXq7FW9QKiGX66XW9jbpvsBw9EUjMn_s4PVvinHN");'>
+</div>
+<div class="flex flex-col">
+<h4 class="text-[#111318] dark:text-white text-base font-bold leading-snug">Biblioteca Central</h4>
+<span class="text-gray-500 dark:text-gray-400 text-xs font-medium">05 Sep 2023</span>
+</div>
+</div>
+<div class="flex items-center gap-1 -mr-2">
+<button class="p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-primary/5">
+<span class="material-symbols-outlined !text-[20px]">edit</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full hover:bg-red-50">
+<span class="material-symbols-outlined !text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-1 mb-3 text-gold">
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined unfilled !text-[20px] text-gray-300 dark:text-gray-600">star</span>
+</div>
+<p class="text-gray-600 dark:text-gray-300 text-sm font-normal leading-relaxed">
+                    Muy tranquila para estudiar, pero el wifi fallaba un poco en la segunda planta durante la tarde. Por lo demás, excelente colección de libros.
+                </p>
+</article>
+<!-- Card 3 -->
+<article class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none border border-transparent dark:border-gray-700 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-lg h-12 w-12 shrink-0 shadow-sm" data-alt="Sports center indoor court" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBd4R0V-5JfkYo6He3rb-83U2ZilWGQB5OHM9xx0h0YApb4pRl-ZsxtU4-d9BGFriHxBHqNU31nsLvd6YF3z2En9sFLHEenwNL2AgtALMTEhMoZhfnPDSCJ3ZnaogCdKBP7ExmS4it6KX4b5xe1T1eQzRuB5T914P6-Gz4meNxIEienZ0VD3Eb0NqUK1f3F4-KQwoMEZVDWPBrk5QgrgbwLi1zBWaF1fSh9ORl9iKCHzzShqvplK7QsJ9G3g6zb6Yo7cdDjB9H0zYaR");'>
+</div>
+<div class="flex flex-col">
+<h4 class="text-[#111318] dark:text-white text-base font-bold leading-snug">Polideportivo Municipal</h4>
+<span class="text-gray-500 dark:text-gray-400 text-xs font-medium">20 Ago 2023</span>
+</div>
+</div>
+<div class="flex items-center gap-1 -mr-2">
+<button class="p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-primary/5">
+<span class="material-symbols-outlined !text-[20px]">edit</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full hover:bg-red-50">
+<span class="material-symbols-outlined !text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-1 mb-3 text-gold">
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+</div>
+<p class="text-gray-600 dark:text-gray-300 text-sm font-normal leading-relaxed">
+                    Instalaciones renovadas, muy limpio. Los vestuarios están impecables y el personal de recepción es muy atento con las reservas.
+                </p>
+</article>
+<!-- Card 4 -->
+<article class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none border border-transparent dark:border-gray-700 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-lg h-12 w-12 shrink-0 shadow-sm" data-alt="Abstract blue gradient pattern" style="background-image: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);">
+</div>
+<div class="flex flex-col">
+<h4 class="text-[#111318] dark:text-white text-base font-bold leading-snug">Parque de Can Mercader</h4>
+<span class="text-gray-500 dark:text-gray-400 text-xs font-medium">15 Jul 2023</span>
+</div>
+</div>
+<div class="flex items-center gap-1 -mr-2">
+<button class="p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-primary/5">
+<span class="material-symbols-outlined !text-[20px]">edit</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full hover:bg-red-50">
+<span class="material-symbols-outlined !text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-1 mb-3 text-gold">
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined !text-[20px]">star</span>
+<span class="material-symbols-outlined unfilled !text-[20px] text-gray-300 dark:text-gray-600">star</span>
+<span class="material-symbols-outlined unfilled !text-[20px] text-gray-300 dark:text-gray-600">star</span>
+</div>
+<p class="text-gray-600 dark:text-gray-300 text-sm font-normal leading-relaxed">
+                    Un espacio verde genial para pasear, aunque los fines de semana se llena demasiado.
+                </p>
+</article>
+</main>
+</div>
+</body></html>

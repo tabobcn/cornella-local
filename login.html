@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Iniciar Sesión Ciudadano</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#195ae6",
+              "background-light": "#f6f6f8",
+              "background-dark": "#111621",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "Noto Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            boxShadow: {
+                'soft': '0 4px 24px -4px rgba(0, 0, 0, 0.08)',
+                'inner-light': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex flex-col items-center justify-center p-4">
+<!-- Card Container (Simulates phone screen or centered card) -->
+<div class="w-full max-w-[420px] bg-white dark:bg-[#1a202c] rounded-xl shadow-soft p-6 sm:p-8 flex flex-col gap-6 relative overflow-hidden transition-colors duration-200">
+<!-- Header Section -->
+<div class="flex flex-col items-center text-center gap-2 pt-2">
+<!-- Logo -->
+<div class="w-20 h-20 bg-cover bg-center bg-no-repeat rounded-2xl shadow-sm mb-2" data-alt="Cornellà Local app illustrative logo in blue and white" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBL78wfGDYTsRyavtyWcUx-2_1sQsP3xdttOnXPenBE0ZOboD_hOwBGWtzk5u4iIfgSIJfffA2-yiyHa4Juk1hKuSwvy-1Ck5I_lkY9PesIbB1p-Qu8qbnX3okqXdhoAVQKCsc9NnH5hJm4qdqwi82lpAO_DFVI5G38kVO3AhJ2tRzo3_mshZ0X69IjFF2mO6HhXfvNA922G_4h0pW16OCo9bh1h-wdC-7DTepgqD4b4yq4ZDhn1Kd-ZUtEa-raW4q7XO2UQyHMOwMq");'>
+</div>
+<!-- HeadlineText Adaptation -->
+<h1 class="text-[#111318] dark:text-white tracking-tight text-[28px] font-bold leading-tight px-4 pb-1">
+                ¡Hola de nuevo!
+            </h1>
+<!-- BodyText Adaptation -->
+<p class="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal px-4">
+                Accede a tus servicios ciudadanos.
+            </p>
+</div>
+<!-- Form Section -->
+<form class="flex flex-col gap-5 w-full mt-2" onsubmit="event.preventDefault()">
+<!-- TextField: Email -->
+<div class="flex flex-col gap-2">
+<label class="text-[#111318] dark:text-gray-200 text-sm font-semibold ml-1">Email</label>
+<input class="form-input flex w-full rounded-lg text-[#111318] dark:text-white border-0 bg-background-light dark:bg-background-dark focus:ring-2 focus:ring-primary/20 h-14 placeholder:text-gray-400 p-[15px] text-base font-normal leading-normal shadow-inner-light transition-all" placeholder="ejemplo@correo.com" type="email" value=""/>
+</div>
+<!-- TextField: Password -->
+<div class="flex flex-col gap-2">
+<label class="text-[#111318] dark:text-gray-200 text-sm font-semibold ml-1">Contraseña</label>
+<div class="flex w-full items-stretch rounded-lg bg-background-light dark:bg-background-dark shadow-inner-light focus-within:ring-2 focus-within:ring-primary/20 transition-all overflow-hidden">
+<input class="form-input flex w-full min-w-0 flex-1 resize-none border-0 bg-transparent text-[#111318] dark:text-white focus:outline-0 focus:ring-0 h-14 placeholder:text-gray-400 p-[15px] pr-2 text-base font-normal leading-normal" placeholder="********" type="password" value=""/>
+<button class="flex items-center justify-center px-4 text-gray-500 hover:text-primary transition-colors cursor-pointer bg-transparent border-none" type="button">
+<span class="material-symbols-outlined select-none" style="font-size: 24px;">visibility</span>
+</button>
+</div>
+</div>
+<!-- Forgot Password Link -->
+<div class="flex justify-end -mt-1">
+<a class="text-primary hover:text-blue-700 text-sm font-medium transition-colors" href="#">
+                    Olvidé mi contraseña
+                </a>
+</div>
+<!-- Primary Action Button -->
+<button class="w-full bg-primary hover:bg-blue-700 text-white font-bold h-14 rounded-lg shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all duration-200 mt-2 flex items-center justify-center text-lg">
+                Iniciar Sesión
+            </button>
+</form>
+<!-- Social Login Section -->
+<div class="flex flex-col gap-6 pt-2">
+<div class="relative flex py-1 items-center">
+<div class="flex-grow border-t border-gray-100 dark:border-gray-700"></div>
+<span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">O continúa con</span>
+<div class="flex-grow border-t border-gray-100 dark:border-gray-700"></div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Google Button -->
+<button class="flex items-center justify-center gap-2 h-12 rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-background-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm">
+<svg class="w-5 h-5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+</svg>
+<span class="text-[#111318] dark:text-white font-medium text-sm">Google</span>
+</button>
+<!-- Apple Button -->
+<button class="flex items-center justify-center gap-2 h-12 rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-background-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm">
+<svg class="w-5 h-5 text-black dark:text-white" fill="currentColor" viewbox="0 0 24 24">
+<path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.78 1.18-.19 2.31-.89 3.51-.84 1.54.06 2.7.79 3.44 1.92-3.04 1.8-2.5 5.27.64 6.64-.67 1.72-1.6 3.41-2.67 4.47zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"></path>
+</svg>
+<span class="text-[#111318] dark:text-white font-medium text-sm">Apple</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

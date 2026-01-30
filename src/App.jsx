@@ -680,12 +680,6 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
     }
   };
 
-  const handleShareWhatsApp = (e) => {
-    e.stopPropagation();
-    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business.name}*\n⭐ ${business.rating} (${business.reviews} reseñas)\n📍 ${business.address}\n📂 ${business.category}\n\nDescúbrelo en Cornellà Local`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-  };
-
   if (variant === 'compact') {
     return (
       <article
@@ -712,20 +706,12 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
               <h2 className="font-bold leading-tight text-slate-900 text-lg">{business.name}</h2>
               <p className="text-sm font-medium text-gray-500 mt-1">{business.category}</p>
             </div>
-            <div className="flex items-center gap-1 -mr-1 -mt-1">
-              <button
-                onClick={handleShareWhatsApp}
-                className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors active:scale-90"
-              >
-                <MessageCircle size={16} />
-              </button>
-              <button
-                onClick={handleFavoriteClick}
-                className="group/heart relative p-2 active:scale-90 transition-transform"
-              >
-                <Heart className={isFavorite ? "text-red-500 fill-red-500" : "text-gray-300 hover:text-red-400"} size={22} />
-              </button>
-            </div>
+            <button
+              onClick={handleFavoriteClick}
+              className="group/heart relative p-2 active:scale-90 transition-transform -mr-1 -mt-1"
+            >
+              <Heart className={isFavorite ? "text-red-500 fill-red-500" : "text-gray-300 hover:text-red-400"} size={22} />
+            </button>
           </div>
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1">
@@ -759,13 +745,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
             Nuevo
           </span>
         )}
-        <div className="absolute top-3 right-3 flex gap-2">
-          <button
-            onClick={handleShareWhatsApp}
-            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors shadow-md"
-          >
-            <MessageCircle size={18} />
-          </button>
+        <div className="absolute top-3 right-3">
           <button
             onClick={handleFavoriteClick}
             className={`p-2 backdrop-blur-md rounded-full transition-colors ${
@@ -1522,23 +1502,66 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
 // Página de Solicitud de Presupuesto
 const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
-  const [descripcion, setDescripcion] = useState('');
+  const [paso, setPaso] = useState(1);
   const [enviado, setEnviado] = useState(false);
+  const [formData, setFormData] = useState({
+    category: null,
+    description: '',
+    photos: [],
+    urgency: null,
+    address: '',
+    phone: '',
+  });
 
-  // Si ya se envió, mostrar pantalla de éxito
-  if (enviado) {
+  const categorias = [
+    { id: 'albanil', name: 'Albañil y reformas', icon: 'Hammer', businessCount: 18 },
+    { id: 'carpintero', name: 'Carpintero', icon: 'TreePine', businessCount: 12 },
+    { id: 'cerrajero', name: 'Cerrajero', icon: 'Key', businessCount: 8 },
+    { id: 'climatizacion', name: 'Climatización', icon: 'Snowflake', businessCount: 10 },
+    { id: 'electricista', name: 'Electricista', icon: 'Zap', businessCount: 15 },
+    { id: 'fontanero', name: 'Fontanero', icon: 'Droplet', businessCount: 14 },
+    { id: 'jardineria', name: 'Jardinería', icon: 'Flower2', businessCount: 9 },
+    { id: 'limpieza', name: 'Limpieza', icon: 'Sparkles', businessCount: 20 },
+    { id: 'mudanzas', name: 'Mudanzas', icon: 'Truck', businessCount: 6 },
+    { id: 'pintor', name: 'Pintor', icon: 'Paintbrush', businessCount: 11 },
+    { id: 'reparacion', name: 'Reparación móviles/PC', icon: 'Smartphone', businessCount: 16 },
+  ];
+
+  const urgencias = [
+    { id: 'urgent', label: 'Urgente', desc: 'Lo antes posible', icon: 'Zap', color: 'red' },
+    { id: 'this-week', label: 'Esta semana', desc: 'En los próximos 7 días', icon: 'Calendar', color: 'amber' },
+    { id: 'next-week', label: 'Próxima semana', desc: 'Sin prisa, cuando pueda', icon: 'Clock', color: 'green' },
+  ];
+
+  const categoriaSeleccionada = categorias.find(c => c.id === formData.category);
+
+  const canPaso1 = formData.category !== null;
+  const canPaso2 = formData.description.trim() !== '';
+  const canPaso3 = formData.urgency !== null && formData.address.trim() !== '' && formData.phone.trim() !== '';
+
+  // Pantalla de éxito
+  if (enviado && categoriaSeleccionada) {
     return (
       <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-green-500 flex flex-col items-center justify-center p-6">
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6">
           <CheckCircle2 className="text-green-500" size={48} />
         </div>
         <h2 className="text-white text-2xl font-bold mb-4">¡Solicitud Enviada!</h2>
-        <p className="text-white/90 text-center mb-8">
-          Tu solicitud ha sido enviada a 14 fontaneros de Cornellà
+        <p className="text-white/90 text-center mb-4">
+          Tu solicitud de <span className="font-bold">{categoriaSeleccionada.name}</span> ha sido enviada a {categoriaSeleccionada.businessCount} empresas de Cornellà
+        </p>
+        <p className="text-white/70 text-sm text-center mb-8">
+          Las empresas recibirán tu solicitud y podrán enviarte su presupuesto
         </p>
         <button
+          onClick={() => onNavigate('my-budget-requests')}
+          className="w-full h-14 bg-white text-green-600 font-bold rounded-xl mb-3"
+        >
+          Ver Mis Presupuestos
+        </button>
+        <button
           onClick={() => onNavigate('home')}
-          className="w-full h-14 bg-white text-green-600 font-bold rounded-xl"
+          className="w-full h-12 bg-green-600 text-white font-medium rounded-xl border-2 border-white/30"
         >
           Volver al Inicio
         </button>
@@ -1546,81 +1569,245 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
     );
   }
 
-  // Formulario simple
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
           <button
-            onClick={() => onNavigate('home')}
+            onClick={() => paso > 1 ? setPaso(paso - 1) : onNavigate('home')}
             className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full"
           >
             <ArrowLeft size={24} />
           </button>
           <h2 className="text-slate-900 text-lg font-bold flex-1 text-center pr-10">
-            Pedir Presupuesto
+            Solicitud de Presupuesto
           </h2>
+        </div>
+
+        {/* Progress */}
+        <div className="px-6 pb-4">
+          <div className="flex items-center justify-between">
+            {[1, 2, 3].map((step, idx) => (
+              <div key={step} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    paso >= step ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {paso > step ? <Check size={16} /> : step}
+                  </div>
+                  <span className={`text-[10px] mt-1 font-medium ${paso >= step ? 'text-primary' : 'text-gray-400'}`}>
+                    {step === 1 ? 'SERVICIO' : step === 2 ? 'DETALLES' : 'CONTACTO'}
+                  </span>
+                </div>
+                {idx < 2 && <div className={`w-16 h-0.5 mx-2 mb-4 ${paso > step ? 'bg-primary' : 'bg-gray-200'}`} />}
+              </div>
+            ))}
+          </div>
         </div>
       </header>
 
       {/* Contenido */}
-      <div className="p-4 space-y-6">
-        {/* Categoría fija: Fontanero */}
-        <div className="bg-white rounded-xl p-4 border border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Droplet className="text-blue-500" size={24} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900">Fontanero</h3>
-              <p className="text-sm text-gray-500">14 empresas disponibles</p>
+      <div className="px-4 py-6 pb-32">
+        {/* Paso 1: Categoría */}
+        {paso === 1 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-slate-900">¿Qué servicio necesitas?</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {categorias.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setFormData(prev => ({ ...prev, category: cat.id }))}
+                  className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-all ${
+                    formData.category === cat.id ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  {formData.category === cat.id && (
+                    <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                      <Check className="text-white" size={12} />
+                    </div>
+                  )}
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${
+                    formData.category === cat.id ? 'bg-primary/20' : 'bg-gray-100'
+                  }`}>
+                    <Icon name={cat.icon} size={20} className={formData.category === cat.id ? 'text-primary' : 'text-gray-500'} />
+                  </div>
+                  <span className="text-xs font-bold text-slate-900 text-center">{cat.name}</span>
+                  <span className="text-[10px] text-primary font-medium mt-1">{cat.businessCount} empresas</span>
+                </button>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Campo descripción */}
-        <div>
-          <label className="block text-sm font-bold text-slate-900 mb-2">
-            ¿Qué necesitas? *
-          </label>
-          <textarea
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            placeholder="Describe el trabajo que necesitas..."
-            rows={5}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400"
-          />
-        </div>
+        {/* Paso 2: Descripción */}
+        {paso === 2 && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-4 border border-gray-200 flex items-center gap-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                <Icon name={categoriaSeleccionada?.icon} size={24} className="text-primary" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900">{categoriaSeleccionada?.name}</h4>
+                <p className="text-sm text-gray-500">{categoriaSeleccionada?.businessCount} empresas disponibles</p>
+              </div>
+            </div>
 
-        {/* Botón enviar */}
+            <div>
+              <label className="block text-sm font-bold text-slate-900 mb-2">
+                Describe el trabajo que necesitas *
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Ej: Necesito arreglar una fuga en el baño, debajo del lavabo..."
+                rows={5}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-900 mb-2">
+                Fotos (opcional)
+              </label>
+              <div className="flex gap-3">
+                {formData.photos.map((photo, i) => (
+                  <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden">
+                    <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${photo}")` }} />
+                    <button
+                      onClick={() => setFormData(prev => ({ ...prev, photos: prev.photos.filter((_, idx) => idx !== i) }))}
+                      className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                    >
+                      <X className="text-white" size={12} />
+                    </button>
+                  </div>
+                ))}
+                {formData.photos.length < 3 && (
+                  <button
+                    onClick={() => setFormData(prev => ({ ...prev, photos: [...prev.photos, `https://picsum.photos/200/200?random=${Date.now()}`] }))}
+                    className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400"
+                  >
+                    <Plus size={24} />
+                    <span className="text-[10px]">Añadir</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Paso 3: Urgencia y Contacto */}
+        {paso === 3 && (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-slate-900 mb-3">¿Cuándo lo necesitas?</label>
+              <div className="space-y-3">
+                {urgencias.map(u => (
+                  <button
+                    key={u.id}
+                    onClick={() => setFormData(prev => ({ ...prev, urgency: u.id }))}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 ${
+                      formData.urgency === u.id ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      u.color === 'red' ? 'bg-red-100' : u.color === 'amber' ? 'bg-amber-100' : 'bg-green-100'
+                    }`}>
+                      <Icon name={u.icon} size={20} className={
+                        u.color === 'red' ? 'text-red-500' : u.color === 'amber' ? 'text-amber-500' : 'text-green-500'
+                      } />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <span className="font-bold text-slate-900">{u.label}</span>
+                      <p className="text-sm text-gray-500">{u.desc}</p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      formData.urgency === u.id ? 'border-primary bg-primary' : 'border-gray-300'
+                    }`}>
+                      {formData.urgency === u.id && <Check className="text-white" size={12} />}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-900 mb-2">Dirección del servicio *</label>
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="C/ Mayor 45, Cornellà de Llobregat"
+                className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-900 mb-2">Teléfono de contacto *</label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="612 345 678"
+                className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Botón fijo */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-4">
+        {paso === 3 && categoriaSeleccionada && canPaso3 && (
+          <p className="text-xs text-center text-gray-500 mb-3">
+            Se enviará a <span className="font-bold text-primary">{categoriaSeleccionada.businessCount} empresas</span>
+          </p>
+        )}
         <button
           onClick={() => {
-            if (descripcion.trim()) {
-              // Guardar solicitud
-              if (onSubmitRequest) {
-                onSubmitRequest({
-                  category: 'fontanero',
-                  categoryName: 'Fontanero',
-                  categoryIcon: 'Droplet',
-                  description: descripcion,
-                  businessCount: 14,
-                  createdAt: new Date().toISOString(),
-                  status: 'pending',
-                });
-              }
-              // Mostrar éxito
+            if (paso === 1 && canPaso1) {
+              setPaso(2);
+            } else if (paso === 2 && canPaso2) {
+              setPaso(3);
+            } else if (paso === 3 && canPaso3 && !enviado) {
+              // PRIMERO: Mostrar éxito
               setEnviado(true);
+              // DESPUÉS: Guardar
+              setTimeout(() => {
+                if (onSubmitRequest) {
+                  onSubmitRequest({
+                    category: categoriaSeleccionada.id,
+                    categoryName: categoriaSeleccionada.name,
+                    categoryIcon: categoriaSeleccionada.icon,
+                    description: formData.description,
+                    photos: formData.photos,
+                    urgency: formData.urgency,
+                    address: formData.address,
+                    phone: formData.phone,
+                    businessCount: categoriaSeleccionada.businessCount,
+                    createdAt: new Date().toISOString(),
+                    status: 'pending',
+                  });
+                }
+              }, 100);
             }
           }}
-          disabled={!descripcion.trim()}
-          className={`w-full h-14 rounded-xl font-bold text-base ${
-            descripcion.trim()
+          disabled={
+            (paso === 1 && !canPaso1) ||
+            (paso === 2 && !canPaso2) ||
+            (paso === 3 && !canPaso3)
+          }
+          className={`w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 ${
+            (paso === 1 ? canPaso1 : paso === 2 ? canPaso2 : canPaso3)
               ? 'bg-primary text-white'
               : 'bg-gray-200 text-gray-400'
           }`}
         >
-          Enviar Solicitud
+          {paso === 3 ? (
+            <>Enviar a {categoriaSeleccionada?.businessCount || 0} empresas <Send size={18} /></>
+          ) : (
+            <>Siguiente <ArrowRight size={18} /></>
+          )}
         </button>
       </div>
     </div>
@@ -2752,7 +2939,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
   // Función para compartir por WhatsApp
   const handleShareWhatsApp = () => {
-    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business.name}*\n⭐ ${business.rating} (${business.reviews} reseñas)\n📍 ${business.address}\n📂 ${business.category}\n\nDescúbrelo en Cornellà Local`;
+    const profileUrl = `${window.location.origin}?negocio=${business.id}`;
+    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business.name}*\n⭐ ${business.rating} (${business.reviews} reseñas)\n📍 ${business.address}\n📂 ${business.category}\n\n👉 Ver perfil: ${profileUrl}\n\nDescúbrelo en Cornellà Local`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -4748,8 +4936,19 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
     categoryName: r.categoryName || serviceCategoryNames[r.category] || 'Servicio',
     categoryIcon: r.categoryIcon || serviceCategoryIcons[r.category] || 'Wrench',
     urgencyLabel: r.urgency === 'urgent' ? 'Urgente' : r.urgency === 'this-week' ? 'Esta semana' : 'Próxima semana',
-    status: acceptedRequests[r.id] ? 'accepted' : 'pending',
-    quotes: [],
+    status: acceptedRequests[r.id] ? 'accepted' : (r.responses && r.responses.length > 0) ? 'with-quotes' : 'pending',
+    quotes: (r.responses || []).map(resp => ({
+      id: resp.id,
+      businessId: resp.id,
+      businessName: resp.businessName,
+      price: resp.price,
+      message: resp.message,
+      phone: resp.phone,
+      rating: parseFloat((4.0 + Math.random() * 0.9).toFixed(1)), // Rating con 1 decimal
+      reviews: Math.floor(5 + Math.random() * 30),
+      verified: Math.random() > 0.3, // 70% verificados
+      respondedAt: resp.respondedAt,
+    })),
   })), ...mockRequests];
 
   // Filtrar solicitudes expiradas (más de 3 días sin aceptar)
@@ -4928,9 +5127,9 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
             allRequests.map(request => (
               <div
                 key={request.id}
-                onClick={() => request.status === 'with-quotes' || request.status === 'completed' ? setSelectedRequest(request) : null}
+                onClick={() => (request.status === 'with-quotes' || request.status === 'completed' || request.status === 'accepted' || acceptedRequests[request.id]) ? setSelectedRequest(request) : null}
                 className={`bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ${
-                  request.status === 'with-quotes' || request.status === 'completed' ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
+                  (request.status === 'with-quotes' || request.status === 'completed' || request.status === 'accepted' || acceptedRequests[request.id]) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -4965,7 +5164,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                       </span>
                     </div>
                   </div>
-                  {(request.status === 'with-quotes' || request.status === 'completed') && (
+                  {(request.status === 'with-quotes' || request.status === 'completed' || request.status === 'accepted' || acceptedRequests[request.id]) && (
                     <ChevronRight className="text-gray-400 shrink-0" size={20} />
                   )}
                 </div>
@@ -5087,17 +5286,111 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                 <h4 className="font-bold text-slate-900">{selectedRequest.categoryName}</h4>
                 <p className="text-xs text-gray-500">{selectedRequest.urgencyLabel}</p>
               </div>
-              {acceptedRequests[selectedRequest.id] && (
+              {(acceptedRequests[selectedRequest.id] || selectedRequest.acceptedQuote) && (
                 <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Aceptado</span>
               )}
             </div>
             <p className="text-sm text-gray-600">{selectedRequest.description}</p>
           </div>
 
-          {/* Quotes list */}
-          <h3 className="font-bold text-slate-900 px-1">
-            {selectedRequest.quotes?.length || 0} presupuestos recibidos
-          </h3>
+          {/* Presupuesto aceptado - Mostrar detalles completos */}
+          {(() => {
+            const acceptedQuote = selectedRequest.acceptedQuote ||
+              (acceptedRequests[selectedRequest.id] && selectedRequest.quotes?.find(q => q.id === acceptedRequests[selectedRequest.id]));
+
+            if (acceptedQuote) {
+              return (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border-2 border-green-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <CheckCircle2 className="text-green-600" size={24} />
+                    <h3 className="font-bold text-green-800 text-lg">Presupuesto Aceptado</h3>
+                  </div>
+
+                  {/* Info de la empresa */}
+                  <div className="bg-white rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center text-xl font-bold text-primary">
+                        {acceptedQuote.businessName?.charAt(0) || 'E'}
+                      </div>
+                      <div className="flex-1">
+                        <button
+                          onClick={() => acceptedQuote.businessId && onNavigate('business', { id: acceptedQuote.businessId })}
+                          className="font-bold text-lg text-slate-900 hover:text-primary transition-colors text-left"
+                        >
+                          {acceptedQuote.businessName}
+                        </button>
+                        {acceptedQuote.rating && (
+                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                            <Star className="text-yellow-500 fill-yellow-500" size={14} />
+                            <span>{typeof acceptedQuote.rating === 'number' ? acceptedQuote.rating.toFixed(1) : acceptedQuote.rating}</span>
+                            {acceptedQuote.reviews && <span>({acceptedQuote.reviews} reseñas)</span>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold text-green-600">{acceptedQuote.price}€</p>
+                      </div>
+                    </div>
+
+                    {/* Mensaje del profesional */}
+                    {acceptedQuote.message && (
+                      <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-gray-600 italic">"{acceptedQuote.message}"</p>
+                      </div>
+                    )}
+
+                    {/* Datos de contacto */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-gray-700">
+                        <Phone size={18} className="text-green-600" />
+                        <span className="font-medium">{acceptedQuote.phone}</span>
+                      </div>
+                      {selectedRequest.address && (
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <MapPin size={18} className="text-green-600" />
+                          <span>{selectedRequest.address}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Botones de contacto */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleContactWhatsApp(acceptedQuote.phone, acceptedQuote.businessName)}
+                      className="flex-1 h-12 bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
+                    >
+                      <MessageCircle size={20} />
+                      WhatsApp
+                    </button>
+                    <button
+                      onClick={() => handleCall(acceptedQuote.phone)}
+                      className="flex-1 h-12 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                    >
+                      <Phone size={20} />
+                      Llamar
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Quotes list - Solo mostrar si no hay presupuesto aceptado o hay más quotes */}
+          {(!acceptedRequests[selectedRequest.id] && !selectedRequest.acceptedQuote) && (
+            <>
+              <h3 className="font-bold text-slate-900 px-1">
+                {selectedRequest.quotes?.length || 0} presupuestos recibidos
+              </h3>
+            </>
+          )}
+
+          {(acceptedRequests[selectedRequest.id] || selectedRequest.acceptedQuote) && selectedRequest.quotes?.length > 0 && (
+            <h3 className="font-bold text-slate-900 px-1">
+              Otros presupuestos recibidos
+            </h3>
+          )}
 
           {selectedRequest.quotes?.map((quote, index) => {
             const isAccepted = acceptedRequests[selectedRequest.id] === quote.id;
@@ -5129,7 +5422,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         <Star className="text-yellow-500 fill-yellow-500" size={12} />
-                        <span>{quote.rating}</span>
+                        <span>{typeof quote.rating === 'number' ? quote.rating.toFixed(1) : quote.rating}</span>
                         <span>({quote.reviews} reseñas)</span>
                       </div>
                     </div>
@@ -5144,20 +5437,50 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
 
                 <p className="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-xl">{quote.message}</p>
 
+                {/* Info extra cuando está aceptado */}
+                {isAccepted && (
+                  <div className="mb-4 p-4 bg-green-50 rounded-xl border border-green-200">
+                    <h4 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
+                      <Check size={16} />
+                      Información de contacto
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Phone size={14} className="text-green-600" />
+                        <span className="font-medium">{quote.phone}</span>
+                      </div>
+                      {selectedRequest.address && (
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <MapPin size={14} className="text-green-600" />
+                          <span>{selectedRequest.address}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Tag size={14} className="text-green-600" />
+                        <span>Presupuesto aceptado: <strong>{quote.price}€</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleContactWhatsApp(quote.phone, quote.businessName)}
-                    className="flex-1 h-11 bg-green-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-green-600"
-                  >
-                    <MessageCircle size={18} />
-                    WhatsApp
-                  </button>
-                  <button
-                    onClick={() => handleCall(quote.phone)}
-                    className="w-11 h-11 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-200"
-                  >
-                    <Phone size={18} />
-                  </button>
+                  {isAccepted && (
+                    <>
+                      <button
+                        onClick={() => handleContactWhatsApp(quote.phone, quote.businessName)}
+                        className="flex-1 h-11 bg-green-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-green-600"
+                      >
+                        <MessageCircle size={18} />
+                        WhatsApp
+                      </button>
+                      <button
+                        onClick={() => handleCall(quote.phone)}
+                        className="w-11 h-11 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-200"
+                      >
+                        <Phone size={18} />
+                      </button>
+                    </>
+                  )}
                   {!acceptedRequests[selectedRequest.id] ? (
                     <button
                       onClick={() => handleAcceptQuote(selectedRequest.id, quote, selectedRequest.quotes)}
@@ -5167,13 +5490,12 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                       Aceptar
                     </button>
                   ) : isAccepted ? (
-                    <div className="flex-1 h-11 bg-green-500 text-white font-medium rounded-xl flex items-center justify-center gap-2">
+                    <div className="flex-1 h-11 bg-green-100 text-green-700 font-medium rounded-xl flex items-center justify-center gap-2">
                       <Check size={18} />
                       Aceptado
                     </div>
                   ) : (
-                    <div className="flex-1 h-11 bg-gray-300 text-gray-500 font-medium rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
-                      <X size={18} />
+                    <div className="flex-1 h-11 bg-gray-200 text-gray-500 font-medium rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
                       No elegido
                     </div>
                   )}
@@ -10571,6 +10893,18 @@ export default function App() {
     };
   }, []);
 
+  // Detectar parámetro de URL para abrir perfil de negocio directamente
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const negocioId = urlParams.get('negocio');
+    if (negocioId) {
+      setCurrentPage('business');
+      setPageParams({ id: parseInt(negocioId) });
+      // Limpiar URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -10771,10 +11105,11 @@ export default function App() {
 
   // Función para enviar solicitud de presupuesto
   const submitBudgetRequest = (requestData) => {
+    const requestId = Date.now();
     const newRequest = {
-      id: Date.now(),
+      id: requestId,
       ...requestData,
-      // categoryName y categoryIcon ya vienen desde BudgetRequestScreen
+      responses: [], // Aquí se guardarán las respuestas de empresas
     };
 
     setUserBudgetRequests(prev => [newRequest, ...prev]);
@@ -10783,23 +11118,64 @@ export default function App() {
     addNotification({
       type: 'budget',
       title: 'Solicitud de presupuesto enviada',
-      message: `Tu solicitud de ${categoryNames[requestData.category]?.toLowerCase() || 'servicio'} ha sido enviada a los profesionales verificados`,
+      message: `Tu solicitud de ${requestData.categoryName?.toLowerCase() || 'servicio'} ha sido enviada a ${requestData.businessCount} empresas`,
       icon: 'ClipboardList',
       iconBg: 'bg-primary',
-      actionRoute: 'home',
+      actionRoute: 'my-budget-requests',
     });
 
-    // Simular notificación a negocios verificados (en demo)
-    setTimeout(() => {
-      addNotification({
-        type: 'budget-response',
-        title: '¡Tienes un nuevo presupuesto!',
-        message: 'Fontanería Martínez ha respondido a tu solicitud',
-        icon: 'FileText',
-        iconBg: 'bg-green-500',
-        actionRoute: 'home',
-      });
-    }, 3000);
+    // Empresas ficticias por categoría
+    const empresasPorCategoria = {
+      albanil: ['Reformas García', 'Construcciones López', 'Obras Martín'],
+      carpintero: ['Carpintería Robles', 'Maderas Jiménez', 'Artesanos del Mueble'],
+      cerrajero: ['Cerrajería Express', 'Llaves 24h', 'Seguridad Total'],
+      climatizacion: ['Clima Confort', 'Frío y Calor SL', 'Aires del Sur'],
+      electricista: ['Electricidad Rayo', 'Instalaciones Pérez', 'Voltio Express'],
+      fontanero: ['Fontanería Martínez', 'Desatascos Rápidos', 'AquaService'],
+      jardineria: ['Jardines Verdes', 'Poda Profesional', 'EcoGarden'],
+      limpieza: ['Limpiezas Express', 'Brillo Total', 'CleanPro'],
+      mudanzas: ['Mudanzas Rápidas', 'TransPortes García', 'MoveFast'],
+      pintor: ['Pinturas Colorín', 'Decoraciones Ruiz', 'BrochaPro'],
+      reparacion: ['TechFix', 'Reparaciones Express', 'MóvilDoctor'],
+    };
+
+    const empresas = empresasPorCategoria[requestData.category] || ['Empresa Local 1', 'Empresa Local 2', 'Empresa Local 3'];
+
+    // Simular respuestas de varias empresas con diferentes tiempos
+    empresas.forEach((empresa, index) => {
+      const delay = (index + 1) * 4000 + Math.random() * 2000; // 4-6s, 8-10s, 12-14s
+      const precio = Math.floor(50 + Math.random() * 200); // Precio entre 50€ y 250€
+
+      setTimeout(() => {
+        // Añadir respuesta a la solicitud
+        setUserBudgetRequests(prev => prev.map(req => {
+          if (req.id === requestId) {
+            return {
+              ...req,
+              responses: [...req.responses, {
+                id: Date.now(),
+                businessName: empresa,
+                price: precio,
+                message: `Hola, he revisado tu solicitud. Mi presupuesto es de ${precio}€. Disponibilidad inmediata. Llámame para más detalles.`,
+                respondedAt: new Date().toISOString(),
+                phone: `6${Math.floor(10000000 + Math.random() * 90000000)}`,
+              }]
+            };
+          }
+          return req;
+        }));
+
+        // Notificar al usuario
+        addNotification({
+          type: 'budget-response',
+          title: '¡Nuevo presupuesto recibido!',
+          message: `${empresa} te ha enviado un presupuesto de ${precio}€`,
+          icon: 'FileText',
+          iconBg: 'bg-green-500',
+          actionRoute: 'my-budget-requests',
+        });
+      }, delay);
+    });
   };
 
   const renderPage = () => {

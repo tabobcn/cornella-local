@@ -11730,10 +11730,8 @@ export default function App() {
 
       {/* Contenido de la página con animación */}
       <div
-        className={`transition-all duration-150 ease-out ${
-          isPageTransitioning
-            ? 'opacity-0 scale-[0.98] translate-y-2'
-            : 'opacity-100 scale-100 translate-y-0'
+        className={`transition-opacity duration-150 ease-out ${
+          isPageTransitioning ? 'opacity-0' : 'opacity-100'
         }`}
       >
         {renderPage()}

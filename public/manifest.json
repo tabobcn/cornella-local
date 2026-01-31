@@ -1,6 +1,6 @@
 {
   "name": "Cornellà Local",
-  "short_name": "Cornellà",
+  "short_name": "CornellàLocal",
   "description": "Descubre comercios, ofertas y servicios locales en Cornellà de Llobregat",
   "start_url": "/",
   "display": "standalone",

@@ -11300,7 +11300,7 @@ export default function App() {
     setDynamicNotifications(prev => [newNotification, ...prev]);
   };
 
-  const navigate = (page, params = {}) => {
+  const navigate = (page, params = {}, addToHistory = true) => {
     // Activar animación de salida
     setIsPageTransitioning(true);
 
@@ -11310,10 +11310,34 @@ export default function App() {
       setPageParams(params);
       window.scrollTo(0, 0);
 
+      // Añadir al historial del navegador para que funcione el botón atrás
+      if (addToHistory) {
+        window.history.pushState({ page, params }, '', `#${page}`);
+      }
+
       // Desactivar transición para mostrar la nueva página
       setIsPageTransitioning(false);
     }, 150);
   };
+
+  // Manejar botón atrás del navegador/móvil
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (event.state && event.state.page) {
+        // Navegar a la página anterior sin añadir al historial
+        navigate(event.state.page, event.state.params || {}, false);
+      } else {
+        // Si no hay estado, ir a home
+        navigate('home', {}, false);
+      }
+    };
+
+    // Añadir estado inicial al historial
+    window.history.replaceState({ page: currentPage, params: pageParams }, '', `#${currentPage}`);
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Función para registrar un negocio (pasa a estado pendiente)
   const registerBusiness = () => {

@@ -450,7 +450,7 @@ export const couponDetail = {
   validUntil: "30 Oct 2023",
   type: "Oferta Flash",
   code: "CORN-20",
-  qrCode: "https://lh3.googleusercontent.com/aida-public/AB6AXuD0jom60OnHcuowvLKZuATverW-eUBRUHfasU3AZj2Q-cl-UAL7k7GFkRakRhE2MYvTIgGPTpW1Ry09VjFqABtqYis4US-8w5b5Miw5-NxnYc3iObWn2iPIiQ94abCXS_uGEpmijjSI18FXfQJm7oOBlv1uZElr0vO2vzFab-CFXoEhAXiaQy5pYLxbVO03BsU43_ewgdRx3zMG5EXSLVP7Ti7GAF4eE3QMsJQUDKOu5OkrwMfBC8_ZwwQNHW-XOpa-a9-fHcOvbuaV",
+  qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=CORN-20&bgcolor=ffffff&color=000000&margin=0",
   description: "Disfruta de un 20% de descuento en todos los productos de nuestra cafetería. Esta oferta incluye bebidas calientes, pastelería artesanal y nuestra selección de cafés en grano.",
   conditions: [
     "Válido solo de lunes a viernes.",

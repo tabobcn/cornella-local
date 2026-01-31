@@ -13,7 +13,7 @@ import {
   Dumbbell, Lamp, Refrigerator, Bed, Flower2, Tent, PenTool, BookOpen,
   Flower, Camera, PawPrint, Gamepad2, ShoppingCart, Smartphone, Copyright,
   RefreshCw, Send, Pause, Timer, Edit2, Trash2, Users, FileText, Briefcase,
-  Archive, X, ArrowRight, UserSearch, ClipboardList, Upload, CheckCircle2,
+  Archive, X, ArrowRight, UserSearch, ClipboardList, Upload, CheckCircle2, UserCheck,
   PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
@@ -46,7 +46,7 @@ const iconMap = {
   Dumbbell, Lamp, Refrigerator, Bed, Flower2, Tent, PenTool, BookOpen,
   Flower, Camera, PawPrint, Gamepad2, ShoppingCart, Smartphone, Copyright,
   RefreshCw, Send, Pause, Timer, Edit2, Trash2, Users, FileText, Briefcase,
-  Archive, X, ArrowRight, UserSearch, ClipboardList, Upload, CheckCircle2,
+  Archive, X, ArrowRight, UserSearch, ClipboardList, Upload, CheckCircle2, UserCheck,
   PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
@@ -1100,17 +1100,12 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     {/* Header */}
     <header className="sticky top-0 z-30 bg-gray-50/90 backdrop-blur-md border-b border-gray-100 transition-colors">
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <div className="flex items-center gap-2 cursor-pointer group">
-          <div className="bg-primary/20 p-1.5 rounded-full text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-            <MapPin size={20} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Ubicación actual</span>
-            <div className="flex items-center gap-0.5">
-              <span className="text-sm font-bold leading-none text-slate-800">Cornellà de Llobregat</span>
-              <ChevronDown size={16} className="text-gray-400" />
-            </div>
-          </div>
+        <div className="flex items-center">
+          <img
+            src="/logo.png"
+            alt="Cornellà Local"
+            className="h-9 object-contain"
+          />
         </div>
         <button
           onClick={() => onNavigate('notifications')}
@@ -1391,6 +1386,63 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           {categories.map(category => (
             <CategoryCard key={category.id} category={category} onNavigate={onNavigate} />
           ))}
+        </div>
+      </section>
+
+      {/* Banner Eventos - Próximamente */}
+      <section className="px-4 pb-6">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-5 shadow-lg">
+          {/* Decoración de fondo */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+          <div className="relative flex items-center gap-4">
+            {/* Icono */}
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
+              <Calendar className="text-white" size={32} />
+            </div>
+
+            {/* Contenido */}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-white text-lg font-bold">Eventos del Barrio</h3>
+                <span className="px-2 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
+                  Próximamente
+                </span>
+              </div>
+              <p className="text-white/80 text-sm leading-snug">
+                Fiestas, mercadillos, conciertos y actividades en Cornellà
+              </p>
+            </div>
+          </div>
+
+          {/* Iconos decorativos */}
+          <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-white/20">
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <PartyPopper className="text-white" size={20} />
+              </div>
+              <span className="text-white/70 text-[10px] font-medium">Fiestas</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <ShoppingBag className="text-white" size={20} />
+              </div>
+              <span className="text-white/70 text-[10px] font-medium">Mercadillos</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <Mic className="text-white" size={20} />
+              </div>
+              <span className="text-white/70 text-[10px] font-medium">Conciertos</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <Users className="text-white" size={20} />
+              </div>
+              <span className="text-white/70 text-[10px] font-medium">Actividades</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -2224,7 +2276,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
 };
 
 // Página de Ofertas
-const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers' }) => {
+const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', activeJobs = [], getJobDaysRemaining, isBusinessOwner = false }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Combinar ofertas normales del usuario con las de mockData
@@ -2314,7 +2366,8 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers' }) => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        const text = `¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n¡Descúbrelo en Cornellà Local!`;
+                        const ofertaUrl = `${window.location.origin}${window.location.pathname}?oferta=${offer.id}`;
+                        const text = `¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n👉 Ver oferta: ${ofertaUrl}`;
                         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                       }}
                       className="absolute top-3 right-3 w-9 h-9 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg"
@@ -2352,54 +2405,81 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers' }) => {
               <button className="text-primary text-xs font-semibold bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition">Ver alertas</button>
             </div>
             <div className="px-4 space-y-4 pb-6">
-              {jobs.map(job => (
-                <button
-                  key={job.id}
-                  onClick={() => onNavigate('job-detail', { id: job.id })}
-                  className="w-full text-left bg-white rounded-2xl p-4 shadow-soft hover:shadow-md transition-shadow cursor-pointer border border-slate-100/50"
-                >
-                  <div className="flex gap-4">
-                    <div className={`size-14 rounded-xl flex items-center justify-center shrink-0 border ${
-                      job.iconBg === 'orange' ? 'bg-orange-50 border-orange-100 text-orange-500' :
-                      job.iconBg === 'blue' ? 'bg-blue-50 border-blue-100 text-blue-500' :
-                      'bg-green-50 border-green-100 text-green-600'
-                    }`}>
-                      <Icon name={job.icon} size={28} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="text-slate-900 font-bold text-[16px]">{job.title}</h4>
-                          <p className="text-slate-500 text-sm font-medium">{job.company}</p>
+              {(activeJobs.length > 0 ? activeJobs : jobs).map(job => {
+                const daysRemaining = getJobDaysRemaining ? getJobDaysRemaining(job) : 60;
+                const isExpired = daysRemaining <= 0;
+                const isExpiringSoon = daysRemaining <= 7 && daysRemaining > 0;
+
+                return (
+                  <button
+                    key={job.id}
+                    onClick={() => onNavigate('job-detail', { id: job.id })}
+                    className={`w-full text-left bg-white rounded-2xl p-4 shadow-soft hover:shadow-md transition-shadow cursor-pointer border ${
+                      job.hired ? 'border-green-200 bg-green-50/30' :
+                      isExpired ? 'border-red-200 bg-red-50/30' :
+                      isExpiringSoon ? 'border-amber-200' :
+                      'border-slate-100/50'
+                    }`}
+                  >
+                    <div className="flex gap-4">
+                      <div className={`size-14 rounded-xl flex items-center justify-center shrink-0 border ${
+                        job.iconBg === 'orange' ? 'bg-orange-50 border-orange-100 text-orange-500' :
+                        job.iconBg === 'blue' ? 'bg-blue-50 border-blue-100 text-blue-500' :
+                        'bg-green-50 border-green-100 text-green-600'
+                      }`}>
+                        <Icon name={job.icon} size={28} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="text-slate-900 font-bold text-[16px]">{job.title}</h4>
+                            <p className="text-slate-500 text-sm font-medium">{job.company}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {job.hired ? (
+                              <span className="text-[10px] text-green-600 font-bold whitespace-nowrap bg-green-100 px-2 py-1 rounded-md flex items-center gap-1">
+                                <Check size={12} /> Contratado
+                              </span>
+                            ) : isExpired ? (
+                              <span className="text-[10px] text-red-600 font-bold whitespace-nowrap bg-red-100 px-2 py-1 rounded-md">
+                                Expirado
+                              </span>
+                            ) : (
+                              <span className={`text-[10px] font-semibold whitespace-nowrap px-2 py-1 rounded-md ${
+                                isExpiringSoon ? 'text-amber-600 bg-amber-100' : 'text-slate-500 bg-slate-100'
+                              }`}>
+                                {daysRemaining} días restantes
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-[10px] text-slate-500 font-semibold whitespace-nowrap bg-slate-100 px-2 py-1 rounded-md">{job.postedAgo}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-3 mb-3">
-                        {job.salary && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200">
-                            {job.salary}
-                          </span>
-                        )}
-                        {job.type && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200">
-                            {job.type}
-                          </span>
-                        )}
-                        {job.urgent && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-600 border border-red-100">
-                            Urgente
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-2 mt-3 mb-3">
+                          {job.salary && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200">
+                              {job.salary}
+                            </span>
+                          )}
+                          {job.type && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200">
+                              {job.type}
+                            </span>
+                          )}
+                          {job.urgent && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-600 border border-red-100">
+                              Urgente
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-2 pt-3 border-t border-slate-100 flex justify-end">
-                    <span className="text-primary text-sm font-semibold flex items-center hover:text-primary/80 transition-colors">
-                      Ver Empleo <ChevronRight size={18} className="ml-1" />
-                    </span>
-                  </div>
-                </button>
-              ))}
+                    <div className="mt-2 pt-3 border-t border-slate-100 flex justify-end">
+                      <span className="text-primary text-sm font-semibold flex items-center hover:text-primary/80 transition-colors">
+                        Ver Empleo <ChevronRight size={18} className="ml-1" />
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -3287,7 +3367,8 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
   const isCurrentCouponSaved = isCouponSaved ? isCouponSaved(coupon.id) : false;
 
   const handleShareWhatsApp = () => {
-    const text = `¡Mira esta oferta en Cornellà! 🎉\n\n*${coupon.title}*\n🏪 ${coupon.business}\n🎫 Código: ${coupon.code}\n⏰ Válido hasta ${coupon.validUntil}\n\n¡Descárgala en Cornellà Local!`;
+    const ofertaUrl = `${window.location.origin}${window.location.pathname}?oferta=${coupon.id}`;
+    const text = `¡Mira esta oferta en Cornellà! 🎉\n\n*${coupon.title}*\n🏪 ${coupon.business}\n🎫 Código: ${coupon.code}\n⏰ Válido hasta ${coupon.validUntil}\n\n👉 Ver oferta: ${ofertaUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -3347,15 +3428,13 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
           </div>
 
           {/* QR Code */}
-          <div className="relative w-full bg-primary rounded-2xl p-8 shadow-lg flex flex-col items-center justify-center gap-6 mb-8 group/qr transition-transform active:scale-[0.98] duration-200">
+          <div className="relative w-full bg-primary rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-4 mb-8 group/qr transition-transform active:scale-[0.98] duration-200">
             <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
             <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
-            <div className="text-center space-y-1">
+            <div className="text-center">
               <p className="text-xs font-bold text-white/90 uppercase tracking-wider">Escanea para canjear</p>
             </div>
-            <div className="size-48 bg-white p-2 rounded-xl shadow-sm">
-              <img src={coupon.qrCode} alt="QR Code" className="w-full h-full object-contain" />
-            </div>
+            <img src={coupon.qrCode} alt="QR Code" className="w-56 h-56 rounded-xl" />
             <div className="flex flex-col items-center">
               <p className="text-2xl font-mono font-bold text-white tracking-widest">{coupon.code}</p>
               <p className="text-xs text-white/80 mt-1">O muestra este código al personal</p>
@@ -3418,35 +3497,17 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
       </div>
 
       {/* Navbar */}
-      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 z-50">
-        <div className="flex justify-around items-center px-2 py-2">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className={`flex flex-col items-center gap-0.5 w-14 group ${
-                item.id === 'offers' ? 'text-primary' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <div className="relative">
-                <Icon name={item.icon} size={20} className={item.id === 'offers' ? 'fill-current' : ''} />
-                {item.id === 'offers' && (
-                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-primary rounded-full border border-white"></span>
-                )}
-              </div>
-              <span className={`text-[9px] ${item.id === 'offers' ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
-            </button>
-          ))}
-        </div>
-        <div className="h-3 w-full"></div>
-      </div>
+      <Navbar currentPage="offers" onNavigate={onNavigate} />
     </div>
   );
 };
 
 // Página de Detalle de Oferta de Empleo
-const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification }) => {
-  const job = jobs.find(j => j.id === jobId) || jobs[1]; // Default: Dependiente de Comercio
+const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, activeJob, markJobAsHired, renewJob, deleteJob, getJobDaysRemaining, isBusinessOwner = false }) => {
+  const job = activeJob || jobs.find(j => j.id === jobId) || jobs[1]; // Default: Dependiente de Comercio
+  const daysRemaining = getJobDaysRemaining ? getJobDaysRemaining(job) : 60;
+  const isExpired = daysRemaining <= 0;
+  const isExpiringSoon = daysRemaining <= 7 && daysRemaining > 0;
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [cvUploaded, setCvUploaded] = useState(false);
@@ -3489,7 +3550,8 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification }) => {
   };
 
   const handleShare = () => {
-    const text = `¡Oferta de empleo en Cornellà! 💼\n\n*${job.title}*\n🏢 ${job.company}\n📍 ${job.location}\n💰 ${job.salary}\n\n¡Inscríbete en Cornellà Local!`;
+    const empleoUrl = `${window.location.origin}${window.location.pathname}?empleo=${job.id}`;
+    const text = `¡Oferta de empleo en Cornellà! 💼\n\n*${job.title}*\n🏢 ${job.company}\n📍 ${job.location}\n💰 ${job.salary}\n\n👉 Ver oferta: ${empleoUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -3634,14 +3696,89 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification }) => {
 
         {/* Footer fijo */}
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-4 pb-8 z-40">
-          <button
-            onClick={handleApply}
-            className="w-full h-14 rounded-xl bg-primary text-white font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 shadow-lg shadow-primary/30"
-          >
-            <Upload size={20} />
-            Inscribirme
-            <span className="text-sm bg-white/20 px-3 py-1 rounded-lg">Subir CV</span>
-          </button>
+          {/* Estado del empleo */}
+          {(job.hired || isExpired) && (
+            <div className={`mb-3 p-3 rounded-xl text-center text-sm font-medium ${
+              job.hired ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            }`}>
+              {job.hired ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Check size={16} /> Puesto cubierto - Contratado
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <Clock size={16} /> Oferta expirada (60 días)
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Días restantes si no está expirado ni contratado */}
+          {!job.hired && !isExpired && (
+            <div className={`mb-3 p-2 rounded-lg text-center text-xs font-medium ${
+              isExpiringSoon ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-600'
+            }`}>
+              <Clock size={14} className="inline mr-1" />
+              {daysRemaining} días restantes para esta oferta
+            </div>
+          )}
+
+          {/* Botones para propietarios de negocio */}
+          {isBusinessOwner && (
+            <div className="flex gap-2 mb-3">
+              {!job.hired && !isExpired && (
+                <button
+                  onClick={() => markJobAsHired && markJobAsHired(job.id)}
+                  className="flex-1 h-12 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <UserCheck size={18} />
+                  Contratado
+                </button>
+              )}
+              {isExpired && !job.hired && (
+                <button
+                  onClick={() => renewJob && renewJob(job.id)}
+                  className="flex-1 h-12 rounded-xl bg-primary text-white font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw size={18} />
+                  Renovar 60 días
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  if (deleteJob) {
+                    deleteJob(job.id);
+                    onNavigate('offers', { tab: 'jobs' });
+                  }
+                }}
+                className="h-12 px-4 rounded-xl bg-red-100 text-red-600 font-semibold hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          )}
+
+          {/* Botón de inscripción para candidatos */}
+          {!isBusinessOwner && !job.hired && !isExpired && (
+            <button
+              onClick={handleApply}
+              className="w-full h-14 rounded-xl bg-primary text-white font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 shadow-lg shadow-primary/30"
+            >
+              <Upload size={20} />
+              Inscribirme
+              <span className="text-sm bg-white/20 px-3 py-1 rounded-lg">Subir CV</span>
+            </button>
+          )}
+
+          {/* Mensaje si el empleo no está disponible */}
+          {!isBusinessOwner && (job.hired || isExpired) && (
+            <button
+              onClick={() => onNavigate('offers', { tab: 'jobs' })}
+              className="w-full h-14 rounded-xl bg-gray-200 text-gray-600 font-semibold transition-colors flex items-center justify-center gap-2"
+            >
+              Ver otros empleos
+            </button>
+          )}
         </div>
 
         {/* Pantalla de Éxito */}
@@ -3950,6 +4087,35 @@ const CategoryDetailPage = ({ categoryId, onNavigate }) => {
 const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavorites = [], toggleFavorite }) => {
   const category = categories.find(c => c.id === categoryId);
   const subcategory = category?.subcategories?.find(s => s.id === subcategoryId);
+  const [activeFilter, setActiveFilter] = useState('todos');
+
+  // Función para verificar si un negocio está abierto según la hora actual
+  const isBusinessOpenNow = (business) => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTime = currentHour * 60 + currentMinutes; // Tiempo en minutos desde medianoche
+
+    // Horarios típicos simulados (en minutos desde medianoche)
+    // Podemos usar el campo isOpen del negocio o simular basándonos en horarios típicos
+    if (business.isOpen !== undefined) {
+      return business.isOpen;
+    }
+
+    // Horarios típicos por tipo de negocio
+    const schedules = {
+      'Panadería': { open: 7 * 60, close: 20 * 60 }, // 7:00 - 20:00
+      'Hostelería': { open: 8 * 60, close: 23 * 60 }, // 8:00 - 23:00
+      'Café': { open: 7 * 60, close: 21 * 60 }, // 7:00 - 21:00
+      'Artesanal': { open: 9 * 60, close: 19 * 60 }, // 9:00 - 19:00
+      'Hogar': { open: 9 * 60, close: 20 * 60 }, // 9:00 - 20:00
+      'Tienda local': { open: 9 * 60, close: 20 * 60 }, // 9:00 - 20:00
+      'default': { open: 9 * 60, close: 20 * 60 }, // 9:00 - 20:00
+    };
+
+    const schedule = schedules[business.category] || schedules['default'];
+    return currentTime >= schedule.open && currentTime <= schedule.close;
+  };
 
   // Filtrar negocios que coincidan con la subcategoría (simulado)
   const subcategoryBusinesses = businesses.filter(b => {
@@ -3976,9 +4142,28 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
   });
 
   // Si no hay negocios mapeados, mostrar algunos aleatorios como demo
-  const displayBusinesses = subcategoryBusinesses.length > 0
+  const baseBusinesses = subcategoryBusinesses.length > 0
     ? subcategoryBusinesses
     : businesses.slice(0, 4);
+
+  // Aplicar filtros según el filtro activo
+  const displayBusinesses = (() => {
+    let filtered = [...baseBusinesses];
+
+    switch (activeFilter) {
+      case 'abierto':
+        filtered = filtered.filter(b => isBusinessOpenNow(b));
+        break;
+      case 'valorados':
+        filtered = filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      default:
+        // 'todos' - no aplicar filtro
+        break;
+    }
+
+    return filtered;
+  })();
 
   const colorClasses = {
     orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
@@ -4027,22 +4212,63 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
 
       {/* Filtros rápidos */}
       <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar">
-        <button className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-full whitespace-nowrap">
+        <button
+          onClick={() => setActiveFilter('todos')}
+          className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
+            activeFilter === 'todos'
+              ? 'bg-primary text-white'
+              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+          }`}
+        >
           Todos
         </button>
-        <button className="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap hover:bg-gray-50">
+        <button
+          onClick={() => setActiveFilter('abierto')}
+          className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+            activeFilter === 'abierto'
+              ? 'bg-green-500 text-white'
+              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          <Clock size={14} />
           Abierto ahora
         </button>
-        <button className="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap hover:bg-gray-50">
+        <button
+          onClick={() => setActiveFilter('valorados')}
+          className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+            activeFilter === 'valorados'
+              ? 'bg-amber-500 text-white'
+              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          <Star size={14} />
           Mejor valorados
-        </button>
-        <button className="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap hover:bg-gray-50">
-          Más cercanos
         </button>
       </div>
 
       {/* Lista de negocios */}
       <div className="px-4 py-2 space-y-4">
+        {displayBusinesses.length === 0 && (
+          <div className="py-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Store className="text-gray-400" size={32} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              {activeFilter === 'abierto' ? 'No hay comercios abiertos ahora' : 'No hay resultados'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {activeFilter === 'abierto'
+                ? 'Prueba en otro horario o quita el filtro'
+                : 'Prueba con otro filtro'}
+            </p>
+            <button
+              onClick={() => setActiveFilter('todos')}
+              className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-full"
+            >
+              Ver todos
+            </button>
+          </div>
+        )}
         {displayBusinesses.map(business => {
           const isFavorite = userFavorites.includes(business.id);
           return (
@@ -4059,7 +4285,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
 
                 {/* Badges */}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  {business.isOpen && (
+                  {isBusinessOpenNow(business) && (
                     <span className="px-2.5 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
                       Abierto
                     </span>
@@ -10854,6 +11080,68 @@ export default function App() {
   // Cupones guardados por el usuario
   const [savedCoupons, setSavedCoupons] = useState([]);
 
+  // Estado de empleos activos (con fecha de creación para calcular expiración de 60 días)
+  const [activeJobs, setActiveJobs] = useState(() => {
+    // Inicializar con los empleos de mockData, añadiendo fecha de creación simulada
+    return jobs.map((job, index) => ({
+      ...job,
+      createdAt: new Date(Date.now() - (index * 5 * 24 * 60 * 60 * 1000)), // Cada uno creado hace X días
+      hired: false,
+      hiredDate: null,
+    }));
+  });
+
+  // Función para calcular días restantes de un empleo (60 días máximo)
+  const getJobDaysRemaining = (job) => {
+    const now = new Date();
+    const created = new Date(job.createdAt);
+    const daysPassed = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+    return Math.max(0, 60 - daysPassed);
+  };
+
+  // Marcar empleo como contratado (se borrará en 15 días)
+  const markJobAsHired = (jobId) => {
+    setActiveJobs(prev => prev.map(job =>
+      job.id === jobId
+        ? { ...job, hired: true, hiredDate: new Date() }
+        : job
+    ));
+    showToast('¡Enhorabuena! Empleo marcado como contratado', 'success');
+  };
+
+  // Renovar empleo (reiniciar contador de 60 días)
+  const renewJob = (jobId) => {
+    setActiveJobs(prev => prev.map(job =>
+      job.id === jobId
+        ? { ...job, createdAt: new Date(), hired: false, hiredDate: null }
+        : job
+    ));
+    showToast('Empleo renovado por 60 días más', 'success');
+  };
+
+  // Eliminar empleo
+  const deleteJob = (jobId) => {
+    setActiveJobs(prev => prev.filter(job => job.id !== jobId));
+    showToast('Empleo eliminado', 'success');
+  };
+
+  // Filtrar empleos activos (no expirados y no contratados hace más de 15 días)
+  const getVisibleJobs = () => {
+    const now = new Date();
+    return activeJobs.filter(job => {
+      const daysRemaining = getJobDaysRemaining(job);
+
+      // Si está contratado, verificar si han pasado 15 días
+      if (job.hired && job.hiredDate) {
+        const daysSinceHired = Math.floor((now - new Date(job.hiredDate)) / (1000 * 60 * 60 * 24));
+        if (daysSinceHired >= 15) return false;
+      }
+
+      // Mostrar aunque esté expirado (para que pueda renovar)
+      return true;
+    });
+  };
+
   // Toast notifications
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' });
   const showToast = (message, type = 'success') => {
@@ -10866,6 +11154,9 @@ export default function App() {
   // PWA Install Prompt
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // Animación de transición entre páginas
+  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
 
   useEffect(() => {
     // Escuchar evento de instalación PWA
@@ -10893,14 +11184,24 @@ export default function App() {
     };
   }, []);
 
-  // Detectar parámetro de URL para abrir perfil de negocio directamente
+  // Detectar parámetro de URL para abrir perfil de negocio, oferta o empleo directamente
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const negocioId = urlParams.get('negocio');
+    const ofertaId = urlParams.get('oferta');
+    const empleoId = urlParams.get('empleo');
+
     if (negocioId) {
       setCurrentPage('business');
       setPageParams({ id: parseInt(negocioId) });
-      // Limpiar URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (ofertaId) {
+      setCurrentPage('coupon-detail');
+      setPageParams({ id: parseInt(ofertaId) });
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (empleoId) {
+      setCurrentPage('job-detail');
+      setPageParams({ id: parseInt(empleoId) });
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
@@ -11000,9 +11301,18 @@ export default function App() {
   };
 
   const navigate = (page, params = {}) => {
-    setCurrentPage(page);
-    setPageParams(params);
-    window.scrollTo(0, 0);
+    // Activar animación de salida
+    setIsPageTransitioning(true);
+
+    // Esperar a que termine la animación de salida, luego cambiar página
+    setTimeout(() => {
+      setCurrentPage(page);
+      setPageParams(params);
+      window.scrollTo(0, 0);
+
+      // Desactivar transición para mostrar la nueva página
+      setIsPageTransitioning(false);
+    }, 150);
   };
 
   // Función para registrar un negocio (pasa a estado pendiente)
@@ -11189,7 +11499,7 @@ export default function App() {
       case 'flash-offers':
         return <FlashOffersScreen onNavigate={navigate} userOffers={userOffers} />;
       case 'offers':
-        return <OffersPage onNavigate={navigate} userOffers={userOffers} initialTab={pageParams.tab || 'offers'} />;
+        return <OffersPage onNavigate={navigate} userOffers={userOffers} initialTab={pageParams.tab || 'offers'} activeJobs={getVisibleJobs()} getJobDaysRemaining={getJobDaysRemaining} isBusinessOwner={businessStatus === 'validated'} />;
       case 'favorites':
         return <FavoritesPage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} />;
       case 'profile':
@@ -11215,7 +11525,18 @@ export default function App() {
       case 'user-jobs':
         return <UserJobsScreen onNavigate={navigate} />;
       case 'job-detail':
-        return <JobDetailPage jobId={pageParams.id} onNavigate={navigate} showToast={showToast} onAddNotification={addNotification} />;
+        return <JobDetailPage
+          jobId={pageParams.id}
+          onNavigate={navigate}
+          showToast={showToast}
+          onAddNotification={addNotification}
+          activeJob={activeJobs.find(j => j.id === pageParams.id)}
+          markJobAsHired={markJobAsHired}
+          renewJob={renewJob}
+          deleteJob={deleteJob}
+          getJobDaysRemaining={getJobDaysRemaining}
+          isBusinessOwner={businessStatus === 'validated'}
+        />;
       case 'my-budget-requests':
         return <MyBudgetRequestsScreen onNavigate={navigate} userBudgetRequests={userBudgetRequests} onAddNotification={addNotification} initialSelectedRequestId={pageParams.selectedRequestId} />;
       case 'incoming-budget-requests':
@@ -11383,7 +11704,16 @@ export default function App() {
         </div>
       )}
 
-      {renderPage()}
+      {/* Contenido de la página con animación */}
+      <div
+        className={`transition-all duration-150 ease-out ${
+          isPageTransitioning
+            ? 'opacity-0 scale-[0.98] translate-y-2'
+            : 'opacity-100 scale-100 translate-y-0'
+        }`}
+      >
+        {renderPage()}
+      </div>
     </div>
   );
 }

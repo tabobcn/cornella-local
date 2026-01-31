@@ -1,18 +1,27 @@
 // Service Worker para Cornellà Local PWA
-const CACHE_NAME = 'cornella-local-v1';
-const urlsToCache = [
+const CACHE_NAME = 'cornella-local-v2';
+const STATIC_CACHE = 'cornella-static-v2';
+const DYNAMIC_CACHE = 'cornella-dynamic-v2';
+
+// Recursos estáticos para cachear al instalar
+const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/logo.png',
+  '/offline.html'
 ];
 
 // Instalación del Service Worker
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('Cache abierto');
-        return cache.addAll(urlsToCache);
+        console.log('[SW] Cacheando recursos estáticos');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .catch((err) => {
+        console.log('[SW] Error cacheando:', err);
       })
   );
   // Activar inmediatamente
@@ -25,8 +34,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Eliminando cache antiguo:', cacheName);
+          if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            console.log('[SW] Eliminando cache antiguo:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -37,29 +46,124 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Estrategia de fetch: Network first, fallback to cache
+// Estrategia de fetch mejorada
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Si la respuesta es válida, guardarla en cache
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Si falla la red, buscar en cache
-        return caches.match(event.request);
-      })
-  );
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Solo manejar peticiones HTTP/HTTPS
+  if (!request.url.startsWith('http')) return;
+
+  // Para recursos estáticos (JS, CSS, fuentes): Cache first
+  if (isStaticAsset(request)) {
+    event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  // Para imágenes: Cache first con fallback
+  if (isImage(request)) {
+    event.respondWith(cacheFirstWithFallback(request));
+    return;
+  }
+
+  // Para navegación (HTML): Network first con fallback offline
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirstWithOffline(request));
+    return;
+  }
+
+  // Para API/datos: Network first, guardar en cache
+  event.respondWith(networkFirst(request));
 });
 
-// Manejar notificaciones push (para futuro uso)
+// Helpers para identificar tipos de recursos
+function isStaticAsset(request) {
+  const url = request.url;
+  return url.endsWith('.js') ||
+         url.endsWith('.css') ||
+         url.endsWith('.woff') ||
+         url.endsWith('.woff2');
+}
+
+function isImage(request) {
+  const url = request.url;
+  return url.endsWith('.png') ||
+         url.endsWith('.jpg') ||
+         url.endsWith('.jpeg') ||
+         url.endsWith('.gif') ||
+         url.endsWith('.svg') ||
+         url.endsWith('.webp');
+}
+
+// Estrategia Cache First
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(STATIC_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    return new Response('Offline', { status: 503 });
+  }
+}
+
+// Cache First con fallback para imágenes
+async function cacheFirstWithFallback(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    // Devolver imagen placeholder si falla
+    return caches.match('/logo.png');
+  }
+}
+
+// Network First
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    return cached || new Response('Offline', { status: 503 });
+  }
+}
+
+// Network First con página offline
+async function networkFirstWithOffline(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
+    // Mostrar página offline
+    return caches.match('/offline.html') || caches.match('/');
+  }
+}
+
+// Manejar notificaciones push
 self.addEventListener('push', (event) => {
   if (event.data) {
     const data = event.data.json();
@@ -70,7 +174,11 @@ self.addEventListener('push', (event) => {
       vibrate: [100, 50, 100],
       data: {
         url: data.url || '/'
-      }
+      },
+      actions: [
+        { action: 'open', title: 'Ver' },
+        { action: 'close', title: 'Cerrar' }
+      ]
     };
     event.waitUntil(
       self.registration.showNotification(data.title || 'Cornellà Local', options)
@@ -81,7 +189,31 @@ self.addEventListener('push', (event) => {
 // Manejar clic en notificación
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  if (event.action === 'close') return;
+
   event.waitUntil(
-    clients.openWindow(event.notification.data.url || '/')
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      // Si ya hay una ventana abierta, enfocarla
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Si no, abrir una nueva
+      if (clients.openWindow) {
+        return clients.openWindow(event.notification.data.url || '/');
+      }
+    })
   );
+});
+
+// Sincronización en background (para cuando vuelva la conexión)
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-data') {
+    event.waitUntil(
+      // Aquí se podrían sincronizar datos pendientes
+      console.log('[SW] Sincronizando datos...')
+    );
+  }
 });

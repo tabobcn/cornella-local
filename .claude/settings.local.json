@@ -19,7 +19,14 @@
       "Bash(findstr:*)",
       "Bash(netstat:*)",
       "Bash(ipconfig:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(start http://localhost:3000)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nMejoras UI/UX y nuevas funcionalidades\n\n- Compartir ofertas y empleos con enlaces directos \\(?oferta=ID, ?empleo=ID\\)\n- QR code limpio y tamaño optimizado\n- Filtros funcionales: Abierto ahora, Mejor valorados\n- Sistema de empleos con duración 60 días \\(renovar/contratado/eliminar\\)\n- Banner \"Eventos Próximamente\" en home\n- Nuevo logo en header\n- Splash screen con nuevo logo y animaciones\n- Transiciones suaves entre páginas\n- PWA offline mejorado con página offline\n- Nuevo favicon/icono de app\n- Service worker optimizado con estrategias de cache\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(git commit:*)",
+      "Bash(curl:*)",
+      "Bash(git push:*)"
     ]
   }
 }

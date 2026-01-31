@@ -10138,15 +10138,16 @@ const LoginScreen = ({ onNavigate }) => {
       <div className="w-full max-w-[420px] bg-white rounded-xl shadow-soft p-6 sm:p-8 flex flex-col gap-6 relative overflow-hidden">
         {/* Header */}
         <div className="flex flex-col items-center text-center gap-2 pt-2">
-          <div
-            className="w-20 h-20 bg-cover bg-center bg-no-repeat rounded-2xl shadow-sm mb-2"
-            style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBL78wfGDYTsRyavtyWcUx-2_1sQsP3xdttOnXPenBE0ZOboD_hOwBGWtzk5u4iIfgSIJfffA2-yiyHa4Juk1hKuSwvy-1Ck5I_lkY9PesIbB1p-Qu8qbnX3okqXdhoAVQKCsc9NnH5hJm4qdqwi82lpAO_DFVI5G38kVO3AhJ2tRzo3_mshZ0X69IjFF2mO6HhXfvNA922G_4h0pW16OCo9bh1h-wdC-7DTepgqD4b4yq4ZDhn1Kd-ZUtEa-raW4q7XO2UQyHMOwMq")' }}
+          <img
+            src="/favicon.png"
+            alt="CornellaLocal"
+            className="w-20 h-20 rounded-2xl shadow-sm mb-2"
           />
           <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight px-4 pb-1">
-            ¡Hola de nuevo!
+            Bienvenido a CornellaLocal
           </h1>
           <p className="text-gray-500 text-base font-normal leading-normal px-4">
-            Accede a tus servicios ciudadanos.
+            Tu comercio local, más cerca
           </p>
         </div>
 
@@ -10240,12 +10241,6 @@ const LoginScreen = ({ onNavigate }) => {
               Regístrate
             </button>
           </p>
-          <button
-            onClick={() => onNavigate('owner-welcome')}
-            className="text-primary text-sm font-medium mt-3 hover:underline"
-          >
-            Soy propietario de un negocio
-          </button>
         </div>
       </div>
     </div>
@@ -10276,10 +10271,15 @@ const RegisterScreen = ({ onNavigate }) => {
           </button>
         </div>
 
-        {/* Title */}
-        <div className="px-4 pb-6 pt-2">
-          <h1 className="text-slate-900 tracking-tight text-[32px] font-bold leading-tight pb-3">Crea tu cuenta</h1>
-          <p className="text-gray-500 text-base font-normal leading-normal">Únete a la comunidad y apoya al comercio de Cornellà.</p>
+        {/* Logo and Title */}
+        <div className="flex flex-col items-center px-4 pb-6 pt-2">
+          <img
+            src="/favicon.png"
+            alt="CornellaLocal"
+            className="w-16 h-16 rounded-xl shadow-sm mb-4"
+          />
+          <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight pb-2 text-center">Únete a CornellaLocal</h1>
+          <p className="text-gray-500 text-base font-normal leading-normal text-center">Apoya al comercio local de Cornellà</p>
         </div>
 
         {/* Form */}

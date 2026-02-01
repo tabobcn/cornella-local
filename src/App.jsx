@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 import {
   Home, Map, Tag, Heart, User, Search, Bell, ChevronDown, SlidersHorizontal,
   Clock, Plus, Star, MapPin, UtensilsCrossed, ShoppingBasket, Shirt, Wrench,
@@ -2542,8 +2543,8 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
 };
 
 // Página de Perfil
-const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusiness, savedCoupons = [] }) => {
-  const [avatarUrl, setAvatarUrl] = useState(currentUser.avatar);
+const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusiness, savedCoupons = [], user }) => {
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || currentUser.avatar);
   const fileInputRef = useState(null);
 
   const handleAvatarClick = () => {
@@ -2601,12 +2602,12 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
           </div>
         </div>
         <div className="flex flex-col items-center gap-1">
-          <h2 className="text-2xl font-bold text-slate-900 leading-tight">{currentUser.name}</h2>
+          <h2 className="text-2xl font-bold text-slate-900 leading-tight">{user?.full_name || user?.name || currentUser.name}</h2>
           <div className="flex items-center gap-1.5 px-3 py-1 bg-green-100 rounded-full mt-1">
             <span className="text-green-600" size={18}>🌱</span>
             <span className="text-sm font-semibold text-green-700">{currentUser.badge}</span>
           </div>
-          <p className="text-sm text-slate-500 mt-2">Miembro desde {currentUser.memberSince}</p>
+          <p className="text-sm text-slate-500 mt-2">Miembro desde {user?.created_at ? new Date(user.created_at).getFullYear() : currentUser.memberSince}</p>
         </div>
       </section>
 
@@ -10125,12 +10126,50 @@ const BusinessStatsScreen = ({ onNavigate }) => {
 // ==============================================
 
 // Pantalla de Login
-const LoginScreen = ({ onNavigate }) => {
+const LoginScreen = ({ onNavigate, setUser }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    onNavigate('home');
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // Cargar datos del usuario desde la tabla profiles
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (userError) throw userError;
+
+      setUser(userData);
+      onNavigate('home');
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+
+      if (error.message.includes('Invalid login credentials')) {
+        setError('Email o contraseña incorrectos');
+      } else if (error.message.includes('Email not confirmed')) {
+        setError('Por favor verifica tu email antes de iniciar sesión');
+      } else {
+        setError('Error al iniciar sesión. Intenta de nuevo.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -10151,6 +10190,14 @@ const LoginScreen = ({ onNavigate }) => {
           </p>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+            <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
         {/* Form */}
         <form className="flex flex-col gap-5 w-full mt-2" onSubmit={handleLogin}>
           {/* Email */}
@@ -10160,6 +10207,10 @@ const LoginScreen = ({ onNavigate }) => {
               className="form-input flex w-full rounded-lg text-slate-900 border-0 bg-gray-100 focus:ring-2 focus:ring-primary/20 h-14 placeholder:text-gray-400 p-4 text-base font-normal transition-all"
               placeholder="ejemplo@correo.com"
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
             />
           </div>
 
@@ -10171,11 +10222,16 @@ const LoginScreen = ({ onNavigate }) => {
                 className="form-input flex w-full min-w-0 flex-1 resize-none border-0 bg-transparent text-slate-900 focus:outline-0 focus:ring-0 h-14 placeholder:text-gray-400 p-4 pr-2 text-base font-normal"
                 placeholder="********"
                 type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
               />
               <button
                 className="flex items-center justify-center px-4 text-gray-500 hover:text-primary transition-colors cursor-pointer bg-transparent border-none"
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
               >
                 {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
               </button>
@@ -10196,9 +10252,10 @@ const LoginScreen = ({ onNavigate }) => {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-primary hover:bg-blue-700 text-white font-bold h-14 rounded-lg shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all duration-200 mt-2 flex items-center justify-center text-lg"
+            className="w-full bg-primary hover:bg-blue-700 text-white font-bold h-14 rounded-lg shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all duration-200 mt-2 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
           >
-            Iniciar Sesión
+            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
 
@@ -10252,10 +10309,80 @@ const RegisterScreen = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    onNavigate('home');
+    setLoading(true);
+    setError('');
+
+    // Validaciones
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      setLoading(false);
+      return;
+    }
+
+    if (!acceptTerms) {
+      setError('Debes aceptar los términos y condiciones');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Registrar usuario en Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      // Crear perfil en la tabla profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: data.user.id,
+            name,
+            email,
+            avatar_url: null,
+          },
+        ]);
+
+      if (profileError) throw profileError;
+
+      setSuccess(true);
+    } catch (error) {
+      console.error('Error al registrarse:', error);
+
+      if (error.message.includes('already registered')) {
+        setError('Este email ya está registrado');
+      } else if (error.message.includes('Password')) {
+        setError('La contraseña debe tener al menos 8 caracteres');
+      } else {
+        setError('Error al crear la cuenta. Intenta de nuevo.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -10282,6 +10409,35 @@ const RegisterScreen = ({ onNavigate }) => {
           <p className="text-gray-500 text-base font-normal leading-normal text-center">Apoya al comercio local de Cornellà</p>
         </div>
 
+        {/* Success Message */}
+        {success && (
+          <div className="mx-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 size={20} className="text-green-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-green-800 mb-1">¡Cuenta creada!</p>
+                <p className="text-sm text-green-700">
+                  Te hemos enviado un email de verificación. Por favor revisa tu bandeja de entrada y confirma tu email antes de iniciar sesión.
+                </p>
+                <button
+                  onClick={() => onNavigate('login')}
+                  className="mt-3 text-sm font-semibold text-primary hover:underline"
+                >
+                  Ir al login →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mx-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+            <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
         {/* Form */}
         <form className="flex flex-col gap-4 px-4 pb-4" onSubmit={handleRegister}>
           {/* Name */}
@@ -10295,6 +10451,10 @@ const RegisterScreen = ({ onNavigate }) => {
                 className="form-input flex w-full rounded-lg text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-gray-100 h-14 placeholder:text-gray-500 pl-12 pr-4 text-base font-normal transition-all"
                 placeholder="Ej. Maria Garcia"
                 type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                disabled={loading || success}
               />
             </div>
           </label>
@@ -10310,6 +10470,10 @@ const RegisterScreen = ({ onNavigate }) => {
                 className="form-input flex w-full rounded-lg text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-gray-100 h-14 placeholder:text-gray-500 pl-12 pr-4 text-base font-normal transition-all"
                 placeholder="ejemplo@correo.com"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading || success}
               />
             </div>
           </label>
@@ -10325,11 +10489,17 @@ const RegisterScreen = ({ onNavigate }) => {
                 className="form-input flex w-full rounded-lg text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-gray-100 h-14 placeholder:text-gray-500 pl-12 pr-12 text-base font-normal transition-all"
                 placeholder="••••••••"
                 type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                disabled={loading || success}
               />
               <button
                 className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-primary transition-colors"
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={loading || success}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -10347,11 +10517,16 @@ const RegisterScreen = ({ onNavigate }) => {
                 className="form-input flex w-full rounded-lg text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-gray-100 h-14 placeholder:text-gray-500 pl-12 pr-12 text-base font-normal transition-all"
                 placeholder="••••••••"
                 type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={loading || success}
               />
               <button
                 className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-primary transition-colors"
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={loading || success}
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -10386,9 +10561,10 @@ const RegisterScreen = ({ onNavigate }) => {
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full rounded-lg bg-primary hover:bg-blue-700 text-white h-12 text-base font-bold leading-normal transition-colors flex items-center justify-center shadow-lg shadow-blue-500/30"
+              className="w-full rounded-lg bg-primary hover:bg-blue-700 text-white h-12 text-base font-bold leading-normal transition-colors flex items-center justify-center shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || success}
             >
-              Registrarme
+              {loading ? 'Creando cuenta...' : 'Registrarme'}
             </button>
           </div>
         </form>
@@ -10949,7 +11125,10 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
               </div>
             </button>
             <button
-              onClick={() => onNavigate('login')}
+              onClick={async () => {
+                await supabase.auth.signOut();
+                onNavigate('login');
+              }}
               className="w-full p-4 flex items-center justify-between hover:bg-red-50 transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -11046,8 +11225,76 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 // ==============================================
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState('login');
   const [pageParams, setPageParams] = useState({});
+
+  // Estado del usuario autenticado
+  const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  // Persistir sesión con Supabase Auth
+  useEffect(() => {
+    // Verificar sesión actual
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // Cargar datos del usuario
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data, error }) => {
+            if (data && !error) {
+              setUser(data);
+              setCurrentPage('home');
+            } else {
+              console.error('Error loading profile:', error);
+              // Si hay error, cerrar sesión y redirigir a login
+              supabase.auth.signOut();
+              setUser(null);
+              setCurrentPage('login');
+            }
+          })
+          .catch((err) => {
+            console.error('Error fetching profile:', err);
+            // Si hay error, cerrar sesión y redirigir a login
+            supabase.auth.signOut();
+            setUser(null);
+            setCurrentPage('login');
+          })
+          .finally(() => {
+            setLoadingAuth(false);
+          });
+      } else {
+        setLoadingAuth(false);
+      }
+    }).catch((err) => {
+      console.error('Error getting session:', err);
+      setLoadingAuth(false);
+    });
+
+    // Escuchar cambios de autenticación
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (data) {
+          setUser(data);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setCurrentPage('login');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Estado del onboarding - usar localStorage para persistir
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -11527,7 +11774,7 @@ export default function App() {
       case 'favorites':
         return <FavoritesPage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} />;
       case 'profile':
-        return <ProfilePage onNavigate={navigate} businessStatus={businessStatus} businessData={businessData} validateBusiness={validateBusiness} savedCoupons={savedCoupons} />;
+        return <ProfilePage onNavigate={navigate} businessStatus={businessStatus} businessData={businessData} validateBusiness={validateBusiness} savedCoupons={savedCoupons} user={user} />;
       case 'business':
         return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} />;
       case 'coupon':
@@ -11537,7 +11784,7 @@ export default function App() {
       case 'subcategory':
         return <SubcategoryDetailPage categoryId={pageParams.categoryId} subcategoryId={pageParams.subcategoryId} onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} />;
       case 'login':
-        return <LoginScreen onNavigate={navigate} />;
+        return <LoginScreen onNavigate={navigate} setUser={setUser} />;
       case 'register':
         return <RegisterScreen onNavigate={navigate} />;
       case 'forgot-password':
@@ -11663,8 +11910,24 @@ export default function App() {
     showToast('¡Notificaciones activadas!', 'success');
   };
 
-  // Si no ha visto el onboarding, mostrarlo
-  if (!hasSeenOnboarding) {
+  // Mostrar loading mientras se verifica la autenticación
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <img
+            src="/favicon.png"
+            alt="CornellaLocal"
+            className="w-20 h-20 rounded-2xl shadow-sm mb-4 mx-auto animate-pulse"
+          />
+          <p className="text-gray-500">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no ha visto el onboarding, mostrarlo (solo para usuarios autenticados)
+  if (!hasSeenOnboarding && user) {
     return (
       <OnboardingScreen
         onComplete={() => completeOnboarding(false)}

@@ -39,6 +39,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
@@ -117,6 +118,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
+drop trigger if exists on_review_change on public.reviews;
 create trigger on_review_change
   after insert or update or delete on public.reviews
   for each row execute procedure update_business_rating();

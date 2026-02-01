@@ -4,7 +4,71 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Cornellà Local is a React-based mobile-first web application for local commerce in Cornellà de Llobregat, Spain. It connects residents with local businesses, offering features like flash offers, budget requests for services, job listings, and business discovery.
+**CornellaLocal** es una aplicación web mobile-first para el comercio local de Cornellà de Llobregat, España. Conecta a los residentes con negocios locales, ofreciendo ofertas flash, solicitudes de presupuesto, ofertas de empleo y descubrimiento de comercios.
+
+---
+
+## ESTADO DEL PROYECTO
+
+### Completado
+- [x] Frontend React completo con todas las pantallas
+- [x] Diseño mobile-first con Tailwind CSS
+- [x] PWA configurada (manifest, service worker, iconos)
+- [x] Pantallas de login/registro actualizadas con branding CornellaLocal
+- [x] Supabase configurado (`src/lib/supabase.js`)
+- [x] Schema de base de datos creado (`supabase/schema.sql`)
+- [x] Categorías iniciales preparadas (`supabase/seed.sql`)
+- [x] Eliminado "Soy propietario de negocio" del login (se registra desde perfil)
+
+### Pendiente - PRÓXIMOS PASOS
+
+#### PASO 1: Ejecutar schema.sql en Supabase
+1. Abre: https://supabase.com/dashboard/project/zwhlcgckhocdkdxilldo
+2. Menú izquierdo → **SQL Editor**
+3. Click **New Query**
+4. Abre `supabase/schema.sql` de tu proyecto
+5. Copia TODO el contenido y pégalo
+6. Click **Run** (espera "Success")
+
+#### PASO 2: Ejecutar seed.sql
+1. Click **New Query** otra vez
+2. Abre `supabase/seed.sql`
+3. Copia todo y pégalo
+4. Click **Run**
+
+#### PASO 3: Activar Email en Authentication
+1. Menú izquierdo → **Authentication**
+2. Click **Providers**
+3. Busca **Email** y click
+4. Asegúrate que está **Enabled**
+5. Activa **Confirm email** (validación de correo)
+6. Click **Save**
+
+#### PASO 4: Conectar dominio (cuando lo tengas)
+- Dominio previsto: **CornellaLocal.es**
+- Configurar en Vercel + Supabase
+
+#### PASO 5: Conectar autenticación real en la app
+- Reemplazar login/registro simulado por Supabase Auth
+- Implementar validación de email
+- Implementar regla de 30 días para reseñas
+
+#### PASO 6: Conectar datos reales
+- Reemplazar mockData por consultas a Supabase
+- Sistema de presupuestos con notificaciones por email
+- Panel de propietarios funcional
+
+---
+
+## Reglas de Negocio Importantes
+
+| Regla | Descripción |
+|-------|-------------|
+| **Reseñas** | Usuario debe tener 30+ días registrado Y email verificado |
+| **Negocios** | Se registran desde el perfil del usuario, no desde login |
+| **Presupuestos** | Al crear uno, notifica por email a negocios de esa categoría |
+
+---
 
 ## Development Commands
 
@@ -17,9 +81,11 @@ npm run preview  # Preview production build
 ## Tech Stack
 
 - **Frontend**: React 18 + Vite 5
+- **Backend**: Supabase (PostgreSQL + Auth + Realtime)
 - **Styling**: Tailwind CSS 3 with custom design tokens
 - **Icons**: Lucide React
 - **State**: React useState/useEffect (no external state management)
+- **Deploy**: Vercel (previsto)
 
 ## Architecture
 
@@ -35,7 +101,7 @@ The entire application lives in `src/App.jsx` (~500KB+). This is intentional for
 
 **Navigation**: Custom `navigate(screen, params)` function manages all routing. Screen names are strings like `'home'`, `'business'`, `'profile'`.
 
-**Mock Data**: All data comes from `src/data/mockData.js`. No backend - this is a frontend prototype.
+**Mock Data**: Actualmente los datos vienen de `src/data/mockData.js`. Será reemplazado por Supabase cuando se complete la integración.
 
 ### Main Sections in App.jsx
 

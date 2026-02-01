@@ -22,38 +22,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Pendiente - PRÓXIMOS PASOS
 
-#### PASO 1: Ejecutar schema.sql en Supabase
-1. Abre: https://supabase.com/dashboard/project/zwhlcgckhocdkdxilldo
-2. Menú izquierdo → **SQL Editor**
-3. Click **New Query**
-4. Abre `supabase/schema.sql` de tu proyecto
-5. Copia TODO el contenido y pégalo
-6. Click **Run** (espera "Success")
+#### PASO 1: ✅ Base de datos configurada
+- ✅ schema.sql ejecutado
+- ✅ seed.sql ejecutado
+- ✅ Email Auth activado
 
-#### PASO 2: Ejecutar seed.sql
-1. Click **New Query** otra vez
-2. Abre `supabase/seed.sql`
-3. Copia todo y pégalo
-4. Click **Run**
+#### PASO 2: ✅ Autenticación funcionando
+- ✅ Login con Supabase Auth
+- ✅ Registro con Supabase Auth
+- ✅ Persistencia de sesión
+- ✅ Logout funcional
+- ✅ Datos de usuario reales en perfil
 
-#### PASO 3: Activar Email en Authentication
-1. Menú izquierdo → **Authentication**
-2. Click **Providers**
-3. Busca **Email** y click
-4. Asegúrate que está **Enabled**
-5. Activa **Confirm email** (validación de correo)
-6. Click **Save**
-
-#### PASO 4: Conectar dominio (cuando lo tengas)
+#### PASO 3: Conectar dominio (cuando lo tengas)
 - Dominio previsto: **CornellaLocal.es**
 - Configurar en Vercel + Supabase
 
-#### PASO 5: Conectar autenticación real en la app
-- Reemplazar login/registro simulado por Supabase Auth
-- Implementar validación de email
-- Implementar regla de 30 días para reseñas
-
-#### PASO 6: Conectar datos reales
+#### PASO 4: Conectar datos reales (SIGUIENTE)
 - Reemplazar mockData por consultas a Supabase
 - Sistema de presupuestos con notificaciones por email
 - Panel de propietarios funcional

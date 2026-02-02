@@ -10919,9 +10919,9 @@ const LoginScreen = ({ onNavigate, setUser }) => {
     setLoading(true);
     setError('');
 
-    // Timeout de seguridad (30 segundos para proyectos lentos)
+    // Timeout de seguridad (60 segundos para móviles con conexión lenta)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('TIMEOUT')), 30000);
+      setTimeout(() => reject(new Error('TIMEOUT')), 60000);
     });
 
     try {
@@ -11052,7 +11052,7 @@ const LoginScreen = ({ onNavigate, setUser }) => {
             className="w-full bg-primary hover:bg-blue-700 text-white font-bold h-14 rounded-lg shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all duration-200 mt-2 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
           >
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            {loading ? 'Iniciando sesión... (puede tardar hasta 1 min)' : 'Iniciar Sesión'}
           </button>
         </form>
 
@@ -11138,9 +11138,9 @@ const RegisterScreen = ({ onNavigate }) => {
       return;
     }
 
-    // Timeout de seguridad (30 segundos para proyectos lentos)
+    // Timeout de seguridad (60 segundos para móviles con conexión lenta)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('TIMEOUT')), 30000);
+      setTimeout(() => reject(new Error('TIMEOUT')), 60000);
     });
 
     try {

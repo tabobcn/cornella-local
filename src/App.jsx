@@ -12054,12 +12054,12 @@ export default function App() {
   useEffect(() => {
     console.log('[AUTH] Iniciando verificación de sesión...');
 
-    // Timeout de seguridad
+    // Timeout de seguridad (30 segundos para conexiones lentas)
     const authTimeout = setTimeout(() => {
       console.warn('[AUTH] Timeout alcanzado, continuando sin sesión');
       setLoadingAuth(false);
       setCurrentPage('login');
-    }, 5000);
+    }, 30000);
 
     // Verificar sesión actual
     supabase.auth.getSession().then(({ data: { session } }) => {

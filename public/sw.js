@@ -1,7 +1,7 @@
 // Service Worker para Cornellà Local PWA
-const CACHE_NAME = 'cornella-local-v2';
-const STATIC_CACHE = 'cornella-static-v2';
-const DYNAMIC_CACHE = 'cornella-dynamic-v2';
+const CACHE_NAME = 'cornella-local-v3';
+const STATIC_CACHE = 'cornella-static-v3';
+const DYNAMIC_CACHE = 'cornella-dynamic-v3';
 
 // Recursos estáticos para cachear al instalar
 const STATIC_ASSETS = [
@@ -53,6 +53,12 @@ self.addEventListener('fetch', (event) => {
 
   // Solo manejar peticiones HTTP/HTTPS
   if (!request.url.startsWith('http')) return;
+
+  // NO cachear peticiones a Supabase
+  if (url.hostname.includes('supabase.co')) return;
+
+  // NO cachear peticiones POST, PUT, DELETE, PATCH
+  if (request.method !== 'GET') return;
 
   // Para recursos estáticos (JS, CSS, fuentes): Cache first
   if (isStaticAsset(request)) {
@@ -134,7 +140,8 @@ async function cacheFirstWithFallback(request) {
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    // Solo cachear peticiones GET exitosas
+    if (response.ok && request.method === 'GET') {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, response.clone());
     }

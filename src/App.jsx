@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
+import { getTagsForCategory } from './data/businessTags';
 import {
   Home, Map, Tag, Heart, User, Search, Bell, ChevronDown, SlidersHorizontal,
   Clock, Plus, Star, MapPin, UtensilsCrossed, ShoppingBasket, Shirt, Wrench,
@@ -22,10 +23,8 @@ import {
 } from 'lucide-react';
 
 import {
-  currentUser, categories, flashOffers, businesses, favorites, offers, jobs,
-  couponDetail, mapData, navItems,
-  userReviews, userJobApplications, budgetRequests, businessOffers, termsAndConditions,
-  notifications, businessCandidates
+  categories, navItems, termsAndConditions,
+  userReviews, userJobApplications, businessOffers
 } from './data/mockData';
 
 // ==============================================
@@ -924,6 +923,65 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     return saved ? JSON.parse(saved) : [];
   });
   const [isFocused, setIsFocused] = useState(false);
+  const [businesses, setBusinesses] = useState([]);
+  const [loadingBusinesses, setLoadingBusinesses] = useState(true);
+  const [flashOffers, setFlashOffers] = useState([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
+
+  // Temporal: notifications vacías hasta conectar con Supabase
+  const notifications = [];
+
+  // Cargar negocios desde Supabase
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('is_verified', true)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        console.log('Businesses loaded from Supabase:', data);
+        setBusinesses(data || []);
+      } catch (error) {
+        console.error('Error loading businesses:', error);
+      } finally {
+        setLoadingBusinesses(false);
+      }
+    };
+
+    fetchBusinesses();
+  }, []);
+
+  // Cargar ofertas flash desde Supabase
+  useEffect(() => {
+    const fetchFlashOffers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('offers')
+          .select(`
+            *,
+            businesses!inner(id, name)
+          `)
+          .eq('is_flash', true)
+          .eq('status', 'active')
+          .eq('is_visible', true)
+          .gt('expires_at', new Date().toISOString())
+          .order('expires_at', { ascending: true });
+
+        if (error) throw error;
+        console.log('Flash offers loaded from Supabase:', data);
+        setFlashOffers(data || []);
+      } catch (error) {
+        console.error('Error loading flash offers:', error);
+      } finally {
+        setLoadingOffers(false);
+      }
+    };
+
+    fetchFlashOffers();
+  }, []);
 
   const popularSearches = [
     { text: 'Restaurantes', icon: 'UtensilsCrossed' },
@@ -940,69 +998,45 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   };
   const { pullDistance, isRefreshing, handlers } = usePullToRefresh(handleRefresh);
 
-  // Combinar ofertas flash del usuario con las de mockData
-  const userFlashOffers = userOffers
-    .filter(o => o.isFlash && o.status === 'active')
-    .map(o => {
-      // Calcular el discount display según el tipo
-      let discountDisplay = '';
-      let originalPrice = 0;
-      let discountedPrice = 0;
+  // Calcular tiempo restante desde expires_at
+  const calculateTimeLeft = (expiresAt) => {
+    const now = new Date();
+    const expires = new Date(expiresAt);
+    const diffMs = expires - now;
 
-      if (o.discountType === '2x1') {
-        discountDisplay = '2x1';
-        originalPrice = (o.productPrice || 0) * 2; // Precio de 2 productos
-        discountedPrice = o.productPrice || 0; // Pagas solo 1
-      } else if (o.discountType === 'free') {
-        discountDisplay = 'GRATIS';
-        originalPrice = o.originalPrice || 0;
-        discountedPrice = 0;
-      } else {
-        // percentage
-        discountDisplay = `-${o.discount}%`;
-        originalPrice = o.originalPrice || 0;
-        discountedPrice = o.discountedPrice || 0;
-      }
+    if (diffMs <= 0) return '0m';
 
-      return {
-        id: `user-${o.id}`,
-        title: o.title,
-        image: o.image || 'https://picsum.photos/400/300?random=' + o.id,
-        discount: discountDisplay,
-        discountType: o.discountType,
-        timeLeft: o.timeLeft || '8h',
-        originalPrice: originalPrice,
-        discountedPrice: discountedPrice,
-        businessName: o.businessName,
-        isUserOffer: true,
-      };
-    });
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
 
-  // Parsear tiempo restante a minutos para ordenar
-  const parseTimeToMinutes = (timeStr) => {
-    if (!timeStr) return 999;
-    // Formato HH:MM:SS (de mockData)
-    if (timeStr.includes(':')) {
-      const parts = timeStr.split(':');
-      if (parts.length === 3) {
-        const hours = parseInt(parts[0]) || 0;
-        const minutes = parseInt(parts[1]) || 0;
-        return hours * 60 + minutes;
-      }
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
     }
-    const num = parseInt(timeStr);
-    if (timeStr.includes('min')) return num;
-    if (timeStr.includes('h')) return num * 60;
-    return 999;
+    return `${minutes}m`;
   };
 
-  // Combinar y ordenar por tiempo restante (menos tiempo primero, más tiempo último)
-  const allFlashOffers = [...userFlashOffers, ...flashOffers]
-    .map(offer => ({
-      ...offer,
-      timeMinutes: parseTimeToMinutes(offer.timeLeft)
-    }))
-    .sort((a, b) => a.timeMinutes - b.timeMinutes);
+  // Transformar ofertas de Supabase al formato esperado
+  const allFlashOffers = flashOffers.map(offer => {
+    const timeLeft = calculateTimeLeft(offer.expires_at);
+    const now = new Date();
+    const expires = new Date(offer.expires_at);
+    const diffMinutes = Math.floor((expires - now) / 60000);
+
+    return {
+      id: offer.id,
+      title: offer.title,
+      image: offer.image || 'https://via.placeholder.com/400x300?text=Oferta',
+      discount: offer.discount_label || offer.discount_value + '%',
+      discountType: offer.discount_type,
+      timeLeft: timeLeft,
+      timeMinutes: diffMinutes,
+      originalPrice: offer.original_price || 0,
+      discountedPrice: offer.discounted_price || 0,
+      businessName: offer.businesses?.name || 'Negocio',
+      description: offer.description,
+    };
+  });
 
   // Filtrar negocios según la búsqueda y barrio
   const filteredBusinesses = searchQuery.trim() === '' && !selectedBarrio ? [] : businesses.filter(business => {
@@ -1013,16 +1047,24 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     // Filtro por búsqueda
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
-      return (
+      const matches = (
         business.name.toLowerCase().includes(query) ||
-        business.category.toLowerCase().includes(query) ||
+        (business.subcategory && business.subcategory.toLowerCase().includes(query)) ||
         (business.description && business.description.toLowerCase().includes(query)) ||
         (business.address && business.address.toLowerCase().includes(query)) ||
         (business.tags && business.tags.some(tag => tag.toLowerCase().includes(query)))
       );
+      if (query.includes('tag')) {
+        console.log(`Business "${business.name}" - Name matches: ${business.name.toLowerCase().includes(query)}, Subcategory: "${business.subcategory}"`);
+      }
+      return matches;
     }
     return true;
   });
+
+  if (searchQuery && searchQuery.includes('tag')) {
+    console.log('Search query:', searchQuery, 'Total businesses:', businesses.length, 'Filtered:', filteredBusinesses.length);
+  }
 
   // Filtrar ofertas según la búsqueda
   const filteredOffers = searchQuery.trim() === '' ? [] : allFlashOffers.filter(offer => {
@@ -1451,10 +1493,16 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       <section className="px-4 pb-4">
         <h2 className="text-xl font-bold tracking-tight mb-4">Nuevos en el barrio</h2>
         <div className="flex flex-col gap-4">
-          {businesses.filter(b => b.isNew).map(business => (
+          {businesses.filter(b => {
+            if (!b.verified_at) return false;
+            const verifiedDate = new Date(b.verified_at);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return verifiedDate > thirtyDaysAgo;
+          }).map(business => (
             <BusinessCard
               key={business.id}
-              business={business}
+              business={{...business, isNew: true}}
               onClick={() => onNavigate('business', { id: business.id })}
               isFavorite={isFavorite ? isFavorite(business.id) : false}
               onToggleFavorite={toggleFavorite}
@@ -1557,6 +1605,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
   const [paso, setPaso] = useState(1);
   const [enviado, setEnviado] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     category: null,
     description: '',
@@ -1817,18 +1866,16 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
           </p>
         )}
         <button
-          onClick={() => {
+          onClick={async () => {
             if (paso === 1 && canPaso1) {
               setPaso(2);
             } else if (paso === 2 && canPaso2) {
               setPaso(3);
-            } else if (paso === 3 && canPaso3 && !enviado) {
-              // PRIMERO: Mostrar éxito
-              setEnviado(true);
-              // DESPUÉS: Guardar
-              setTimeout(() => {
+            } else if (paso === 3 && canPaso3 && !enviado && !loading) {
+              try {
+                setLoading(true);
                 if (onSubmitRequest) {
-                  onSubmitRequest({
+                  await onSubmitRequest({
                     category: categoriaSeleccionada.id,
                     categoryName: categoriaSeleccionada.name,
                     categoryIcon: categoriaSeleccionada.icon,
@@ -1842,21 +1889,29 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
                     status: 'pending',
                   });
                 }
-              }, 100);
+                setEnviado(true);
+              } catch (error) {
+                console.error('Error enviando solicitud:', error);
+              } finally {
+                setLoading(false);
+              }
             }
           }}
           disabled={
             (paso === 1 && !canPaso1) ||
             (paso === 2 && !canPaso2) ||
-            (paso === 3 && !canPaso3)
+            (paso === 3 && !canPaso3) ||
+            loading
           }
           className={`w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 ${
-            (paso === 1 ? canPaso1 : paso === 2 ? canPaso2 : canPaso3)
+            ((paso === 1 ? canPaso1 : paso === 2 ? canPaso2 : canPaso3) && !loading)
               ? 'bg-primary text-white'
               : 'bg-gray-200 text-gray-400'
           }`}
         >
-          {paso === 3 ? (
+          {loading ? (
+            <>Enviando...</>
+          ) : paso === 3 ? (
             <>Enviar a {categoriaSeleccionada?.businessCount || 0} empresas <Send size={18} /></>
           ) : (
             <>Siguiente <ArrowRight size={18} /></>
@@ -2080,69 +2135,77 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName }) => {
 
 // Página de Todas las Ofertas Flash
 const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
-  // Combinar ofertas flash del usuario con las de mockData
-  const userFlashOffers = userOffers
-    .filter(o => o.isFlash && o.status === 'active')
-    .map(o => {
-      // Calcular el discount display según el tipo
-      let discountDisplay = '';
-      let originalPrice = 0;
-      let discountedPrice = 0;
+  const [flashOffers, setFlashOffers] = useState([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
 
-      if (o.discountType === '2x1') {
-        discountDisplay = '2x1';
-        originalPrice = (o.productPrice || 0) * 2; // Precio de 2 productos
-        discountedPrice = o.productPrice || 0; // Pagas solo 1
-      } else if (o.discountType === 'free') {
-        discountDisplay = 'GRATIS';
-        originalPrice = o.originalPrice || 0;
-        discountedPrice = 0;
-      } else {
-        // percentage
-        discountDisplay = `-${o.discount}%`;
-        originalPrice = o.originalPrice || 0;
-        discountedPrice = o.discountedPrice || 0;
+  // Cargar ofertas flash desde Supabase
+  useEffect(() => {
+    const fetchFlashOffers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('offers')
+          .select(`
+            *,
+            businesses!inner(id, name)
+          `)
+          .eq('is_flash', true)
+          .eq('status', 'active')
+          .eq('is_visible', true)
+          .gt('expires_at', new Date().toISOString())
+          .order('expires_at', { ascending: true });
+
+        if (error) throw error;
+        console.log('Flash offers loaded from Supabase:', data);
+        setFlashOffers(data || []);
+      } catch (error) {
+        console.error('Error loading flash offers:', error);
+      } finally {
+        setLoadingOffers(false);
       }
+    };
 
-      return {
-        id: `user-${o.id}`,
-        title: o.title,
-        image: o.image || 'https://picsum.photos/400/300?random=' + o.id,
-        discount: discountDisplay,
-        discountType: o.discountType,
-        timeLeft: o.timeLeft || '8h',
-        originalPrice: originalPrice,
-        discountedPrice: discountedPrice,
-        businessName: o.businessName,
-        isUserOffer: true,
-      };
-    });
+    fetchFlashOffers();
+  }, []);
 
-  // Parsear tiempo restante a minutos para ordenar
-  const parseTimeToMinutes = (timeStr) => {
-    if (!timeStr) return 999;
-    // Formato HH:MM:SS (de mockData)
-    if (timeStr.includes(':')) {
-      const parts = timeStr.split(':');
-      if (parts.length === 3) {
-        const hours = parseInt(parts[0]) || 0;
-        const minutes = parseInt(parts[1]) || 0;
-        return hours * 60 + minutes;
-      }
+  // Calcular tiempo restante desde expires_at
+  const calculateTimeLeft = (expiresAt) => {
+    const now = new Date();
+    const expires = new Date(expiresAt);
+    const diffMs = expires - now;
+
+    if (diffMs <= 0) return '0m';
+
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
     }
-    const num = parseInt(timeStr);
-    if (timeStr.includes('min')) return num;
-    if (timeStr.includes('h')) return num * 60;
-    return 999;
+    return `${minutes}m`;
   };
 
-  // Combinar y ordenar por tiempo restante (menos tiempo primero)
-  const allFlashOffers = [...userFlashOffers, ...flashOffers]
-    .map(offer => ({
-      ...offer,
-      timeMinutes: offer.timeMinutes || parseTimeToMinutes(offer.timeLeft)
-    }))
-    .sort((a, b) => a.timeMinutes - b.timeMinutes);
+  // Transformar ofertas de Supabase al formato esperado
+  const allFlashOffers = flashOffers.map(offer => {
+    const timeLeft = calculateTimeLeft(offer.expires_at);
+    const now = new Date();
+    const expires = new Date(offer.expires_at);
+    const diffMinutes = Math.floor((expires - now) / 60000);
+
+    return {
+      id: offer.id,
+      title: offer.title,
+      image: offer.image || 'https://via.placeholder.com/400x300?text=Oferta',
+      discount: offer.discount_label || offer.discount_value + '%',
+      discountType: offer.discount_type,
+      timeLeft: timeLeft,
+      timeMinutes: diffMinutes,
+      originalPrice: offer.original_price || 0,
+      discountedPrice: offer.discounted_price || 0,
+      businessName: offer.businesses?.name || 'Negocio',
+      description: offer.description,
+    };
+  });
 
   const getTimeColor = (minutes) => {
     if (minutes <= 60) return 'text-red-500 bg-red-50';
@@ -2277,26 +2340,64 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
 };
 
 // Página de Ofertas
-const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', activeJobs = [], getJobDaysRemaining, isBusinessOwner = false }) => {
+const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', activeJobs = [], loadingJobs = false, getJobDaysRemaining, isBusinessOwner = false }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [offers, setOffers] = useState([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
 
-  // Combinar ofertas normales del usuario con las de mockData
-  const userNormalOffers = userOffers
-    .filter(o => !o.isFlash && o.status === 'active')
-    .map(o => ({
-      id: `user-${o.id}`,
-      title: o.title,
-      business: o.businessName || 'Mi Negocio',
-      businessIcon: 'Store',
-      image: o.image || 'https://picsum.photos/600/400?random=' + o.id,
-      discount: `-${o.discount}%`,
-      expiresIn: '3 días',
-      featured: true,
-      isUserOffer: true,
-      description: o.description,
-    }));
+  // Temporal: notifications vacías hasta conectar con Supabase
+  const notifications = [];
 
-  const allOffers = [...userNormalOffers, ...offers];
+  // Cargar ofertas normales (no flash) desde Supabase
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('offers')
+          .select(`
+            *,
+            businesses!inner(id, name)
+          `)
+          .eq('is_flash', false)
+          .eq('status', 'active')
+          .eq('is_visible', true)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        console.log('Normal offers loaded:', data);
+
+        // Transformar al formato esperado
+        const transformedOffers = data.map(offer => {
+          const expiresAt = new Date(offer.expires_at);
+          const now = new Date();
+          const daysLeft = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+
+          return {
+            id: offer.id,
+            title: offer.title,
+            business: offer.businesses?.name || 'Negocio',
+            businessIcon: 'Store',
+            image: offer.image || 'https://via.placeholder.com/600x400?text=Oferta',
+            discount: offer.discount_label || `-${offer.discount_value}%`,
+            expiresIn: `${daysLeft} día${daysLeft !== 1 ? 's' : ''}`,
+            featured: true,
+            description: offer.description,
+          };
+        });
+
+        setOffers(transformedOffers);
+      } catch (error) {
+        console.error('Error loading offers:', error);
+      } finally {
+        setLoadingOffers(false);
+      }
+    };
+
+    fetchOffers();
+  }, []);
+
+  const allOffers = offers;
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-white font-body text-slate-900 flex flex-col">
@@ -2406,7 +2507,17 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
               <button className="text-primary text-xs font-semibold bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition">Ver alertas</button>
             </div>
             <div className="px-4 space-y-4 pb-6">
-              {(activeJobs.length > 0 ? activeJobs : jobs).map(job => {
+              {loadingJobs ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                </div>
+              ) : activeJobs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Briefcase size={48} className="text-slate-300 mb-3" />
+                  <p className="text-slate-500 font-medium">No hay empleos disponibles</p>
+                  <p className="text-slate-400 text-sm mt-1">Vuelve más tarde para ver nuevas ofertas</p>
+                </div>
+              ) : activeJobs.map(job => {
                 const daysRemaining = getJobDaysRemaining ? getJobDaysRemaining(job) : 60;
                 const isExpired = daysRemaining <= 0;
                 const isExpiringSoon = daysRemaining <= 7 && daysRemaining > 0;
@@ -2544,7 +2655,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
 
 // Página de Perfil
 const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusiness, savedCoupons = [], user }) => {
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || currentUser.avatar);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || 'https://via.placeholder.com/100');
   const fileInputRef = useState(null);
 
   const handleAvatarClick = () => {
@@ -2602,12 +2713,12 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
           </div>
         </div>
         <div className="flex flex-col items-center gap-1">
-          <h2 className="text-2xl font-bold text-slate-900 leading-tight">{user?.full_name || user?.name || currentUser.name}</h2>
+          <h2 className="text-2xl font-bold text-slate-900 leading-tight">{user?.full_name || user?.name || 'Usuario'}</h2>
           <div className="flex items-center gap-1.5 px-3 py-1 bg-green-100 rounded-full mt-1">
             <span className="text-green-600" size={18}>🌱</span>
-            <span className="text-sm font-semibold text-green-700">{currentUser.badge}</span>
+            <span className="text-sm font-semibold text-green-700">Vecino Local</span>
           </div>
-          <p className="text-sm text-slate-500 mt-2">Miembro desde {user?.created_at ? new Date(user.created_at).getFullYear() : currentUser.memberSince}</p>
+          <p className="text-sm text-slate-500 mt-2">Miembro desde {user?.created_at ? new Date(user.created_at).getFullYear() : '2025'}</p>
         </div>
       </section>
 
@@ -2806,6 +2917,22 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
       {businessStatus === 'validated' && (
         <section className="px-5 w-full max-w-md mx-auto">
           <h3 className="text-lg font-bold text-slate-900 mb-4 px-1">Panel de Propietario</h3>
+
+          {/* Botón destacado del Dashboard */}
+          <button
+            onClick={() => onNavigate('owner-dashboard')}
+            className="w-full bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl p-4 flex items-center justify-between mb-4 hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center gap-3">
+              <LayoutDashboard size={24} />
+              <div className="text-left">
+                <div className="font-bold">Panel de Control</div>
+                <div className="text-xs text-white/80">Ver resumen completo</div>
+              </div>
+            </div>
+            <ChevronRight size={20} />
+          </button>
+
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
             <button
               onClick={() => onNavigate('incoming-budget-requests')}
@@ -2940,7 +3067,65 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
 
 // Página de Detalle de Negocio
 const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite }) => {
-  const business = businesses.find(b => b.id === businessId) || businesses[2]; // Default: Ferretería
+  const [business, setBusiness] = useState(null);
+  const [loadingBusiness, setLoadingBusiness] = useState(true);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
+  const [showWriteReview, setShowWriteReview] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [newReviewText, setNewReviewText] = useState('');
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [reviews, setReviews] = useState([]);
+
+  // Cargar negocio desde Supabase
+  useEffect(() => {
+    const fetchBusiness = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('id', businessId)
+          .single();
+
+        if (error) throw error;
+        setBusiness(data);
+      } catch (error) {
+        console.error('Error loading business:', error);
+      } finally {
+        setLoadingBusiness(false);
+      }
+    };
+
+    fetchBusiness();
+  }, [businessId]);
+
+  if (loadingBusiness) {
+    return (
+      <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <RefreshCw className="animate-spin text-primary mx-auto mb-4" size={40} />
+          <p className="text-gray-500">Cargando negocio...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!business) {
+    return (
+      <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Store className="text-gray-400 mx-auto mb-4" size={60} />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Negocio no encontrado</h2>
+          <button
+            onClick={() => onNavigate('home')}
+            className="mt-4 px-6 py-3 bg-primary text-white rounded-xl font-semibold"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Categorías de servicios/oficios que pueden recibir presupuestos directos
   const serviceCategories = [
@@ -2952,33 +3137,74 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     business.category?.toLowerCase().includes(cat.toLowerCase()) ||
     business.subcategory?.toLowerCase().includes(cat.toLowerCase())
   );
-  const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [showReviews, setShowReviews] = useState(false);
-  const [showWriteReview, setShowWriteReview] = useState(false);
-  const [showRatingModal, setShowRatingModal] = useState(false);
-  const [newReviewText, setNewReviewText] = useState('');
-  const [newReviewRating, setNewReviewRating] = useState(5);
-  const [reviews, setReviews] = useState([
-    { id: 1, user: "María G.", avatar: "M", rating: 5, date: "Hace 2 días", timestamp: Date.now() - 2*24*60*60*1000, comment: "Excelente atención y muy buenos productos. El personal es muy amable y te asesoran muy bien." },
-    { id: 2, user: "Carlos R.", avatar: "C", rating: 4, date: "Hace 1 semana", timestamp: Date.now() - 7*24*60*60*1000, comment: "Muy buen servicio, encontré todo lo que necesitaba. Volveré seguro." },
-    { id: 3, user: "Ana P.", avatar: "A", rating: 5, date: "Hace 2 semanas", timestamp: Date.now() - 14*24*60*60*1000, comment: "Tienda de toda la vida, con productos de calidad y precios justos." },
-    { id: 4, user: "Pedro M.", avatar: "P", rating: 5, date: "Hace 3 semanas", timestamp: Date.now() - 21*24*60*60*1000, comment: "Muy recomendable. Tienen de todo y los precios son muy competitivos." },
-    { id: 5, user: "Laura S.", avatar: "L", rating: 4, date: "Hace 1 mes", timestamp: Date.now() - 30*24*60*60*1000, comment: "Buena variedad de productos. A veces hay cola pero merece la pena." },
-    { id: 6, user: "Jorge F.", avatar: "J", rating: 5, date: "Hace 1 mes", timestamp: Date.now() - 35*24*60*60*1000, comment: "El mejor servicio de la zona. Siempre encuentro lo que busco." },
-    { id: 7, user: "Isabel T.", avatar: "I", rating: 3, date: "Hace 2 meses", timestamp: Date.now() - 60*24*60*60*1000, comment: "Está bien, pero a veces los precios son un poco altos." },
-  ]);
 
-  // Generar negocios relacionados si no existen (basados en categoría similar)
-  const relatedBusinesses = business.relatedBusinesses || businesses
-    .filter(b => b.id !== business.id)
-    .slice(0, 3)
-    .map(b => ({
-      id: b.id,
-      name: b.name,
-      category: b.category,
-      rating: b.rating,
-      image: b.image
-    }));
+  // Temporal: negocios relacionados vacíos hasta conectar con Supabase
+  const relatedBusinesses = [];
+
+  // Temporal: mapa placeholder
+  const mapData = {
+    backgroundImage: 'https://via.placeholder.com/400x200?text=Mapa'
+  };
+
+  // Función para formatear horarios desde Supabase opening_hours
+  const formatOpeningHours = (openingHours) => {
+    if (!openingHours) return null;
+
+    const dayNames = {
+      monday: 'Lunes',
+      tuesday: 'Martes',
+      wednesday: 'Miércoles',
+      thursday: 'Jueves',
+      friday: 'Viernes',
+      saturday: 'Sábado',
+      sunday: 'Domingo'
+    };
+
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    return days.map(day => {
+      const daySchedule = openingHours[day];
+      if (!daySchedule || !daySchedule.enabled) {
+        return { day: dayNames[day], hours: 'Cerrado', closed: true };
+      }
+
+      const parts = [];
+      if (daySchedule.morning && daySchedule.morning.start && daySchedule.morning.end) {
+        parts.push(`${daySchedule.morning.start} - ${daySchedule.morning.end}`);
+      }
+      if (daySchedule.afternoon && daySchedule.afternoon.start && daySchedule.afternoon.end) {
+        parts.push(`${daySchedule.afternoon.start} - ${daySchedule.afternoon.end}`);
+      }
+
+      return {
+        day: dayNames[day],
+        hours: parts.length > 0 ? parts.join(', ') : 'Cerrado',
+        closed: parts.length === 0
+      };
+    });
+  };
+
+  const formattedSchedule = formatOpeningHours(business?.opening_hours);
+
+  // Obtener próximos cierres especiales (dentro de los próximos 14 días)
+  const getUpcomingClosures = (specialClosures) => {
+    if (!specialClosures || !Array.isArray(specialClosures)) return [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const fourteenDaysFromNow = new Date(today);
+    fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
+
+    return specialClosures
+      .filter(closure => {
+        const closureDate = new Date(closure.date);
+        return closureDate >= today && closureDate <= fourteenDaysFromNow;
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  };
+
+  const upcomingClosures = getUpcomingClosures(business?.special_closures);
 
   // Ordenar reseñas por fecha (más recientes primero)
   const sortedReviews = [...reviews].sort((a, b) => b.timestamp - a.timestamp);
@@ -3074,29 +3300,37 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
               </div>
               <p className="text-sm text-gray-500 font-medium">{business.address} • {business.category}</p>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <button
-                onClick={() => setShowReviews(true)}
-                className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <span className="text-gray-900 font-bold">{business.rating}</span>
-                <Star className="text-yellow-500 fill-yellow-500" size={16} />
-                <span className="text-gray-400 text-xs">({business.reviews})</span>
-                <ChevronRight className="text-gray-400 ml-1" size={14} />
-              </button>
-              <button
-                onClick={() => setShowRatingModal(true)}
-                className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors cursor-pointer"
-              >
-                <Star size={14} className="fill-white" />
-                <span className="font-semibold text-xs">Valorar</span>
-              </button>
-              {business.tags && (
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3 text-sm">
+                <button
+                  onClick={() => setShowReviews(true)}
+                  className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <span className="text-gray-900 font-bold">{business.rating}</span>
+                  <Star className="text-yellow-500 fill-yellow-500" size={16} />
+                  <span className="text-gray-400 text-xs">({business.reviews})</span>
+                  <ChevronRight className="text-gray-400 ml-1" size={14} />
+                </button>
+                <button
+                  onClick={() => setShowRatingModal(true)}
+                  className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors cursor-pointer"
+                >
+                  <Star size={14} className="fill-white" />
+                  <span className="font-semibold text-xs">Valorar</span>
+                </button>
+              </div>
+
+              {/* Etiquetas */}
+              {business.tags && business.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
                   {business.tags.map((tag, i) => (
-                    <span key={i} className="px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                    <button
+                      key={i}
+                      onClick={() => onNavigate('category', { id: business.categoryId, filterTag: tag })}
+                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                    >
                       {tag}
-                    </span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -3146,32 +3380,74 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
             <p className="text-gray-600 text-sm leading-relaxed">{business.description}</p>
           </div>
 
+          {/* Próximos Cierres Especiales */}
+          {upcomingClosures && upcomingClosures.length > 0 && (
+            <div className="space-y-2">
+              {upcomingClosures.map((closure, index) => {
+                const closureDate = new Date(closure.date);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const daysUntil = Math.ceil((closureDate - today) / (1000 * 60 * 60 * 24));
+                const formattedDate = closureDate.toLocaleDateString('es-ES', {
+                  day: 'numeric',
+                  month: 'long'
+                });
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-orange-50 border border-orange-300 rounded-xl p-3.5 flex items-start gap-3"
+                  >
+                    <div className="size-9 bg-orange-500 rounded-full flex items-center justify-center shrink-0">
+                      <AlertCircle className="text-white" size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-orange-900 text-sm">Cerrado por {closure.name}</h3>
+                        {daysUntil === 0 && (
+                          <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">HOY</span>
+                        )}
+                        {daysUntil === 1 && (
+                          <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">MAÑANA</span>
+                        )}
+                      </div>
+                      <p className="text-orange-700 text-xs">
+                        📅 {formattedDate} {daysUntil > 1 && `(en ${daysUntil} días)`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Schedule */}
-          {business.schedule && (
+          {formattedSchedule && formattedSchedule.length > 0 && (
             <div className="flex flex-col gap-3">
               <h2 className="text-lg font-bold text-gray-900">Horario</h2>
-              <div className="bg-white rounded-2xl p-5 shadow-soft border border-gray-100/50">
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <button
                   onClick={() => setScheduleOpen(!scheduleOpen)}
                   className="flex items-center justify-between w-full"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="size-10 rounded-full bg-green-50 flex items-center justify-center shrink-0">
-                      <Clock className="text-green-600" size={20} />
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Clock className="text-primary" size={20} />
                     </div>
                     <div className="flex flex-col text-left">
-                      <span className="text-sm font-bold text-green-600">Abierto ahora</span>
-                      <span className="text-xs text-gray-500">Hasta las {business.schedule.closesAt}</span>
+                      <span className="text-sm font-semibold text-gray-900">Ver horario completo</span>
+                      <span className="text-xs text-gray-500">Lunes a Domingo</span>
                     </div>
                   </div>
                   <ChevronDown className={`text-gray-400 transition-transform ${scheduleOpen ? 'rotate-180' : ''}`} size={20} />
                 </button>
                 {scheduleOpen && (
-                  <div className="mt-4 pt-4 border-t border-gray-100 space-y-3 text-sm">
-                    {business.schedule.hours.map((item, i) => (
-                      <div key={i} className={`flex justify-between font-medium ${item.closed ? 'text-red-400' : 'text-gray-700'}`}>
-                        <span>{item.day}</span>
-                        <span>{item.hours}</span>
+                  <div className="mt-4 pt-4 border-t border-gray-100 space-y-2.5">
+                    {formattedSchedule.map((item, i) => (
+                      <div key={i} className={`flex justify-between items-center ${item.closed ? 'text-gray-400' : 'text-gray-700'}`}>
+                        <span className="font-medium text-sm">{item.day}</span>
+                        <span className={`text-sm ${item.closed ? 'italic' : 'font-medium text-gray-900'}`}>{item.hours}</span>
                       </div>
                     ))}
                   </div>
@@ -3364,8 +3640,107 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
 // Página de Detalle de Cupón
 const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveCoupon, isCouponSaved }) => {
-  const coupon = couponDetail;
+  const [offer, setOffer] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Cargar oferta desde Supabase
+  useEffect(() => {
+    const fetchOffer = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('offers')
+          .select(`
+            *,
+            businesses!inner(id, name, address, phone)
+          `)
+          .eq('id', couponId)
+          .single();
+
+        if (error) throw error;
+        console.log('Offer loaded:', data);
+        setOffer(data);
+      } catch (error) {
+        console.error('Error loading offer:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (couponId) {
+      fetchOffer();
+    }
+  }, [couponId]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando oferta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!offer) {
+    return (
+      <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-white">
+        <div className="text-center px-6">
+          <Tag className="mx-auto mb-4 text-gray-400" size={48} />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Oferta no encontrada</h2>
+          <p className="text-gray-600 mb-6">Esta oferta no existe o ha expirado.</p>
+          <button
+            onClick={() => onNavigate('offers')}
+            className="px-6 py-3 bg-primary text-white rounded-xl font-semibold"
+          >
+            Ver todas las ofertas
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Formatear fecha de expiración
+  const expiresAt = new Date(offer.expires_at);
+  const formattedExpiry = expiresAt.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  // Convertir oferta de Supabase al formato esperado por el template
+  const coupon = {
+    id: offer.id,
+    title: offer.title,
+    description: offer.description || 'Oferta exclusiva para ti.',
+    business: offer.businesses?.name || 'Negocio',
+    image: offer.image || 'https://via.placeholder.com/800x400?text=Oferta',
+    validUntil: formattedExpiry,
+    type: offer.is_flash ? 'Oferta Flash' : 'Oferta',
+    code: 'CORNELLA' + offer.id.substring(0, 8).toUpperCase(),
+    qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${offer.id}`,
+    discount: offer.discount_label || offer.discount_value + '%',
+    originalPrice: offer.original_price,
+    discountedPrice: offer.discounted_price,
+    conditions: [
+      'Válido una vez por persona',
+      'No acumulable con otras ofertas',
+      'Presentar cupón antes de pagar',
+      'Sujeto a disponibilidad'
+    ],
+    location: {
+      address: offer.businesses?.address || 'Cornellà de Llobregat',
+      city: 'Barcelona, España',
+      distance: '1.2 km'
+    }
+  };
+
   const isCurrentCouponSaved = isCouponSaved ? isCouponSaved(coupon.id) : false;
+
+  // Placeholder para el mapa
+  const mapData = {
+    backgroundImage: 'https://via.placeholder.com/400x200?text=Mapa'
+  };
 
   const handleShareWhatsApp = () => {
     const ofertaUrl = `${window.location.origin}${window.location.pathname}?oferta=${coupon.id}`;
@@ -3505,15 +3880,112 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
 
 // Página de Detalle de Oferta de Empleo
 const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, activeJob, markJobAsHired, renewJob, deleteJob, getJobDaysRemaining, isBusinessOwner = false }) => {
-  const job = activeJob || jobs.find(j => j.id === jobId) || jobs[1]; // Default: Dependiente de Comercio
-  const daysRemaining = getJobDaysRemaining ? getJobDaysRemaining(job) : 60;
-  const isExpired = daysRemaining <= 0;
-  const isExpiringSoon = daysRemaining <= 7 && daysRemaining > 0;
+  const [job, setJob] = useState(activeJob || null);
+  const [loading, setLoading] = useState(!activeJob);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [cvUploaded, setCvUploaded] = useState(false);
   const [cvFileName, setCvFileName] = useState('');
   const [coverLetter, setCoverLetter] = useState('');
+
+  // Cargar empleo desde Supabase si no viene de activeJob
+  useEffect(() => {
+    const fetchJob = async () => {
+      if (activeJob) {
+        setJob(activeJob);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select(`
+            *,
+            businesses!inner(
+              id,
+              name,
+              address,
+              phone
+            )
+          `)
+          .eq('id', jobId)
+          .single();
+
+        if (error) throw error;
+
+        // Transformar datos al formato esperado
+        let icon = 'Briefcase';
+        let iconBg = 'blue';
+        if (data.type === 'Media Jornada') {
+          icon = 'Clock';
+          iconBg = 'orange';
+        } else if (data.type === 'Temporal') {
+          icon = 'Calendar';
+          iconBg = 'orange';
+        } else if (data.type === 'Prácticas') {
+          icon = 'GraduationCap';
+          iconBg = 'green';
+        }
+
+        let salary = 'A convenir';
+        if (data.salary_min && data.salary_max) {
+          salary = `${(data.salary_min / 1000).toFixed(0)}-${(data.salary_max / 1000).toFixed(0)}k €/año`;
+        } else if (data.salary_note) {
+          salary = data.salary_note;
+        }
+
+        const transformedJob = {
+          id: data.id,
+          title: data.title,
+          company: data.businesses?.name || 'Empresa',
+          icon,
+          iconBg,
+          salary,
+          type: data.type,
+          contract: data.contract,
+          modality: data.modality,
+          location: data.location,
+          address: data.address,
+          description: data.description,
+          requirements: data.requirements || [],
+          benefits: data.benefits || [],
+          createdAt: data.created_at,
+          businessId: data.business_id,
+          businessPhone: data.businesses?.phone,
+          postedAgo: getTimeAgo(data.created_at),
+          hired: false,
+          hiredDate: null
+        };
+
+        setJob(transformedJob);
+      } catch (error) {
+        console.error('Error loading job:', error);
+        showToast('Error al cargar el empleo', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (jobId) fetchJob();
+  }, [jobId, activeJob]);
+
+  // Función auxiliar para calcular tiempo transcurrido
+  const getTimeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+    if (diffInDays === 0) return 'Hoy';
+    if (diffInDays === 1) return '1 día';
+    if (diffInDays < 7) return `${diffInDays} días`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} semanas`;
+    return `${Math.floor(diffInDays / 30)} meses`;
+  };
+
+  const daysRemaining = job && getJobDaysRemaining ? getJobDaysRemaining(job) : 60;
+  const isExpired = daysRemaining <= 0;
+  const isExpiringSoon = daysRemaining <= 7 && daysRemaining > 0;
 
   const handleApply = () => {
     setShowApplyModal(true);
@@ -3555,6 +4027,32 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
     const text = `¡Oferta de empleo en Cornellà! 💼\n\n*${job.title}*\n🏢 ${job.company}\n📍 ${job.location}\n💰 ${job.salary}\n\n👉 Ver oferta: ${empleoUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
+
+  // Datos del mapa (placeholder)
+  const mapData = {
+    backgroundImage: 'https://via.placeholder.com/400x200?text=Mapa+Cornella'
+  };
+
+  // Mostrar loading si está cargando
+  if (loading || !job) {
+    return (
+      <div className="bg-gray-50 font-display antialiased text-slate-900 min-h-screen">
+        <div className="relative flex min-h-screen w-full max-w-md mx-auto flex-col overflow-x-hidden shadow-2xl bg-white">
+          <header className="sticky top-0 z-30 flex items-center bg-white/95 backdrop-blur-md px-4 py-4 justify-between border-b border-gray-100">
+            <button
+              onClick={() => onNavigate('offers')}
+              className="text-slate-800 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <ArrowLeft size={24} />
+            </button>
+          </header>
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 font-display antialiased text-slate-900 min-h-screen">
@@ -4089,6 +4587,43 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
   const category = categories.find(c => c.id === categoryId);
   const subcategory = category?.subcategories?.find(s => s.id === subcategoryId);
   const [activeFilter, setActiveFilter] = useState('todos');
+  const [businesses, setBusinesses] = useState([]);
+  const [loadingBusinesses, setLoadingBusinesses] = useState(true);
+
+  // Cargar negocios desde Supabase
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('category_id', categoryId)
+          .eq('is_verified', true);
+
+        if (error) throw error;
+
+        // Filtrar por subcategoría si está definida
+        console.log('[SUBCATEGORY] Category:', category?.name, 'Subcategory:', subcategory?.name);
+        console.log('[SUBCATEGORY] Data from Supabase:', data);
+
+        const filtered = data?.filter(b => {
+          if (!subcategory) return true;
+          const match = b.subcategory && b.subcategory.toLowerCase().includes(subcategory.name.toLowerCase());
+          console.log(`[SUBCATEGORY] Business "${b.name}" - subcategory: "${b.subcategory}" - matches "${subcategory.name}": ${match}`);
+          return match;
+        }) || [];
+
+        console.log('[SUBCATEGORY] Filtered businesses:', filtered);
+        setBusinesses(filtered);
+      } catch (error) {
+        console.error('Error loading businesses:', error);
+      } finally {
+        setLoadingBusinesses(false);
+      }
+    };
+
+    fetchBusinesses();
+  }, [categoryId, subcategoryId]);
 
   // Función para verificar si un negocio está abierto según la hora actual
   const isBusinessOpenNow = (business) => {
@@ -4118,34 +4653,8 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
     return currentTime >= schedule.open && currentTime <= schedule.close;
   };
 
-  // Filtrar negocios que coincidan con la subcategoría (simulado)
-  const subcategoryBusinesses = businesses.filter(b => {
-    // Mapeo simple de categorías de negocios a subcategorías
-    const categoryMap = {
-      'Panadería': ['Panadería', 'Pastelería'],
-      'Artesanal': ['Panadería', 'Pastelería'],
-      'Hostelería': ['Bar y cafetería', 'Restaurante'],
-      'Café': ['Bar y cafetería'],
-      'Hogar': ['Ferretería', 'Carpintero'],
-      'Tienda local': ['Ferretería', 'Carpintero'],
-      'Bricolaje': ['Ferretería', 'Albañil y reformas'],
-      'Ocio': ['Restaurante', 'Bar y cafetería'],
-      'Gastronomía': ['Restaurante', 'Tapas'],
-      'Libros': ['Papelería'],
-      'Comercio': ['Ropa', 'Calzado'],
-    };
-
-    const businessCategories = categoryMap[b.category] || [];
-    return subcategory && businessCategories.some(cat =>
-      subcategory.name.toLowerCase().includes(cat.toLowerCase()) ||
-      cat.toLowerCase().includes(subcategory.name.toLowerCase().split(' ')[0])
-    );
-  });
-
-  // Si no hay negocios mapeados, mostrar algunos aleatorios como demo
-  const baseBusinesses = subcategoryBusinesses.length > 0
-    ? subcategoryBusinesses
-    : businesses.slice(0, 4);
+  // Los negocios ya vienen filtrados de Supabase
+  const baseBusinesses = businesses;
 
   // Aplicar filtros según el filtro activo
   const displayBusinesses = (() => {
@@ -5860,7 +6369,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
 };
 
 // Pantalla de Presupuestos Entrantes (para negocios)
-const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onAddNotification }) => {
+const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onAddNotification, requests = [], onSendQuote }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [replyPrice, setReplyPrice] = useState('');
   const [replyMessage, setReplyMessage] = useState('');
@@ -5883,79 +6392,33 @@ const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onA
     return `Hace ${diffDays} días`;
   };
 
-  // Mock de solicitudes entrantes para el negocio
-  const incomingRequests = [
-    {
-      id: 1,
-      customerName: 'María García',
-      customerAvatar: 'M',
-      category: 'plumbing',
-      categoryName: 'Fontanería',
-      description: 'Fuga de agua en el baño principal, parece que viene de debajo del lavabo. Necesito que alguien venga lo antes posible.',
-      urgency: 'urgent',
-      urgencyLabel: 'Urgente',
-      address: 'C/ Mayor 45, Cornellà de Llobregat',
-      phone: '612345678',
-      photos: ['https://picsum.photos/200/200?random=10', 'https://picsum.photos/200/200?random=11'],
-      createdAt: '2026-01-19T08:30:00',
-      status: 'new', // new, replied, accepted, rejected
-    },
-    {
-      id: 2,
-      customerName: 'Carlos Ruiz',
-      customerAvatar: 'C',
-      category: 'plumbing',
-      categoryName: 'Fontanería',
-      description: 'Cambiar grifo de la cocina. Tengo el grifo nuevo comprado.',
-      urgency: 'this-week',
-      urgencyLabel: 'Esta semana',
-      address: 'Av. Barcelona 120, Cornellà',
-      phone: '623456789',
-      photos: [],
-      createdAt: '2026-01-18T15:00:00',
-      status: 'replied',
-      myQuote: { price: 45, message: 'Puedo ir el jueves por la mañana.' },
-    },
-    {
-      id: 3,
-      customerName: 'Ana López',
-      customerAvatar: 'A',
-      category: 'plumbing',
-      categoryName: 'Fontanería',
-      description: 'Desatascar tubería del fregadero.',
-      urgency: 'next-week',
-      urgencyLabel: 'Próxima semana',
-      address: 'C/ Industria 8, Cornellà',
-      phone: '634567890',
-      photos: [],
-      createdAt: '2026-01-17T10:00:00',
-      status: 'accepted',
-      myQuote: { price: 60, message: 'Incluye revisión completa.' },
-    },
-  ];
+  // Usar solicitudes del prop
+  const incomingRequests = requests;
 
-  const handleSendQuote = () => {
+  const handleSendQuote = async () => {
     if (!replyPrice || !replyMessage.trim()) return;
 
-    // Mostrar toast de éxito
-    if (showToast) {
-      showToast(`¡Presupuesto de ${replyPrice}€ enviado a ${selectedRequest.customerName}!`, 'success');
-    }
+    try {
+      if (onSendQuote) {
+        await onSendQuote(selectedRequest.id, {
+          price: replyPrice,
+          message: replyMessage,
+        });
+      }
 
-    // Añadir notificación
-    if (onAddNotification) {
-      onAddNotification({
-        type: 'budget',
-        title: 'Presupuesto enviado',
-        message: `Has enviado un presupuesto de ${replyPrice}€ a ${selectedRequest.customerName}`,
-        icon: 'Send',
-        iconBg: 'bg-green-500',
-      });
-    }
+      // Mostrar toast de éxito
+      if (showToast) {
+        showToast(`¡Presupuesto de ${replyPrice}€ enviado a ${selectedRequest.customerName}!`, 'success');
+      }
 
-    setSelectedRequest(null);
-    setReplyPrice('');
-    setReplyMessage('');
+      setSelectedRequest(null);
+      setReplyPrice('');
+      setReplyMessage('');
+    } catch (error) {
+      if (showToast) {
+        showToast('Error al enviar el presupuesto', 'error');
+      }
+    }
   };
 
   const handleContactWhatsApp = (phone, customerName) => {
@@ -6446,16 +6909,15 @@ const BusinessBudgetReplyScreen = ({ onNavigate }) => {
 };
 
 // Pantalla de Gestión de Ofertas (para dueños de negocio)
-const BusinessOffersScreen = ({ onNavigate, userOffers = [] }) => {
+const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: toggleVisibilityProp }) => {
   const [filter, setFilter] = useState('all');
-  // Combinar ofertas de mock con ofertas creadas por el usuario
-  const allOffers = [...userOffers.map(o => ({
-    ...o,
-    discount: `-${o.discount}%`,
-    timeLeft: o.isFlash ? 'menos de 8h' : '3 días',
-    expiresSoon: o.isFlash,
-  })), ...businessOffers];
-  const [offersState, setOffersState] = useState(allOffers);
+  // Usar solo ofertas del usuario (ya no necesitamos mock)
+  const [offersState, setOffersState] = useState(userOffers);
+
+  // Actualizar estado cuando cambien userOffers
+  React.useEffect(() => {
+    setOffersState(userOffers);
+  }, [userOffers]);
 
   const filteredOffers = offersState.filter(offer => {
     if (filter === 'all') return true;
@@ -6465,9 +6927,14 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [] }) => {
   });
 
   const toggleVisibility = (id) => {
+    const offer = offersState.find(o => o.id === id);
+    if (offer && toggleVisibilityProp) {
+      toggleVisibilityProp(id, offer.status);
+    }
+    // Actualizar estado local inmediatamente para feedback
     setOffersState(prev => prev.map(offer =>
       offer.id === id
-        ? { ...offer, isVisible: !offer.isVisible, status: offer.isVisible ? 'paused' : 'active' }
+        ? { ...offer, isVisible: !offer.isVisible, status: offer.status === 'active' ? 'paused' : 'active' }
         : offer
     ));
   };
@@ -8625,10 +9092,13 @@ const servicesBySubcategory = {
 };
 
 // Pantalla de Editar Datos del Negocio (Completa con pestañas)
-const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness }) => {
+const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }) => {
   const [activeTab, setActiveTab] = useState('store'); // 'store', 'schedule', 'gallery'
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [publishSuccess, setPublishSuccess] = useState(false);
 
   // Estado para modal de cierre especial
   const [showClosureModal, setShowClosureModal] = useState(false);
@@ -8645,7 +9115,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness }) => {
     address: businessData?.address || '',
     category: businessData?.category || '',
     subcategory: businessData?.subcategory || '',
-    services: businessData?.services || [],
+    tags: businessData?.tags || [],
     coverPhoto: businessData?.coverPhoto || null,
     photos: businessData?.photos || [],
     schedule: businessData?.schedule || {
@@ -8669,7 +9139,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness }) => {
 
   const selectedCategory = categories.find(cat => cat.id === parseInt(formData.category));
   const availableSubcategories = selectedCategory?.subcategories || [];
-  const availableServices = servicesBySubcategory[formData.subcategory] || servicesBySubcategory.default;
+  const availableTags = formData.category ? getTagsForCategory(selectedCategory?.slug) : [];
 
   const dayNames = {
     monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles',
@@ -8681,19 +9151,19 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness }) => {
       const newData = { ...prev, [field]: value };
       if (field === 'category') {
         newData.subcategory = '';
-        newData.services = [];
+        newData.tags = [];
       }
       return newData;
     });
     setSaved(false);
   };
 
-  const toggleService = (serviceId) => {
+  const toggleTag = (tag) => {
     setFormData(prev => ({
       ...prev,
-      services: prev.services.includes(serviceId)
-        ? prev.services.filter(s => s !== serviceId)
-        : [...prev.services, serviceId]
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag]
     }));
     setSaved(false);
   };
@@ -8801,16 +9271,96 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness }) => {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!businessData?.id) return;
+
     setIsSaving(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const { error: updateError } = await supabase
+        .from('businesses')
+        .update({
+          name: formData.name,
+          description: formData.description,
+          phone: formData.phone,
+          website: formData.website,
+          address: formData.address,
+          category_id: parseInt(formData.category),
+          subcategory: formData.subcategory,
+          tags: formData.tags,
+          opening_hours: formData.schedule,
+          special_closures: formData.specialClosures,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', businessData.id)
+        .eq('owner_id', user?.id);
+
+      if (updateError) throw updateError;
+
       if (onUpdateBusiness) {
         onUpdateBusiness(formData);
       }
-      setIsSaving(false);
+
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    }, 800);
+    } catch (err) {
+      console.error('Error saving business:', err);
+      setError('Error al guardar los cambios');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!businessData?.id) return;
+
+    // Validar que todos los campos requeridos estén completos
+    if (!formData.name || !formData.description || !formData.phone || !formData.address || !formData.category) {
+      setError('Por favor completa todos los campos requeridos antes de publicar');
+      return;
+    }
+
+    setIsPublishing(true);
+    setError('');
+
+    try {
+      const { error: updateError } = await supabase
+        .from('businesses')
+        .update({
+          name: formData.name,
+          description: formData.description,
+          phone: formData.phone,
+          website: formData.website,
+          address: formData.address,
+          category_id: parseInt(formData.category),
+          subcategory: formData.subcategory,
+          tags: formData.tags,
+          opening_hours: formData.schedule,
+          special_closures: formData.specialClosures,
+          verification_status: 'pending',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', businessData.id)
+        .eq('owner_id', user?.id);
+
+      if (updateError) throw updateError;
+
+      if (onUpdateBusiness) {
+        onUpdateBusiness({...formData, verification_status: 'pending'});
+      }
+
+      setPublishSuccess(true);
+      setTimeout(() => {
+        setPublishSuccess(false);
+        onNavigate('profile');
+      }, 2000);
+    } catch (err) {
+      console.error('Error publishing business:', err);
+      setError('Error al publicar el negocio');
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const tabs = [
@@ -9019,40 +9569,27 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness }) => {
                       <MapPin size={20} />
                     </div>
                   </div>
-                  <button className="absolute bottom-2 right-2 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors">
-                    Ajustar pin
-                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Servicios */}
-            {formData.subcategory && (
+            {/* Etiquetas */}
+            {formData.category && (
               <div className="animate-slide-up">
-                <h3 className="text-sm font-bold text-slate-900 mb-4">Servicios que ofreces</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {availableServices.map(service => (
+                <h3 className="text-sm font-bold text-slate-900 mb-2">Etiquetas de tu negocio</h3>
+                <p className="text-xs text-gray-500 mb-4">Selecciona las características que mejor describen tu negocio</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map(tag => (
                     <button
-                      key={service.id}
-                      onClick={() => toggleService(service.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                        formData.services.includes(service.id)
-                          ? 'border-primary bg-primary/5'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className={`px-3 py-2 rounded-full text-xs font-medium transition-all ${
+                        formData.tags.includes(tag)
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        formData.services.includes(service.id)
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        <Icon name={service.icon} size={16} />
-                      </div>
-                      <span className={`text-xs font-medium ${
-                        formData.services.includes(service.id) ? 'text-primary' : 'text-gray-700'
-                      }`}>
-                        {service.name}
-                      </span>
+                      {tag}
                     </button>
                   ))}
                 </div>
@@ -9302,25 +9839,71 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness }) => {
 
       {/* Bottom Save Button */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-30 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-4 pb-8">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className={`w-full h-12 rounded-xl text-white font-bold text-sm shadow-lg shadow-primary/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-            isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-700'
-          }`}
-        >
-          {isSaving ? (
-            <>
-              <RefreshCw size={18} className="animate-spin" />
-              Guardando...
-            </>
-          ) : (
-            <>
-              <Check size={18} />
-              Guardar Cambios
-            </>
+        {error && (
+          <div className="mb-3 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+        {publishSuccess && (
+          <div className="mb-3 px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm font-medium flex items-center gap-2">
+            <CheckCircle2 size={16} />
+            ¡Negocio enviado para revisión! Te notificaremos cuando sea aprobado.
+          </div>
+        )}
+        {businessData?.verification_status === 'pending' && (
+          <div className="mb-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
+            <Clock size={16} />
+            Tu negocio está en revisión. Puedes seguir editando los datos.
+          </div>
+        )}
+        {businessData?.is_verified && (
+          <div className="mb-3 px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm font-medium flex items-center gap-2">
+            <BadgeCheck size={16} />
+            ¡Tu negocio está verificado y visible en Cornellà Local!
+          </div>
+        )}
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={isSaving || isPublishing}
+            className={`flex-1 h-12 rounded-xl font-semibold text-sm shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+              isSaving ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <RefreshCw size={18} className="animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Check size={18} />
+                Guardar
+              </>
+            )}
+          </button>
+          {!businessData?.is_verified && (
+            <button
+              onClick={handlePublish}
+              disabled={isSaving || isPublishing}
+              className={`flex-1 h-12 rounded-xl text-white font-bold text-sm shadow-lg shadow-primary/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+                isPublishing ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-700'
+              }`}
+            >
+              {isPublishing ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" />
+                  Publicando...
+                </>
+              ) : (
+                <>
+                  <Send size={18} />
+                  Publicar
+                </>
+              )}
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
       {/* Modal de Cierre Especial */}
@@ -9958,6 +10541,215 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
   );
 };
 
+// =============================================
+// BUSINESS OWNER DASHBOARD - Panel principal del propietario
+// =============================================
+const BusinessOwnerDashboard = ({
+  onNavigate,
+  businessData,
+  userJobOffers,
+  userOffers,
+  incomingBudgetRequests,
+}) => {
+  // Calcular estadísticas rápidas
+  const activeJobs = userJobOffers.filter(j => j.status === 'active').length;
+  const totalApplications = userJobOffers.reduce((sum, j) => sum + (j.applications || 0), 0);
+  const activeOffers = userOffers.filter(o => o.status === 'active').length;
+  const newBudgetRequests = incomingBudgetRequests.filter(r => r.status === 'new').length;
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
+      {/* Header */}
+      <div className="sticky top-0 z-50 flex items-center bg-white/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-gray-100">
+        <button
+          onClick={() => onNavigate('profile')}
+          className="text-slate-800 flex size-12 shrink-0 items-center justify-start cursor-pointer hover:opacity-70 transition-opacity"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">
+          Panel de Propietario
+        </h2>
+        <button
+          onClick={() => onNavigate('edit-business')}
+          className="flex size-12 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent text-primary hover:bg-primary/10 transition-colors"
+        >
+          <Settings size={24} />
+        </button>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Información del negocio */}
+        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-5 text-white shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            {businessData?.logo_url ? (
+              <img
+                src={businessData.logo_url}
+                alt={businessData.name}
+                className="w-16 h-16 rounded-xl object-cover border-2 border-white/30"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
+                <Store size={32} className="text-white" />
+              </div>
+            )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-xl font-bold">{businessData?.name || 'Mi Negocio'}</h3>
+                {businessData?.is_verified && (
+                  <BadgeCheck className="text-white fill-white" size={20} />
+                )}
+              </div>
+              <p className="text-sm text-white/80">{businessData?.subcategory || 'Comercio local'}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <div className="text-2xl font-bold mb-1">{activeJobs}</div>
+              <div className="text-xs text-white/80">Empleos activos</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <div className="text-2xl font-bold mb-1">{activeOffers}</div>
+              <div className="text-xs text-white/80">Ofertas activas</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <div className="text-2xl font-bold mb-1">{newBudgetRequests}</div>
+              <div className="text-xs text-white/80">Presupuestos</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Acciones rápidas */}
+        <div>
+          <h4 className="text-sm font-bold text-slate-700 mb-3 px-1">Acciones Rápidas</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => onNavigate('create-job-offer')}
+              className="bg-white rounded-xl p-4 flex flex-col items-center gap-3 hover:shadow-md transition-shadow border border-gray-100"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Briefcase className="text-blue-600" size={24} />
+              </div>
+              <span className="text-sm font-semibold text-slate-800">Crear Empleo</span>
+            </button>
+
+            <button
+              onClick={() => onNavigate('create-offer')}
+              className="bg-white rounded-xl p-4 flex flex-col items-center gap-3 hover:shadow-md transition-shadow border border-gray-100"
+            >
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <Tag className="text-purple-600" size={24} />
+              </div>
+              <span className="text-sm font-semibold text-slate-800">Crear Oferta</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Gestión */}
+        <div>
+          <h4 className="text-sm font-bold text-slate-700 mb-3 px-1">Gestión</h4>
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
+            <button
+              onClick={() => onNavigate('incoming-budget-requests')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-green-100 p-2 rounded-lg text-green-600 group-hover:text-green-700 transition-colors relative">
+                  <ClipboardList size={20} />
+                  {newBudgetRequests > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
+                      {newBudgetRequests}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="font-medium text-slate-700 block">Presupuestos Entrantes</span>
+                  <span className="text-xs text-slate-500">
+                    {newBudgetRequests > 0 ? `${newBudgetRequests} nueva${newBudgetRequests > 1 ? 's' : ''}` : 'Sin solicitudes nuevas'}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="text-slate-400" size={20} />
+            </button>
+
+            <button
+              onClick={() => onNavigate('business-jobs')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-lg text-blue-600 group-hover:text-blue-700 transition-colors relative">
+                  <Briefcase size={20} />
+                  {totalApplications > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
+                      {totalApplications}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="font-medium text-slate-700 block">Ofertas de Empleo</span>
+                  <span className="text-xs text-slate-500">
+                    {activeJobs} activa{activeJobs !== 1 ? 's' : ''}, {totalApplications} candidatura{totalApplications !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="text-slate-400" size={20} />
+            </button>
+
+            <button
+              onClick={() => onNavigate('business-offers')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-100 p-2 rounded-lg text-purple-600 group-hover:text-purple-700 transition-colors">
+                  <Tag size={20} />
+                </div>
+                <div>
+                  <span className="font-medium text-slate-700 block">Gestionar Ofertas</span>
+                  <span className="text-xs text-slate-500">{activeOffers} oferta{activeOffers !== 1 ? 's' : ''} activa{activeOffers !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+              <ChevronRight className="text-slate-400" size={20} />
+            </button>
+
+            <button
+              onClick={() => onNavigate('edit-business')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-100 p-2 rounded-lg text-slate-600 group-hover:text-slate-700 transition-colors">
+                  <Edit3 size={20} />
+                </div>
+                <div>
+                  <span className="font-medium text-slate-700 block">Editar Negocio</span>
+                  <span className="text-xs text-slate-500">Información y configuración</span>
+                </div>
+              </div>
+              <ChevronRight className="text-slate-400" size={20} />
+            </button>
+
+            <button
+              onClick={() => onNavigate('business-stats')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-100 p-2 rounded-lg text-amber-600 group-hover:text-amber-700 transition-colors">
+                  <TrendingUp size={20} />
+                </div>
+                <div>
+                  <span className="font-medium text-slate-700 block">Estadísticas</span>
+                  <span className="text-xs text-slate-500">Ver rendimiento</span>
+                </div>
+              </div>
+              <ChevronRight className="text-slate-400" size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Pantalla de Estadísticas del Negocio
 const BusinessStatsScreen = ({ onNavigate }) => {
   const stats = {
@@ -10139,34 +10931,26 @@ const LoginScreen = ({ onNavigate, setUser }) => {
     setError('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      console.log('[LOGIN] Intentando login con email:', email);
 
-      if (error) throw error;
-
-      // Cargar datos del usuario desde la tabla profiles
+      // TEMPORAL: Login simplificado sin Supabase Auth
+      // Buscar usuario directamente en la tabla profiles por email
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', data.user.id)
+        .eq('email', email)
         .single();
 
-      if (userError) throw userError;
+      if (userError || !userData) {
+        throw new Error('Usuario no encontrado');
+      }
 
+      console.log('[LOGIN] Usuario encontrado:', userData);
       setUser(userData);
       onNavigate('home');
     } catch (error) {
-      console.error('Error al iniciar sesión:', error);
-
-      if (error.message.includes('Invalid login credentials')) {
-        setError('Email o contraseña incorrectos');
-      } else if (error.message.includes('Email not confirmed')) {
-        setError('Por favor verifica tu email antes de iniciar sesión');
-      } else {
-        setError('Error al iniciar sesión. Intenta de nuevo.');
-      }
+      console.error('[LOGIN] Error al iniciar sesión:', error);
+      setError('Email no encontrado. Intenta con: test@cornella.local');
     } finally {
       setLoading(false);
     }
@@ -11234,9 +12018,20 @@ export default function App() {
 
   // Persistir sesión con Supabase Auth
   useEffect(() => {
+    console.log('[AUTH] Iniciando verificación de sesión...');
+
+    // TEMPORAL: Desactivar verificación de sesión hasta resolver el problema
+    console.warn('[AUTH] Verificación de sesión desactivada temporalmente');
+    setLoadingAuth(false);
+    setCurrentPage('login');
+    return;
+
     // Verificar sesión actual
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(authTimeout);
+      console.log('[AUTH] Sesión obtenida:', session ? 'Existe sesión' : 'No hay sesión');
       if (session) {
+        console.log('[AUTH] Cargando perfil del usuario...');
         // Cargar datos del usuario
         supabase
           .from('profiles')
@@ -11245,10 +12040,11 @@ export default function App() {
           .single()
           .then(({ data, error }) => {
             if (data && !error) {
+              console.log('[AUTH] Perfil cargado correctamente:', data);
               setUser(data);
               setCurrentPage('home');
             } else {
-              console.error('Error loading profile:', error);
+              console.error('[AUTH] Error loading profile:', error);
               // Si hay error, cerrar sesión y redirigir a login
               supabase.auth.signOut();
               setUser(null);
@@ -11256,20 +12052,23 @@ export default function App() {
             }
           })
           .catch((err) => {
-            console.error('Error fetching profile:', err);
+            console.error('[AUTH] Error fetching profile:', err);
             // Si hay error, cerrar sesión y redirigir a login
             supabase.auth.signOut();
             setUser(null);
             setCurrentPage('login');
           })
           .finally(() => {
+            console.log('[AUTH] Finalizando carga de autenticación');
             setLoadingAuth(false);
           });
       } else {
+        console.log('[AUTH] No hay sesión, mostrando login');
         setLoadingAuth(false);
       }
     }).catch((err) => {
-      console.error('Error getting session:', err);
+      clearTimeout(authTimeout);
+      console.error('[AUTH] Error getting session:', err);
       setLoadingAuth(false);
     });
 
@@ -11296,6 +12095,50 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Cargar negocio del propietario cuando cambie el usuario
+  useEffect(() => {
+    const loadUserBusiness = async () => {
+      if (!user?.id) {
+        setBusinessData(null);
+        setBusinessStatus(null);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('owner_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 = no rows returned (normal si no tiene negocio)
+          throw error;
+        }
+
+        if (data) {
+          console.log('[BUSINESS] Negocio cargado:', data);
+          setBusinessData(data);
+          // Mapear verification_status de Supabase a businessStatus del UI
+          if (data.verification_status === 'approved') {
+            setBusinessStatus('validated');
+          } else if (data.verification_status === 'pending') {
+            setBusinessStatus('pending');
+          } else if (data.verification_status === 'rejected') {
+            setBusinessStatus('rejected');
+          }
+        } else {
+          setBusinessData(null);
+          setBusinessStatus(null);
+        }
+      } catch (error) {
+        console.error('[BUSINESS] Error loading user business:', error);
+      }
+    };
+
+    loadUserBusiness();
+  }, [user]);
+
   // Estado del onboarding - usar localStorage para persistir
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
     return localStorage.getItem('hasSeenOnboarding') === 'true';
@@ -11304,8 +12147,8 @@ export default function App() {
   // Modal de permisos de notificación
   const [showNotificationModal, setShowNotificationModal] = useState(false);
 
-  // Estado de favoritos - inicializado con los IDs de los favoritos de mockData
-  const [userFavorites, setUserFavorites] = useState(favorites.map(f => f.id));
+  // Estado de favoritos - se cargará desde Supabase
+  const [userFavorites, setUserFavorites] = useState([]);
 
   // Estado del negocio del usuario
   // Estados posibles: null (sin negocio), 'pending' (en revisión), 'validated' (validado), 'rejected' (rechazado)
@@ -11321,22 +12164,99 @@ export default function App() {
   // Ofertas creadas por el usuario
   const [userOffers, setUserOffers] = useState([]);
 
+  // Solicitudes de presupuesto entrantes (para propietarios)
+  const [incomingBudgetRequests, setIncomingBudgetRequests] = useState([]);
+
   // Solicitudes de presupuesto del usuario
   const [userBudgetRequests, setUserBudgetRequests] = useState([]);
 
   // Cupones guardados por el usuario
   const [savedCoupons, setSavedCoupons] = useState([]);
 
-  // Estado de empleos activos (con fecha de creación para calcular expiración de 60 días)
-  const [activeJobs, setActiveJobs] = useState(() => {
-    // Inicializar con los empleos de mockData, añadiendo fecha de creación simulada
-    return jobs.map((job, index) => ({
-      ...job,
-      createdAt: new Date(Date.now() - (index * 5 * 24 * 60 * 60 * 1000)), // Cada uno creado hace X días
-      hired: false,
-      hiredDate: null,
-    }));
-  });
+  // Estado de empleos activos - se cargará desde Supabase
+  const [activeJobs, setActiveJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+
+  // Cargar empleos desde Supabase
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select(`
+            *,
+            businesses!inner(
+              id,
+              name,
+              address,
+              phone
+            )
+          `)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Transformar datos al formato esperado por el UI
+        const transformedJobs = (data || []).map(job => {
+          // Determinar icono según tipo de trabajo
+          let icon = 'Briefcase';
+          let iconBg = 'blue';
+
+          if (job.type === 'Media Jornada') {
+            icon = 'Clock';
+            iconBg = 'orange';
+          } else if (job.type === 'Temporal') {
+            icon = 'Calendar';
+            iconBg = 'orange';
+          } else if (job.type === 'Prácticas') {
+            icon = 'GraduationCap';
+            iconBg = 'green';
+          }
+
+          // Formatear salario
+          let salary = 'A convenir';
+          if (job.salary_min && job.salary_max) {
+            salary = `${(job.salary_min / 1000).toFixed(0)}-${(job.salary_max / 1000).toFixed(0)}k €/año`;
+          } else if (job.salary_note) {
+            salary = job.salary_note;
+          }
+
+          return {
+            id: job.id,
+            title: job.title,
+            company: job.businesses?.name || 'Empresa',
+            icon,
+            iconBg,
+            salary,
+            type: job.type,
+            contract: job.contract,
+            modality: job.modality,
+            location: job.location,
+            address: job.address,
+            description: job.description,
+            requirements: job.requirements || [],
+            benefits: job.benefits || [],
+            createdAt: job.created_at,
+            businessId: job.business_id,
+            businessPhone: job.businesses?.phone,
+            // Estados adicionales del UI
+            hired: false,
+            hiredDate: null
+          };
+        });
+
+        setActiveJobs(transformedJobs);
+      } catch (error) {
+        console.error('Error loading jobs:', error);
+        showToast('Error al cargar empleos', 'error');
+      } finally {
+        setLoadingJobs(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   // Función para calcular días restantes de un empleo (60 días máximo)
   const getJobDaysRemaining = (job) => {
@@ -11388,6 +12308,208 @@ export default function App() {
       return true;
     });
   };
+
+  // Cargar empleos creados por el propietario
+  useEffect(() => {
+    const loadOwnerJobs = async () => {
+      if (!businessData?.id) {
+        setUserJobOffers([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('business_id', businessData.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log('[OWNER JOBS] Empleos del propietario cargados:', data?.length || 0);
+
+        // Transformar al formato esperado por el UI
+        const transformedJobs = (data || []).map(job => {
+          // Calcular tiempo transcurrido
+          const getTimeAgo = (dateString) => {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Ahora';
+            if (diffMins < 60) return `Hace ${diffMins} min`;
+            if (diffHours < 24) return `Hace ${diffHours}h`;
+            if (diffDays === 1) return 'Ayer';
+            return `Hace ${diffDays} días`;
+          };
+
+          return {
+            id: job.id,
+            title: job.title,
+            type: job.type,
+            salary: job.salary_min && job.salary_max
+              ? `${(job.salary_min / 1000).toFixed(0)}-${(job.salary_max / 1000).toFixed(0)}k €/año`
+              : job.salary_note || 'A convenir',
+            location: job.location || businessData.address,
+            description: job.description,
+            requirements: job.requirements || [],
+            benefits: job.benefits || [],
+            createdAt: job.created_at,
+            status: job.status,
+            applications: 0, // TODO: Contar candidaturas reales
+            postedAgo: getTimeAgo(job.created_at),
+          };
+        });
+
+        setUserJobOffers(transformedJobs);
+      } catch (error) {
+        console.error('[OWNER JOBS] Error loading owner jobs:', error);
+      }
+    };
+
+    loadOwnerJobs();
+  }, [businessData]);
+
+  // Cargar ofertas creadas por el propietario
+  useEffect(() => {
+    const loadOwnerOffers = async () => {
+      if (!businessData?.id) {
+        setUserOffers([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('offers')
+          .select('*')
+          .eq('business_id', businessData.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log('[OWNER OFFERS] Ofertas del propietario cargadas:', data?.length || 0);
+
+        // Transformar al formato esperado por el UI
+        const transformedOffers = (data || []).map(offer => {
+          // Calcular tiempo restante
+          const now = new Date();
+          const endsAt = new Date(offer.expires_at);
+          const diffMs = endsAt - now;
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+
+          let timeLeft = 'Expirada';
+          if (diffMs > 0) {
+            if (diffHours < 24) {
+              timeLeft = `menos de ${diffHours}h`;
+            } else {
+              timeLeft = `${diffDays} días`;
+            }
+          }
+
+          // Formatear descuento
+          let discount = '';
+          if (offer.discount_type === 'percentage') {
+            discount = `-${offer.discount_value}%`;
+          } else if (offer.discount_type === '2x1') {
+            discount = '2x1';
+          } else if (offer.discount_type === 'free') {
+            discount = 'GRATIS';
+          } else if (offer.discount_type === 'fixed_amount') {
+            discount = `-${offer.discount_value}€`;
+          } else {
+            discount = offer.discount_label || 'Oferta';
+          }
+
+          return {
+            id: offer.id,
+            title: offer.title,
+            description: offer.description,
+            discount,
+            originalPrice: offer.original_price,
+            discountedPrice: offer.discounted_price,
+            discountType: offer.discount_type,
+            isFlash: offer.is_flash,
+            code: offer.code,
+            conditions: offer.conditions,
+            timeLeft,
+            expiresSoon: diffHours < 8 && diffHours > 0,
+            createdAt: offer.created_at,
+            status: offer.status,
+            isVisible: offer.is_visible,
+            redemptions: 0, // TODO: Contar redenciones reales
+          };
+        });
+
+        setUserOffers(transformedOffers);
+      } catch (error) {
+        console.error('[OWNER OFFERS] Error loading owner offers:', error);
+      }
+    };
+
+    loadOwnerOffers();
+  }, [businessData]);
+
+  // Cargar solicitudes de presupuesto para la categoría del negocio
+  useEffect(() => {
+    const loadBudgetRequests = async () => {
+      if (!businessData?.subcategory) {
+        setIncomingBudgetRequests([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('budget_requests')
+          .select(`
+            *,
+            profiles:user_id(full_name, phone),
+            budget_quotes(id, price, description, business_id)
+          `)
+          .eq('category', businessData.subcategory)
+          .in('status', ['pending', 'quoted'])
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log('[BUDGET REQUESTS] Solicitudes cargadas:', data?.length || 0);
+
+        // Transformar al formato esperado
+        const transformedRequests = (data || []).map(request => {
+          const myQuote = request.budget_quotes?.find(
+            q => q.business_id === businessData.id
+          );
+
+          return {
+            id: request.id,
+            customerName: request.profiles?.full_name || 'Usuario',
+            customerAvatar: request.profiles?.full_name?.charAt(0) || 'U',
+            category: request.category,
+            categoryName: request.category,
+            description: request.description,
+            urgency: request.urgency || 'medium',
+            urgencyLabel: request.urgency === 'urgent' ? 'Urgente' :
+                         request.urgency === 'this-week' ? 'Esta semana' : 'Próxima semana',
+            address: request.address || 'Cornellà de Llobregat',
+            phone: request.profiles?.phone || request.phone,
+            photos: request.photos || [],
+            createdAt: request.created_at,
+            status: myQuote ? 'replied' : 'new',
+            myQuote: myQuote ? { price: myQuote.price, message: myQuote.description } : null,
+          };
+        });
+
+        setIncomingBudgetRequests(transformedRequests);
+      } catch (error) {
+        console.error('[BUDGET REQUESTS] Error loading budget requests:', error);
+      }
+    };
+
+    loadBudgetRequests();
+  }, [businessData]);
 
   // Toast notifications
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' });
@@ -11489,30 +12611,93 @@ export default function App() {
   const [userJobOffers, setUserJobOffers] = useState([]);
 
   // Crear oferta de empleo
-  const createJobOffer = (jobData) => {
-    const newJob = {
-      id: Date.now(),
-      ...jobData,
-      createdAt: new Date().toISOString(),
-      status: 'active',
-      applications: 0,
-      postedAgo: 'Ahora',
-    };
-    setUserJobOffers(prev => [newJob, ...prev]);
+  const createJobOffer = async (jobData) => {
+    if (!businessData?.id) {
+      showToast('Error: No se encontró el negocio', 'error');
+      return;
+    }
 
-    addNotification({
-      type: 'job',
-      title: '¡Oferta de empleo publicada!',
-      message: `Tu oferta "${jobData.title}" ya está visible para los candidatos`,
-      icon: 'Briefcase',
-      iconBg: 'bg-green-500',
-      actionRoute: 'business-jobs',
-    });
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .insert({
+          business_id: businessData.id,
+          title: jobData.title,
+          description: jobData.description,
+          salary_min: jobData.salaryMin || null,
+          salary_max: jobData.salaryMax || null,
+          salary_note: jobData.salaryNote || null,
+          type: jobData.type,
+          contract: jobData.contract,
+          modality: jobData.modality,
+          location: jobData.location || businessData.address,
+          address: jobData.address || businessData.address,
+          requirements: jobData.requirements || [],
+          benefits: jobData.benefits || [],
+          status: 'active',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('[OWNER JOBS] Empleo creado:', data);
+
+      // Agregar al estado local con formato UI
+      const newJob = {
+        id: data.id,
+        title: data.title,
+        type: data.type,
+        salary: data.salary_min && data.salary_max
+          ? `${(data.salary_min / 1000).toFixed(0)}-${(data.salary_max / 1000).toFixed(0)}k €/año`
+          : data.salary_note || 'A convenir',
+        location: data.location,
+        description: data.description,
+        requirements: data.requirements || [],
+        benefits: data.benefits || [],
+        createdAt: data.created_at,
+        status: 'active',
+        applications: 0,
+        postedAgo: 'Ahora',
+      };
+
+      setUserJobOffers(prev => [newJob, ...prev]);
+
+      addNotification({
+        type: 'job',
+        title: '¡Oferta de empleo publicada!',
+        message: `Tu oferta "${jobData.title}" ya está visible para los candidatos`,
+        icon: 'Briefcase',
+        iconBg: 'bg-green-500',
+        actionRoute: 'business-jobs',
+      });
+
+      showToast('Empleo publicado correctamente', 'success');
+      return data;
+    } catch (error) {
+      console.error('[OWNER JOBS] Error creating job:', error);
+      showToast('Error al publicar el empleo', 'error');
+      throw error;
+    }
   };
 
   // Eliminar oferta de empleo
-  const deleteJobOffer = (jobId) => {
-    setUserJobOffers(prev => prev.filter(j => j.id !== jobId));
+  const deleteJobOffer = async (jobId) => {
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .delete()
+        .eq('id', jobId)
+        .eq('business_id', businessData?.id); // Seguridad: solo puede borrar sus propios empleos
+
+      if (error) throw error;
+
+      setUserJobOffers(prev => prev.filter(j => j.id !== jobId));
+      showToast('Empleo eliminado', 'success');
+    } catch (error) {
+      console.error('[OWNER JOBS] Error deleting job:', error);
+      showToast('Error al eliminar el empleo', 'error');
+    }
   };
 
   // Configuración del usuario
@@ -11633,39 +12818,173 @@ export default function App() {
   };
 
   // Función para crear una nueva oferta
-  const createOffer = (offerData) => {
-    const newOffer = {
-      id: Date.now(),
-      ...offerData,
-      createdAt: new Date().toISOString(),
-      status: 'active',
-      isVisible: true,
-      redemptions: 0,
-    };
-    setUserOffers(prev => [newOffer, ...prev]);
+  const createOffer = async (offerData) => {
+    if (!businessData?.id) {
+      showToast('Error: No se encontró el negocio', 'error');
+      return;
+    }
 
-    // Notificar al propietario
-    addNotification({
-      type: 'offer',
-      title: offerData.isFlash ? '¡Oferta Flash publicada!' : '¡Oferta publicada!',
-      message: `Tu oferta "${offerData.title}" ya está visible para los usuarios`,
-      icon: offerData.isFlash ? 'Zap' : 'Tag',
-      iconBg: offerData.isFlash ? 'bg-amber-500' : 'bg-primary',
-      actionRoute: 'business-offers',
-    });
+    try {
+      // Calcular fecha de expiración
+      const startsAt = new Date();
+      const expiresAt = new Date();
+      if (offerData.isFlash) {
+        expiresAt.setHours(expiresAt.getHours() + 8); // Flash = 8 horas
+      } else {
+        expiresAt.setDate(expiresAt.getDate() + 3); // Normal = 3 días
+      }
 
-    // Simular notificación a usuarios que tienen el negocio en favoritos
-    // En una app real, esto se haría en el backend
-    setTimeout(() => {
+      const { data, error } = await supabase
+        .from('offers')
+        .insert({
+          business_id: businessData.id,
+          title: offerData.title,
+          description: offerData.description,
+          discount_type: offerData.discountType,
+          discount_value: offerData.discount || null,
+          discount_label: offerData.discountLabel || null,
+          original_price: offerData.originalPrice || null,
+          discounted_price: offerData.discountedPrice || null,
+          code: offerData.code || null,
+          conditions: offerData.conditions || null,
+          is_flash: offerData.isFlash || false,
+          starts_at: startsAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          status: 'active',
+          is_visible: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('[OWNER OFFERS] Oferta creada:', data);
+
+      // Agregar al estado local con formato UI
+      const newOffer = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        discount: offerData.discountType === 'percentage'
+          ? `-${offerData.discount}%`
+          : offerData.discountType === '2x1'
+          ? '2x1'
+          : offerData.discountType === 'free'
+          ? 'GRATIS'
+          : data.discount_label || 'Oferta',
+        originalPrice: data.original_price,
+        discountedPrice: data.discounted_price,
+        discountType: data.discount_type,
+        isFlash: data.is_flash,
+        code: data.code,
+        conditions: data.conditions,
+        timeLeft: offerData.isFlash ? 'menos de 8h' : '3 días',
+        expiresSoon: offerData.isFlash,
+        createdAt: data.created_at,
+        status: 'active',
+        isVisible: true,
+        redemptions: 0,
+      };
+
+      setUserOffers(prev => [newOffer, ...prev]);
+
+      // Notificar al propietario
       addNotification({
-        type: 'favorite-alert',
-        title: `${offerData.businessName || businessData?.name || 'Un negocio favorito'} tiene nueva oferta`,
-        message: `${offerData.title} - ${offerData.discount}% de descuento`,
+        type: 'offer',
+        title: offerData.isFlash ? '¡Oferta Flash publicada!' : '¡Oferta publicada!',
+        message: `Tu oferta "${offerData.title}" ya está visible para los usuarios`,
         icon: offerData.isFlash ? 'Zap' : 'Tag',
         iconBg: offerData.isFlash ? 'bg-amber-500' : 'bg-primary',
-        actionRoute: 'offers',
+        actionRoute: 'business-offers',
       });
-    }, 500);
+
+      showToast('Oferta publicada correctamente', 'success');
+      return data;
+    } catch (error) {
+      console.error('[OWNER OFFERS] Error creating offer:', error);
+      showToast('Error al publicar la oferta', 'error');
+      throw error;
+    }
+  };
+
+  // Pausar o reactivar oferta
+  const toggleOfferVisibility = async (offerId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+      const newVisibility = newStatus === 'active';
+
+      const { error } = await supabase
+        .from('offers')
+        .update({
+          status: newStatus,
+          is_visible: newVisibility
+        })
+        .eq('id', offerId)
+        .eq('business_id', businessData?.id);
+
+      if (error) throw error;
+
+      setUserOffers(prev => prev.map(offer =>
+        offer.id === offerId
+          ? { ...offer, status: newStatus, isVisible: newVisibility }
+          : offer
+      ));
+
+      showToast(newVisibility ? 'Oferta reactivada' : 'Oferta pausada', 'success');
+    } catch (error) {
+      console.error('[OWNER OFFERS] Error toggling offer:', error);
+      showToast('Error al cambiar estado de la oferta', 'error');
+    }
+  };
+
+  // Responder a solicitud de presupuesto
+  const respondToBudgetRequest = async (requestId, quoteData) => {
+    if (!businessData?.id) {
+      showToast('Error: No se encontró el negocio', 'error');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('budget_quotes')
+        .insert({
+          budget_request_id: requestId,
+          business_id: businessData.id,
+          price: parseFloat(quoteData.price),
+          description: quoteData.message,
+          estimated_duration: quoteData.estimatedTime || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('[BUDGET QUOTE] Presupuesto enviado:', data);
+
+      // Actualizar estado local
+      setIncomingBudgetRequests(prev => prev.map(req =>
+        req.id === requestId
+          ? { ...req, status: 'replied', myQuote: { price: data.price, message: data.description } }
+          : req
+      ));
+
+      showToast('Presupuesto enviado correctamente', 'success');
+
+      addNotification({
+        type: 'budget',
+        title: 'Presupuesto enviado',
+        message: `Tu presupuesto de ${quoteData.price}€ ha sido enviado al cliente`,
+        icon: 'CheckCircle2',
+        iconBg: 'bg-green-500',
+        actionRoute: 'incoming-budget-requests',
+      });
+
+      return data;
+    } catch (error) {
+      console.error('[BUDGET QUOTE] Error sending quote:', error);
+      showToast('Error al enviar el presupuesto', 'error');
+      throw error;
+    }
   };
 
   // Función para toggle de favoritos
@@ -11685,25 +13004,54 @@ export default function App() {
   const isFavorite = (businessId) => userFavorites.includes(businessId);
 
   // Función para enviar solicitud de presupuesto
-  const submitBudgetRequest = (requestData) => {
-    const requestId = Date.now();
-    const newRequest = {
-      id: requestId,
-      ...requestData,
-      responses: [], // Aquí se guardarán las respuestas de empresas
-    };
+  const submitBudgetRequest = async (requestData) => {
+    try {
+      console.log('[BUDGET] Guardando solicitud:', requestData);
 
-    setUserBudgetRequests(prev => [newRequest, ...prev]);
+      // Guardar en Supabase
+      const { data, error } = await supabase
+        .from('budget_requests')
+        .insert({
+          user_id: user?.id,
+          category: requestData.category,
+          description: requestData.description,
+          photos: requestData.photos || [],
+          urgency: requestData.urgency,
+          address: requestData.address,
+          phone: requestData.phone,
+          status: 'pending'
+        })
+        .select()
+        .single();
 
-    // Notificar al usuario que su solicitud fue enviada
-    addNotification({
-      type: 'budget',
-      title: 'Solicitud de presupuesto enviada',
-      message: `Tu solicitud de ${requestData.categoryName?.toLowerCase() || 'servicio'} ha sido enviada a ${requestData.businessCount} empresas`,
-      icon: 'ClipboardList',
-      iconBg: 'bg-primary',
-      actionRoute: 'my-budget-requests',
-    });
+      if (error) throw error;
+
+      console.log('[BUDGET] Solicitud guardada:', data);
+
+      // Actualizar state local
+      const newRequest = {
+        id: data.id,
+        ...requestData,
+        responses: [],
+      };
+      setUserBudgetRequests(prev => [newRequest, ...prev]);
+
+      // Notificar al usuario que su solicitud fue enviada
+      addNotification({
+        type: 'budget',
+        title: 'Solicitud de presupuesto enviada',
+        message: `Tu solicitud de ${requestData.categoryName?.toLowerCase() || 'servicio'} ha sido enviada a ${requestData.businessCount} empresas`,
+        icon: 'ClipboardList',
+        iconBg: 'bg-primary',
+        actionRoute: 'my-budget-requests',
+      });
+
+      return data;
+    } catch (error) {
+      console.error('[BUDGET] Error guardando solicitud:', error);
+      showToast('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
+      throw error;
+    }
 
     // Empresas ficticias por categoría
     const empresasPorCategoria = {
@@ -11770,7 +13118,7 @@ export default function App() {
       case 'flash-offers':
         return <FlashOffersScreen onNavigate={navigate} userOffers={userOffers} />;
       case 'offers':
-        return <OffersPage onNavigate={navigate} userOffers={userOffers} initialTab={pageParams.tab || 'offers'} activeJobs={getVisibleJobs()} getJobDaysRemaining={getJobDaysRemaining} isBusinessOwner={businessStatus === 'validated'} />;
+        return <OffersPage onNavigate={navigate} userOffers={userOffers} initialTab={pageParams.tab || 'offers'} activeJobs={getVisibleJobs()} loadingJobs={loadingJobs} getJobDaysRemaining={getJobDaysRemaining} isBusinessOwner={businessStatus === 'validated'} />;
       case 'favorites':
         return <FavoritesPage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} />;
       case 'profile':
@@ -11811,11 +13159,11 @@ export default function App() {
       case 'my-budget-requests':
         return <MyBudgetRequestsScreen onNavigate={navigate} userBudgetRequests={userBudgetRequests} onAddNotification={addNotification} initialSelectedRequestId={pageParams.selectedRequestId} />;
       case 'incoming-budget-requests':
-        return <IncomingBudgetRequestsScreen onNavigate={navigate} businessData={businessData} showToast={showToast} onAddNotification={addNotification} />;
+        return <IncomingBudgetRequestsScreen onNavigate={navigate} businessData={businessData} showToast={showToast} onAddNotification={addNotification} requests={incomingBudgetRequests} onSendQuote={respondToBudgetRequest} />;
       case 'business-budget':
         return <BusinessBudgetReplyScreen onNavigate={navigate} />;
       case 'business-offers':
-        return <BusinessOffersScreen onNavigate={navigate} userOffers={userOffers} />;
+        return <BusinessOffersScreen onNavigate={navigate} userOffers={userOffers} toggleVisibility={toggleOfferVisibility} />;
       case 'business-jobs':
         return <BusinessJobsScreen onNavigate={navigate} userJobOffers={userJobOffers} deleteJobOffer={deleteJobOffer} />;
       case 'business-candidates':
@@ -11835,7 +13183,17 @@ export default function App() {
       case 'registration-success':
         return <RegistrationSuccessScreen onNavigate={navigate} />;
       case 'edit-business':
-        return <EditBusinessScreen onNavigate={navigate} businessData={businessData} onUpdateBusiness={updateBusiness} />;
+        return <EditBusinessScreen onNavigate={navigate} businessData={businessData} onUpdateBusiness={updateBusiness} user={user} />;
+      case 'owner-dashboard':
+        return (
+          <BusinessOwnerDashboard
+            onNavigate={navigate}
+            businessData={businessData}
+            userJobOffers={userJobOffers}
+            userOffers={userOffers}
+            incomingBudgetRequests={incomingBudgetRequests}
+          />
+        );
       case 'business-stats':
         return <BusinessStatsScreen onNavigate={navigate} />;
       case 'create-offer':

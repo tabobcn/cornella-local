@@ -80,11 +80,13 @@ create table public.businesses (
   opening_hours jsonb,
   images text[],
   logo_url text,
+  tags text[],
   is_verified boolean default false,
   verification_status text default 'pending' check (verification_status in ('pending', 'approved', 'rejected')),
   verification_documents text[],
   rating decimal(2, 1) default 0,
   review_count integer default 0,
+  verified_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

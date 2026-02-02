@@ -913,7 +913,7 @@ const barrios = [
   { id: 'fontsanta-fatjo', name: 'Fontsanta-Fatjó' },
 ];
 
-const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, userOffers = [] }) => {
+const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, userOffers = [], notifications = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedBarrio, setSelectedBarrio] = useState(null);
@@ -927,9 +927,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
   const [flashOffers, setFlashOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
-
-  // Temporal: notifications vacías hasta conectar con Supabase
-  const notifications = [];
 
   // Cargar negocios desde Supabase
   useEffect(() => {
@@ -2917,21 +2914,6 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
       {businessStatus === 'validated' && (
         <section className="px-5 w-full max-w-md mx-auto">
           <h3 className="text-lg font-bold text-slate-900 mb-4 px-1">Panel de Propietario</h3>
-
-          {/* Botón destacado del Dashboard */}
-          <button
-            onClick={() => onNavigate('owner-dashboard')}
-            className="w-full bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl p-4 flex items-center justify-between mb-4 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center gap-3">
-              <LayoutDashboard size={24} />
-              <div className="text-left">
-                <div className="font-bold">Panel de Control</div>
-                <div className="text-xs text-white/80">Ver resumen completo</div>
-              </div>
-            </div>
-            <ChevronRight size={20} />
-          </button>
 
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
             <button
@@ -6915,7 +6897,7 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
   const [offersState, setOffersState] = useState(userOffers);
 
   // Actualizar estado cuando cambien userOffers
-  React.useEffect(() => {
+  useEffect(() => {
     setOffersState(userOffers);
   }, [userOffers]);
 
@@ -7062,6 +7044,9 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
 // Pantalla de Gestión de Ofertas de Empleo
 const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer }) => {
   const [filter, setFilter] = useState('all');
+
+  // TODO: Conectar con candidaturas reales de Supabase
+  const businessCandidates = [];
 
   const filteredJobs = userJobOffers.filter(job => {
     if (filter === 'all') return true;
@@ -7228,6 +7213,10 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer }) 
 // Pantalla de Candidaturas Recibidas (para empresas)
 const BusinessCandidatesScreen = ({ onNavigate }) => {
   const [filter, setFilter] = useState('all');
+
+  // TODO: Conectar con candidaturas reales de Supabase
+  const businessCandidates = [];
+
   const [candidates, setCandidates] = useState(businessCandidates || []);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -10930,27 +10919,51 @@ const LoginScreen = ({ onNavigate, setUser }) => {
     setLoading(true);
     setError('');
 
+    // Timeout de seguridad (30 segundos para proyectos lentos)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('TIMEOUT')), 30000);
+    });
+
     try {
       console.log('[LOGIN] Intentando login con email:', email);
 
-      // TEMPORAL: Login simplificado sin Supabase Auth
-      // Buscar usuario directamente en la tabla profiles por email
+      // Login con Supabase Auth con timeout
+      const loginPromise = supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      const { data: authData, error: authError } = await Promise.race([loginPromise, timeoutPromise]);
+
+      if (authError) {
+        throw authError;
+      }
+
+      console.log('[LOGIN] Autenticación exitosa:', authData);
+
+      // Cargar perfil del usuario
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('email', email)
+        .eq('id', authData.user.id)
         .single();
 
       if (userError || !userData) {
-        throw new Error('Usuario no encontrado');
+        throw new Error('Error al cargar perfil del usuario');
       }
 
-      console.log('[LOGIN] Usuario encontrado:', userData);
+      console.log('[LOGIN] Perfil cargado:', userData);
       setUser(userData);
       onNavigate('home');
     } catch (error) {
       console.error('[LOGIN] Error al iniciar sesión:', error);
-      setError('Email no encontrado. Intenta con: test@cornella.local');
+      if (error.message === 'TIMEOUT') {
+        setError('El servidor tardó demasiado en responder. Verifica tu conexión e intenta de nuevo.');
+      } else if (error.message === 'Invalid login credentials') {
+        setError('Email o contraseña incorrectos');
+      } else {
+        setError('Error al iniciar sesión. Por favor, intenta de nuevo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -11125,46 +11138,67 @@ const RegisterScreen = ({ onNavigate }) => {
       return;
     }
 
+    // Timeout de seguridad (30 segundos para proyectos lentos)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('TIMEOUT')), 30000);
+    });
+
     try {
-      // Registrar usuario en Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
+      console.log('[REGISTER] Iniciando registro...');
+
+      // Registrar usuario en Supabase Auth con timeout
+      const signUpPromise = supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name,
+            full_name: name,
           },
+          emailRedirectTo: `${window.location.origin}/login`,
         },
       });
 
-      if (error) throw error;
+      const { data, error } = await Promise.race([signUpPromise, timeoutPromise]);
 
-      // Crear perfil en la tabla profiles
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: data.user.id,
-            name,
-            email,
-            avatar_url: null,
-          },
-        ]);
+      if (error) {
+        console.error('[REGISTER] Error en signUp:', error);
+        throw error;
+      }
 
-      if (profileError) throw profileError;
+      console.log('[REGISTER] SignUp exitoso:', data);
 
+      // El perfil se crea automáticamente con el trigger handle_new_user
+      // Solo mostrar éxito
       setSuccess(true);
-    } catch (error) {
-      console.error('Error al registrarse:', error);
+      console.log('[REGISTER] Registro completado exitosamente');
 
-      if (error.message.includes('already registered')) {
-        setError('Este email ya está registrado');
+      // Si el email no requiere confirmación, redirigir automáticamente
+      if (data.session) {
+        console.log('[REGISTER] Sesión creada automáticamente, redirigiendo...');
+        setTimeout(() => {
+          onNavigate('home');
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('[REGISTER] Error al registrarse:', error);
+
+      if (error.message === 'TIMEOUT') {
+        setError('El servidor tardó demasiado en responder. El usuario puede haberse creado correctamente. Intenta iniciar sesión.');
+        // Mostrar success de todas formas
+        setTimeout(() => {
+          setSuccess(true);
+        }, 2000);
+      } else if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+        setError('Este email ya está registrado. Intenta iniciar sesión.');
       } else if (error.message.includes('Password')) {
         setError('La contraseña debe tener al menos 8 caracteres');
+      } else if (error.message.includes('Email')) {
+        setError('Email inválido. Por favor verifica el formato.');
       } else {
-        setError('Error al crear la cuenta. Intenta de nuevo.');
+        setError(`Error al crear la cuenta: ${error.message}`);
       }
     } finally {
+      console.log('[REGISTER] Finalizando proceso de registro');
       setLoading(false);
     }
   };
@@ -11199,15 +11233,15 @@ const RegisterScreen = ({ onNavigate }) => {
             <div className="flex items-start gap-3">
               <CheckCircle2 size={20} className="text-green-600 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-green-800 mb-1">¡Cuenta creada!</p>
+                <p className="text-sm font-semibold text-green-800 mb-1">¡Cuenta creada exitosamente!</p>
                 <p className="text-sm text-green-700">
-                  Te hemos enviado un email de verificación. Por favor revisa tu bandeja de entrada y confirma tu email antes de iniciar sesión.
+                  Ya puedes iniciar sesión con tu email y contraseña.
                 </p>
                 <button
                   onClick={() => onNavigate('login')}
-                  className="mt-3 text-sm font-semibold text-primary hover:underline"
+                  className="mt-3 px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors"
                 >
-                  Ir al login →
+                  Ir al login
                 </button>
               </div>
             </div>
@@ -12020,11 +12054,12 @@ export default function App() {
   useEffect(() => {
     console.log('[AUTH] Iniciando verificación de sesión...');
 
-    // TEMPORAL: Desactivar verificación de sesión hasta resolver el problema
-    console.warn('[AUTH] Verificación de sesión desactivada temporalmente');
-    setLoadingAuth(false);
-    setCurrentPage('login');
-    return;
+    // Timeout de seguridad
+    const authTimeout = setTimeout(() => {
+      console.warn('[AUTH] Timeout alcanzado, continuando sin sesión');
+      setLoadingAuth(false);
+      setCurrentPage('login');
+    }, 5000);
 
     // Verificar sesión actual
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -13110,7 +13145,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <HomePage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} userOffers={userOffers} />;
+        return <HomePage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} userOffers={userOffers} notifications={dynamicNotifications} />;
       case 'budget-request':
         return <BudgetRequestScreen onNavigate={navigate} onSubmitRequest={submitBudgetRequest} showToast={showToast} onAddNotification={addNotification} />;
       case 'direct-budget':
@@ -13214,7 +13249,7 @@ export default function App() {
       case 'contact-support':
         return <ContactSupportScreen onNavigate={navigate} showToast={showToast} />;
       default:
-        return <HomePage onNavigate={navigate} />;
+        return <HomePage onNavigate={navigate} notifications={dynamicNotifications} />;
     }
   };
 

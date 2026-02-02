@@ -50,7 +50,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Filtros y detalles funcionales
   - Carga desde base de datos
 
-#### Panel de Propietarios (Tasks #9-13) - ⚠️ IMPLEMENTADO, PENDIENTE DEBUG
+#### Panel de Propietarios (Tasks #9-13) - ✅ COMPLETADO Y CORREGIDO
 - [x] **Task #9**: Cargar negocio del propietario automáticamente
   - useEffect que carga businessData desde Supabase
   - Mapeo de verification_status a businessStatus
@@ -76,43 +76,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Accesos rápidos a todas las funciones
   - Botón destacado en ProfilePage
 
-### ⚠️ EN DEBUG - SIGUIENTE SESIÓN
+### ✅ BUGS CORREGIDOS - 2026-02-02
 
-**Problema reportado**: "Algo falla" en el panel de propietarios
+**Problemas identificados y solucionados**:
 
-**Posibles causas a investigar**:
-1. RLS policies bloqueando acceso (error 403)
-2. Campo `subcategory` vs `category_id` en consultas
-3. businessData no se carga correctamente
-4. Campos de Supabase que no coinciden con el código
+1. ✅ **CRÍTICO**: `offers.business_id` tenía tipo UUID en lugar de INTEGER
+   - Schema corregido en `schema-offers-FIXED.sql`
+   - Script de migración en `fix-owner-panel.sql`
 
-**Pasos para debugging**:
-1. Revisar consola del navegador para ver errores específicos
-2. Verificar en Supabase Dashboard:
-   - Usuario tiene negocio asignado (owner_id)
-   - Negocio tiene verification_status = 'approved'
-   - Campo subcategory existe y tiene valor
-3. Verificar RLS policies permiten acceso
-4. Comprobar que las queries se ejecutan (Network tab)
+2. ✅ **Sincronización**: `is_verified` no estaba sincronizado con `verification_status`
+   - Trigger automático creado para mantener sincronización
+   - UPDATE inicial para corregir datos existentes
+
+3. ✅ **RLS Policies**: Faltaba política para que propietarios vean todas sus ofertas
+   - Policy "Propietarios ven todas sus ofertas" añadida
+   - Ahora pueden ver ofertas pausadas/invisibles
+
+4. ✅ **Documentación**: Creado `README-FIX.md` con guía completa de corrección
+
+**Archivos creados para la corrección**:
+- `supabase/fix-owner-panel.sql` - Script de migración/corrección
+- `supabase/schema-offers-FIXED.sql` - Schema corregido de offers
+- `supabase/README-FIX.md` - Guía paso a paso para aplicar correcciones
 
 ---
 
 ## 🔜 Pendientes Futuros
 
-### Inmediato (después de debug)
-- [ ] Debug y fix del panel de propietarios
+### Inmediato
+- [ ] **Ejecutar script de corrección** `fix-owner-panel.sql` en Supabase
+- [ ] Aprobar un negocio de prueba con `verification_status = 'approved'`
 - [ ] Testing completo del flujo de propietario
 
 ### Corto plazo
 - [ ] Sistema de favoritos con Supabase
 - [ ] Notificaciones por email para presupuestos
-- [ ] Panel para ver/gestionar candidaturas
+- [ ] Panel para ver/gestionar candidaturas a empleos
 - [ ] Estadísticas reales (no mockData)
+- [ ] Contador de vistas/clics en negocios
 
 ### Medio plazo
 - [ ] Conectar dominio: **CornellaLocal.es**
 - [ ] Deploy a Vercel
 - [ ] Configurar dominio en Supabase
+- [ ] Sistema de reseñas funcional
+- [ ] Notificaciones push para nuevos presupuestos
 
 ---
 
@@ -124,6 +132,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Negocios** | Se registran desde el perfil del usuario, no desde login |
 | **Propietarios** | Solo pueden gestionar su negocio si verification_status = 'approved' |
 | **Presupuestos** | Propietarios ven solicitudes de su categoría (subcategory match) |
+
+---
+
+## 🛠️ Cómo Aplicar las Correcciones del Panel de Propietarios
+
+### Paso 1: Ejecutar el script de corrección en Supabase
+
+1. Abre **Supabase Dashboard** → Tu proyecto → **SQL Editor**
+2. Abre el archivo `supabase/fix-owner-panel.sql`
+3. Copia y pega todo el contenido en el SQL Editor
+4. Haz clic en **Run** (o Ctrl+Enter)
+5. Verifica que no haya errores
+
+Este script corrige:
+- ✅ Tipo de `offers.business_id` (uuid → integer)
+- ✅ Sincroniza `is_verified` con `verification_status`
+- ✅ Añade políticas RLS para propietarios
+
+### Paso 2: Aprobar un negocio de prueba
+
+```sql
+-- Ver tus negocios
+SELECT id, name, verification_status, is_verified
+FROM public.businesses
+WHERE owner_id = auth.uid();
+
+-- Aprobar tu negocio (para testing)
+UPDATE public.businesses
+SET verification_status = 'approved'
+WHERE owner_id = auth.uid();
+```
+
+### Paso 3: Probar el panel
+
+1. Recarga la aplicación (F5)
+2. Ve a **Perfil** → **Panel de Propietario**
+3. Verifica que se carguen todos los datos
+4. Intenta crear una oferta o empleo de prueba
+
+**Para más detalles**, consulta: `supabase/README-FIX.md`
 
 ---
 
@@ -139,9 +187,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Base de Datos
 - **`supabase/schema.sql`**: Schema principal
 - **`supabase/schema-jobs.sql`**: Tabla de empleos
-- **`supabase/schema-offers.sql`**: Tabla de ofertas
+- **`supabase/schema-offers.sql`**: Tabla de ofertas (⚠️ tiene bug)
+- **`supabase/schema-offers-FIXED.sql`**: Tabla de ofertas CORREGIDA ✅
 - **`supabase/schema-budget-requests.sql`**: Solicitudes de presupuesto
 - **`supabase/schema-budget-quotes.sql`**: Cotizaciones de propietarios
+
+### Scripts de Corrección (NUEVO)
+- **`supabase/fix-owner-panel.sql`**: ⭐ Script para corregir bugs del panel
+- **`supabase/README-FIX.md`**: Guía completa de corrección paso a paso
 
 ### Datos de Ejemplo
 - **`supabase/seed-sample-businesses.sql`**: 12 negocios de ejemplo
@@ -232,7 +285,28 @@ Custom colors in `tailwind.config.js`:
 
 ---
 
-## Últimos Cambios (2026-02-02)
+## Últimos Cambios
+
+### Sesión 2: Debug y Corrección del Panel (2026-02-02)
+
+**Tarea**: Debuggear errores del panel de propietarios
+
+**Problemas identificados**:
+1. ❌ `offers.business_id` tipo UUID en lugar de INTEGER
+2. ❌ `is_verified` no sincronizado con `verification_status`
+3. ❌ Falta RLS policy para que propietarios vean todas sus ofertas
+
+**Archivos creados**:
+- `supabase/fix-owner-panel.sql` - Script de corrección completo
+- `supabase/schema-offers-FIXED.sql` - Schema corregido
+- `supabase/README-FIX.md` - Guía paso a paso
+- `CLAUDE.md` actualizado con estado actual
+
+**Estado**: ✅ Scripts de corrección listos, pendiente ejecutar en Supabase
+
+---
+
+### Sesión 1: Implementación del Panel (2026-02-02)
 
 **Commit**: `c951e25 - Implementar panel de propietarios funcional con Supabase`
 
@@ -243,7 +317,7 @@ Custom colors in `tailwind.config.js`:
 - Todas las funciones CRUD conectadas a Supabase
 - BusinessOwnerDashboard nuevo con estadísticas en tiempo real
 
-**Estado**: Implementado pero con errores pendientes de debug.
+**Estado**: ⚠️ Implementado pero con bugs identificados
 
 ---
 

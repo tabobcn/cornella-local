@@ -3123,6 +3123,22 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     fetchBusiness();
   }, [businessId]);
 
+  // Incrementar contador de vistas
+  useEffect(() => {
+    const incrementViews = async () => {
+      if (!businessId) return;
+
+      try {
+        await supabase.rpc('increment_business_views', { business_id: businessId });
+        console.log('[ANALYTICS] Vista de negocio registrada:', businessId);
+      } catch (error) {
+        console.error('[ANALYTICS] Error incrementando vistas:', error);
+      }
+    };
+
+    incrementViews();
+  }, [businessId]);
+
   // Cargar reseñas desde Supabase
   useEffect(() => {
     const fetchReviews = async () => {
@@ -3178,6 +3194,38 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
     checkCanReview();
   }, [user, businessId]);
+
+  // Handler para incrementar clics
+  const handleClick = async (type) => {
+    try {
+      await supabase.rpc('increment_business_clicks', { business_id: businessId });
+      console.log('[ANALYTICS] Clic registrado:', type);
+    } catch (error) {
+      console.error('[ANALYTICS] Error incrementando clics:', error);
+    }
+  };
+
+  const handleCallClick = () => {
+    handleClick('phone');
+    if (business?.phone) {
+      window.location.href = `tel:${business.phone}`;
+    }
+  };
+
+  const handleWebClick = () => {
+    handleClick('website');
+    if (business?.website) {
+      window.open(business.website, '_blank');
+    }
+  };
+
+  const handleMapClick = () => {
+    handleClick('map');
+    if (business?.address) {
+      const address = encodeURIComponent(business.address + ', Cornellà de Llobregat');
+      window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+    }
+  };
 
   if (loadingBusiness) {
     return (
@@ -3474,20 +3522,29 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
           {/* Action buttons */}
           <div className="flex gap-3">
-            <button className="flex-1 h-12 bg-primary rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:bg-blue-700 active:scale-[0.98] transition-all">
+            <button
+              onClick={handleCallClick}
+              className="flex-1 h-12 bg-primary rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:bg-blue-700 active:scale-[0.98] transition-all"
+            >
               <Phone className="text-white" size={20} />
               <span className="text-white font-bold">Llamar</span>
             </button>
             {isServiceBusiness && (
               <button
-                onClick={() => onNavigate('direct-budget', { businessId: business.id, businessName: business.name })}
+                onClick={() => {
+                  handleClick('budget');
+                  onNavigate('direct-budget', { businessId: business.id, businessName: business.name });
+                }}
                 className="flex-1 h-12 bg-orange-500 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 hover:bg-orange-600 active:scale-[0.98] transition-all"
               >
                 <ClipboardList className="text-white" size={20} />
                 <span className="text-white font-bold">Presupuesto</span>
               </button>
             )}
-            <button className="size-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all shadow-sm">
+            <button
+              onClick={handleWebClick}
+              className="size-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+            >
               <Globe className="text-primary" size={22} />
             </button>
           </div>
@@ -3806,6 +3863,22 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
     }
   }, [couponId]);
 
+  // Incrementar contador de vistas
+  useEffect(() => {
+    const incrementViews = async () => {
+      if (!couponId) return;
+
+      try {
+        await supabase.rpc('increment_offer_views', { offer_id: couponId });
+        console.log('[ANALYTICS] Vista de oferta registrada:', couponId);
+      } catch (error) {
+        console.error('[ANALYTICS] Error incrementando vistas:', error);
+      }
+    };
+
+    incrementViews();
+  }, [couponId]);
+
   if (loading) {
     return (
       <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-white">
@@ -4105,6 +4178,22 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
 
     if (jobId) fetchJob();
   }, [jobId, activeJob]);
+
+  // Incrementar contador de vistas
+  useEffect(() => {
+    const incrementViews = async () => {
+      if (!jobId) return;
+
+      try {
+        await supabase.rpc('increment_job_views', { job_id: jobId });
+        console.log('[ANALYTICS] Vista de empleo registrada:', jobId);
+      } catch (error) {
+        console.error('[ANALYTICS] Error incrementando vistas:', error);
+      }
+    };
+
+    incrementViews();
+  }, [jobId]);
 
   // Función auxiliar para calcular tiempo transcurrido
   const getTimeAgo = (dateString) => {

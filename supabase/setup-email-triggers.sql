@@ -52,6 +52,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =============================================
 -- TRIGGER 1: Nueva solicitud de presupuesto
 -- =============================================
+-- ⚠️ DESHABILITADO: Enviaría demasiados emails
+-- Los presupuestos usan SOLO notificaciones in-app
+-- Si quieres habilitarlo, descomenta el trigger al final
+-- =============================================
 CREATE OR REPLACE FUNCTION notify_new_budget_request()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -92,12 +96,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Crear trigger
-DROP TRIGGER IF EXISTS trigger_notify_new_budget_request ON public.budget_requests;
-CREATE TRIGGER trigger_notify_new_budget_request
-  AFTER INSERT ON public.budget_requests
-  FOR EACH ROW
-  EXECUTE FUNCTION notify_new_budget_request();
+-- ⚠️ TRIGGER DESHABILITADO POR DEFECTO
+-- Descomenta estas líneas si quieres habilitar emails de presupuestos:
+--
+-- DROP TRIGGER IF EXISTS trigger_notify_new_budget_request ON public.budget_requests;
+-- CREATE TRIGGER trigger_notify_new_budget_request
+--   AFTER INSERT ON public.budget_requests
+--   FOR EACH ROW
+--   EXECUTE FUNCTION notify_new_budget_request();
 
 
 -- =============================================
@@ -270,9 +276,12 @@ CREATE TRIGGER trigger_notify_application_status_change_email
 
 
 -- =============================================
--- TRIGGER 5 (OPCIONAL): Nueva oferta de favorito
+-- TRIGGER 5: Nueva oferta de favorito
 -- =============================================
--- Este trigger envía email cuando un negocio favorito publica una oferta
+-- ⚠️ DESHABILITADO POR DEFECTO: Puede generar mucho spam
+-- Si un negocio tiene 100 favoritos y publica oferta = 100 emails
+-- Mejor usar solo notificaciones in-app (ya implementadas)
+-- =============================================
 CREATE OR REPLACE FUNCTION notify_favorite_new_offer()
 RETURNS TRIGGER AS $$
 DECLARE

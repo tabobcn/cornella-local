@@ -633,6 +633,168 @@ const RateBusinessModal = ({ isOpen, onClose, business, onSubmitRating }) => {
   );
 };
 
+// Modal de filtros avanzados
+const AdvancedFiltersModal = ({
+  isOpen,
+  onClose,
+  sortBy,
+  setSortBy,
+  minRating,
+  setMinRating,
+  priceRange,
+  setPriceRange,
+  onReset
+}) => {
+  if (!isOpen) return null;
+
+  const sortOptions = [
+    { id: 'relevance', label: 'Relevancia', icon: 'TrendingUp' },
+    { id: 'rating', label: 'Mejor valorados', icon: 'Star' },
+    { id: 'newest', label: 'Más recientes', icon: 'Clock' },
+    { id: 'name', label: 'Alfabético', icon: 'SlidersHorizontal' },
+    { id: 'distance', label: 'Más cercanos', icon: 'MapPin' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-t-3xl md:rounded-3xl w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 p-5 flex items-center justify-between z-10">
+          <h3 className="text-lg font-bold text-slate-900">Filtros avanzados</h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X size={20} className="text-gray-500" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-5 space-y-6">
+          {/* Ordenar por */}
+          <div>
+            <h4 className="text-sm font-bold text-slate-700 mb-3">Ordenar por</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {sortOptions.map(option => (
+                <button
+                  key={option.id}
+                  onClick={() => setSortBy(option.id)}
+                  className={`p-3 rounded-xl border-2 transition-all text-left ${
+                    sortBy === option.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon
+                      name={option.icon}
+                      size={18}
+                      className={sortBy === option.id ? 'text-primary' : 'text-gray-400'}
+                    />
+                    {sortBy === option.id && (
+                      <CheckCircle2 size={16} className="text-primary ml-auto" />
+                    )}
+                  </div>
+                  <span className={`text-sm font-medium ${
+                    sortBy === option.id ? 'text-primary' : 'text-slate-700'
+                  }`}>
+                    {option.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Valoración mínima */}
+          <div>
+            <h4 className="text-sm font-bold text-slate-700 mb-3">Valoración mínima</h4>
+            <div className="flex items-center gap-2">
+              {[0, 1, 2, 3, 4, 5].map(rating => (
+                <button
+                  key={rating}
+                  onClick={() => setMinRating(rating)}
+                  className={`flex-1 p-3 rounded-xl border-2 transition-all ${
+                    minRating === rating
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <Star
+                      size={20}
+                      className={minRating === rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
+                    />
+                    <span className={`text-xs font-bold ${
+                      minRating === rating ? 'text-primary' : 'text-gray-500'
+                    }`}>
+                      {rating === 0 ? 'Todo' : `${rating}+`}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rango de precio (para ofertas) */}
+          <div>
+            <h4 className="text-sm font-bold text-slate-700 mb-3">
+              Rango de precio: {priceRange[0]}€ - {priceRange[1] === 100 ? '100+€' : `${priceRange[1]}€`}
+            </h4>
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 mb-1 block">Mínimo</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={priceRange[0]}
+                    onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 mb-1 block">Máximo</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={priceRange[1]}
+                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer con botones */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 p-5 flex gap-3">
+          <button
+            onClick={() => {
+              onReset();
+              setSortBy('relevance');
+              setMinRating(0);
+              setPriceRange([0, 100]);
+            }}
+            className="flex-1 h-12 bg-gray-100 text-slate-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+          >
+            Limpiar
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 h-12 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-primary/20"
+          >
+            Aplicar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Navbar inferior reutilizable
 const Navbar = ({ currentPage, onNavigate }) => {
   const items = [
@@ -928,6 +1090,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [flashOffers, setFlashOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
 
+  // 🔍 Advanced filters state
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('relevance'); // relevance, rating, distance, name, newest
+  const [minRating, setMinRating] = useState(0); // 0-5
+  const [priceRange, setPriceRange] = useState([0, 100]); // For offers
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
   // Cargar negocios desde Supabase
   useEffect(() => {
     const fetchBusinesses = async () => {
@@ -1036,41 +1205,90 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   });
 
   // Filtrar negocios según la búsqueda y barrio
-  const filteredBusinesses = searchQuery.trim() === '' && !selectedBarrio ? [] : businesses.filter(business => {
-    // Filtro por barrio
-    if (selectedBarrio && business.barrio !== selectedBarrio) {
-      return false;
-    }
-    // Filtro por búsqueda
-    if (searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase();
-      const matches = (
-        business.name.toLowerCase().includes(query) ||
-        (business.subcategory && business.subcategory.toLowerCase().includes(query)) ||
-        (business.description && business.description.toLowerCase().includes(query)) ||
-        (business.address && business.address.toLowerCase().includes(query)) ||
-        (business.tags && business.tags.some(tag => tag.toLowerCase().includes(query)))
-      );
-      if (query.includes('tag')) {
-        console.log(`Business "${business.name}" - Name matches: ${business.name.toLowerCase().includes(query)}, Subcategory: "${business.subcategory}"`);
+  const filteredBusinesses = searchQuery.trim() === '' && !selectedBarrio && !selectedCategory && minRating === 0 ? [] : businesses
+    .filter(business => {
+      // Filtro por barrio
+      if (selectedBarrio && business.barrio !== selectedBarrio) {
+        return false;
       }
-      return matches;
-    }
-    return true;
-  });
+      // Filtro por categoría
+      if (selectedCategory && business.subcategory !== selectedCategory) {
+        return false;
+      }
+      // Filtro por valoración mínima
+      if (minRating > 0 && (business.rating || 0) < minRating) {
+        return false;
+      }
+      // Filtro por búsqueda
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        const matches = (
+          business.name.toLowerCase().includes(query) ||
+          (business.subcategory && business.subcategory.toLowerCase().includes(query)) ||
+          (business.description && business.description.toLowerCase().includes(query)) ||
+          (business.address && business.address.toLowerCase().includes(query)) ||
+          (business.tags && business.tags.some(tag => tag.toLowerCase().includes(query)))
+        );
+        return matches;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      // Ordenamiento
+      switch (sortBy) {
+        case 'rating':
+          return (b.rating || 0) - (a.rating || 0);
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'newest':
+          return new Date(b.created_at) - new Date(a.created_at);
+        case 'distance':
+          // Simular distancia basada en coordenadas (si existen)
+          return (a.distance || 999) - (b.distance || 999);
+        default: // relevance
+          return 0;
+      }
+    });
 
   if (searchQuery && searchQuery.includes('tag')) {
     console.log('Search query:', searchQuery, 'Total businesses:', businesses.length, 'Filtered:', filteredBusinesses.length);
   }
 
-  // Filtrar ofertas según la búsqueda
-  const filteredOffers = searchQuery.trim() === '' ? [] : allFlashOffers.filter(offer => {
-    const query = searchQuery.toLowerCase();
-    return (
-      offer.title.toLowerCase().includes(query) ||
-      (offer.businessName && offer.businessName.toLowerCase().includes(query))
-    );
-  });
+  // Filtrar ofertas según la búsqueda y precio
+  const filteredOffers = searchQuery.trim() === '' && priceRange[0] === 0 && priceRange[1] === 100 ? [] : allFlashOffers
+    .filter(offer => {
+      // Filtro por búsqueda
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = (
+          offer.title.toLowerCase().includes(query) ||
+          (offer.businessName && offer.businessName.toLowerCase().includes(query))
+        );
+        if (!matchesSearch) return false;
+      }
+
+      // Filtro por rango de precio (basado en descuento)
+      const offerPrice = offer.originalPrice || 50; // Default si no hay precio
+      const discountedPrice = offer.price || offerPrice;
+      if (discountedPrice < priceRange[0] || discountedPrice > priceRange[1]) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Ordenamiento
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        case 'price_low':
+          return (a.price || 0) - (b.price || 0);
+        case 'price_high':
+          return (b.price || 0) - (a.price || 0);
+        default:
+          return 0;
+      }
+    });
 
   // Filtrar categorías según la búsqueda
   const filteredCategories = searchQuery.trim() === '' ? [] : categories.filter(category => {
@@ -1113,6 +1331,20 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     setShowSearchResults(false);
     setIsFocused(false);
   };
+
+  const resetFilters = () => {
+    setSortBy('relevance');
+    setMinRating(0);
+    setPriceRange([0, 100]);
+    setSelectedCategory(null);
+  };
+
+  const clearAllFiltersAndSearch = () => {
+    clearSearch();
+    resetFilters();
+  };
+
+  const hasActiveFilters = sortBy !== 'relevance' || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 100 || selectedCategory !== null;
 
   const selectBarrio = (barrioId) => {
     setSelectedBarrio(barrioId);
@@ -1182,21 +1414,33 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             }}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 gap-1">
-            {(searchQuery || selectedBarrio) && (
+            {(searchQuery || selectedBarrio || hasActiveFilters) && (
               <button
-                onClick={clearSearch}
+                onClick={clearAllFiltersAndSearch}
                 className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
+                title="Limpiar todo"
               >
                 <X size={18} />
               </button>
             )}
             <button
               onClick={() => setShowBarrioFilter(true)}
-              className={`p-1.5 hover:bg-gray-100 rounded-lg transition-colors ${selectedBarrio ? 'text-primary bg-primary/10' : 'text-gray-400'}`}
+              className={`p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative ${selectedBarrio ? 'text-primary bg-primary/10' : 'text-gray-400'}`}
+              title="Filtrar por barrio"
+            >
+              <MapPin size={20} />
+              {selectedBarrio && (
+                <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+              )}
+            </button>
+            <button
+              onClick={() => setShowAdvancedFilters(true)}
+              className={`p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative ${hasActiveFilters ? 'text-primary bg-primary/10' : 'text-gray-400'}`}
+              title="Filtros avanzados"
             >
               <SlidersHorizontal size={20} />
-              {selectedBarrio && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
+              {hasActiveFilters && (
+                <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
               )}
             </button>
           </div>
@@ -1207,21 +1451,48 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     {/* Resultados de búsqueda */}
     {showSearchResults && (
       <div className="absolute top-[140px] left-0 right-0 z-20 bg-white mx-4 rounded-2xl shadow-xl border border-gray-100 max-h-[60vh] overflow-y-auto">
-        {/* Filtro activo de barrio */}
-        {selectedBarrio && (
+        {/* Filtros activos */}
+        {(selectedBarrio || hasActiveFilters) && (
           <div className="p-3 border-b border-gray-100 bg-gray-50/50">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Filtrando por:</span>
-              <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                <MapPin size={14} />
-                {barrios.find(b => b.id === selectedBarrio)?.name}
-                <button
-                  onClick={clearBarrioFilter}
-                  className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
-                >
-                  <X size={12} />
-                </button>
-              </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500">Filtros activos:</span>
+
+              {selectedBarrio && (
+                <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                  <MapPin size={14} />
+                  {barrios.find(b => b.id === selectedBarrio)?.name}
+                  <button
+                    onClick={clearBarrioFilter}
+                    className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+
+              {sortBy !== 'relevance' && (
+                <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                  <TrendingUp size={14} />
+                  {sortBy === 'rating' && 'Mejor valorados'}
+                  {sortBy === 'newest' && 'Más recientes'}
+                  {sortBy === 'name' && 'Alfabético'}
+                  {sortBy === 'distance' && 'Más cercanos'}
+                </span>
+              )}
+
+              {minRating > 0 && (
+                <span className="inline-flex items-center gap-1.5 bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-sm font-medium">
+                  <Star size={14} className="fill-current" />
+                  {minRating}+ estrellas
+                </span>
+              )}
+
+              {(priceRange[0] > 0 || priceRange[1] < 100) && (
+                <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1 rounded-full text-sm font-medium">
+                  <Tag size={14} />
+                  {priceRange[0]}€ - {priceRange[1]}€
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -1594,6 +1865,19 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
         </div>
       </div>
     )}
+
+    {/* Modal de filtros avanzados */}
+    <AdvancedFiltersModal
+      isOpen={showAdvancedFilters}
+      onClose={() => setShowAdvancedFilters(false)}
+      sortBy={sortBy}
+      setSortBy={setSortBy}
+      minRating={minRating}
+      setMinRating={setMinRating}
+      priceRange={priceRange}
+      setPriceRange={setPriceRange}
+      onReset={resetFilters}
+    />
   </div>
   );
 };

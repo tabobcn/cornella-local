@@ -30,7 +30,8 @@
       "Bash(claude config set:*)",
       "Bash(cd:*)",
       "Bash(supabase db execute:*)",
-      "Bash(node scripts/seed-businesses.js:*)"
+      "Bash(node scripts/seed-businesses.js:*)",
+      "Bash(awk:*)"
     ]
   }
 }

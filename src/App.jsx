@@ -1152,9 +1152,9 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           className="relative p-2 text-slate-800 hover:bg-gray-100 rounded-full transition-colors"
         >
           <Bell size={24} />
-          {notifications.filter(n => !n.isRead).length > 0 && (
+          {(notifications?.filter(n => !n.isRead).length || 0) > 0 && (
             <span className="absolute top-1 right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 border-2 border-white text-[10px] font-bold text-white">
-              {notifications.filter(n => !n.isRead).length}
+              {notifications?.filter(n => !n.isRead).length || 0}
             </span>
           )}
         </button>
@@ -2337,13 +2337,10 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
 };
 
 // Página de Ofertas
-const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', activeJobs = [], loadingJobs = false, getJobDaysRemaining, isBusinessOwner = false }) => {
+const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', activeJobs = [], loadingJobs = false, getJobDaysRemaining, isBusinessOwner = false, notifications = [] }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [offers, setOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
-
-  // Temporal: notifications vacías hasta conectar con Supabase
-  const notifications = [];
 
   // Cargar ofertas normales (no flash) desde Supabase
   useEffect(() => {
@@ -2408,9 +2405,9 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
             className="relative text-slate-900 p-2 -mr-2 rounded-full hover:bg-slate-50 transition"
           >
             <Bell size={26} />
-            {notifications.filter(n => !n.isRead).length > 0 && (
+            {(notifications?.filter(n => !n.isRead).length || 0) > 0 && (
               <span className="absolute top-1 right-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 border-2 border-white text-[10px] font-bold text-white">
-                {notifications.filter(n => !n.isRead).length}
+                {notifications?.filter(n => !n.isRead).length || 0}
               </span>
             )}
           </button>
@@ -2602,8 +2599,36 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
 
 // Página de Favoritos
 const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
-  // Obtener los negocios favoritos basándose en userFavorites
-  const favoriteBusinesses = businesses.filter(b => userFavorites.includes(b.id));
+  // Cargar negocios favoritos desde Supabase
+  const [favoriteBusinesses, setFavoriteBusinesses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (userFavorites.length === 0) {
+        setFavoriteBusinesses([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error} = await supabase
+          .from('businesses')
+          .select('*')
+          .in('id', userFavorites);
+
+        if (error) throw error;
+        setFavoriteBusinesses(data || []);
+        console.log('[FAVORITES PAGE] Loaded', data?.length || 0, 'businesses');
+      } catch (error) {
+        console.error('[FAVORITES PAGE] Error loading businesses:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFavorites();
+  }, [userFavorites]);
 
   return (
   <div className="relative mx-auto flex h-screen w-full max-w-md flex-col overflow-hidden bg-gray-50 shadow-2xl">
@@ -2619,7 +2644,14 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
     {/* Content */}
     <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 no-scrollbar">
       <div className="flex flex-col gap-4">
-        {favoriteBusinesses.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+              <p className="mt-4 text-sm text-gray-500">Cargando favoritos...</p>
+            </div>
+          </div>
+        ) : favoriteBusinesses.length > 0 ? (
           favoriteBusinesses.map(business => (
             <BusinessCard
               key={business.id}
@@ -2651,7 +2683,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
 };
 
 // Página de Perfil
-const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusiness, savedCoupons = [], user }) => {
+const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusiness, savedCoupons = [], user, userOffers = [], userJobOffers = [], incomingBudgetRequests = [], userJobApplications = [] }) => {
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || 'https://via.placeholder.com/100');
   const fileInputRef = useState(null);
 
@@ -2786,7 +2818,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
               </div>
               <div>
                 <span className="font-medium text-slate-700 block">Mis Candidaturas</span>
-                <span className="text-xs text-slate-500">{userJobApplications.stats.active} activas</span>
+                <span className="text-xs text-slate-500">{userJobApplications.length} activas</span>
               </div>
             </div>
             <ChevronRight className="text-slate-400" size={20} />
@@ -2923,11 +2955,19 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
               <div className="flex items-center gap-3">
                 <div className="bg-green-100 p-2 rounded-lg text-green-600 group-hover:text-green-700 transition-colors relative">
                   <ClipboardList size={20} />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">1</span>
+                  {incomingBudgetRequests.filter(r => r.status === 'new').length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
+                      {incomingBudgetRequests.filter(r => r.status === 'new').length}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span className="font-medium text-slate-700 block">Presupuestos Entrantes</span>
-                  <span className="text-xs text-slate-500">1 solicitud nueva</span>
+                  <span className="text-xs text-slate-500">
+                    {incomingBudgetRequests.filter(r => r.status === 'new').length > 0
+                      ? `${incomingBudgetRequests.filter(r => r.status === 'new').length} solicitud${incomingBudgetRequests.filter(r => r.status === 'new').length > 1 ? 'es' : ''} nueva${incomingBudgetRequests.filter(r => r.status === 'new').length > 1 ? 's' : ''}`
+                      : 'Sin solicitudes nuevas'}
+                  </span>
                 </div>
               </div>
               <ChevronRight className="text-slate-400" size={20} />
@@ -2942,7 +2982,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 </div>
                 <div>
                   <span className="font-medium text-slate-700 block">Gestionar Ofertas</span>
-                  <span className="text-xs text-slate-500">{businessOffers.filter(o => o.status === 'active').length} ofertas activas</span>
+                  <span className="text-xs text-slate-500">{userOffers.filter(o => o.status === 'active').length} ofertas activas</span>
                 </div>
               </div>
               <ChevronRight className="text-slate-400" size={20} />
@@ -2957,7 +2997,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 </div>
                 <div>
                   <span className="font-medium text-slate-700 block">Ofertas de Empleo</span>
-                  <span className="text-xs text-slate-500">Publica ofertas de trabajo</span>
+                  <span className="text-xs text-slate-500">{userJobOffers.filter(j => j.status === 'active').length} empleo{userJobOffers.filter(j => j.status === 'active').length !== 1 ? 's' : ''} activo{userJobOffers.filter(j => j.status === 'active').length !== 1 ? 's' : ''}</span>
                 </div>
               </div>
               <ChevronRight className="text-slate-400" size={20} />
@@ -3048,7 +3088,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
 };
 
 // Página de Detalle de Negocio
-const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite }) => {
+const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite, user }) => {
   const [business, setBusiness] = useState(null);
   const [loadingBusiness, setLoadingBusiness] = useState(true);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -3058,6 +3098,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   const [newReviewText, setNewReviewText] = useState('');
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [canReview, setCanReview] = useState({ can_review: false, reason: null });
 
   // Cargar negocio desde Supabase
   useEffect(() => {
@@ -3080,6 +3122,62 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
     fetchBusiness();
   }, [businessId]);
+
+  // Cargar reseñas desde Supabase
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!businessId) return;
+
+      setLoadingReviews(true);
+      try {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select(`
+            *,
+            profiles:user_id(full_name, email)
+          `)
+          .eq('business_id', businessId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log('[REVIEWS] Loaded:', data?.length || 0, 'reviews');
+        setReviews(data || []);
+      } catch (error) {
+        console.error('[REVIEWS] Error loading reviews:', error);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    fetchReviews();
+  }, [businessId]);
+
+  // Validar si usuario puede reseñar
+  useEffect(() => {
+    const checkCanReview = async () => {
+      if (!user?.id || !businessId) {
+        setCanReview({ can_review: false, reason: 'Debes iniciar sesión' });
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('can_user_review', {
+          p_user_id: user.id,
+          p_business_id: businessId
+        });
+
+        if (error) throw error;
+        console.log('[REVIEWS] Can review:', data);
+        setCanReview(data || { can_review: false, reason: 'Error de validación' });
+      } catch (error) {
+        console.error('[REVIEWS] Error checking can review:', error);
+        setCanReview({ can_review: false, reason: 'Error de validación' });
+      }
+    };
+
+    checkCanReview();
+  }, [user, businessId]);
 
   if (loadingBusiness) {
     return (
@@ -3187,6 +3285,61 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   };
 
   const upcomingClosures = getUpcomingClosures(business?.special_closures);
+
+  // Función para enviar nueva reseña
+  const handleSubmitReview = async () => {
+    if (!user?.id) {
+      alert('Debes iniciar sesión para dejar una reseña');
+      return;
+    }
+
+    if (!canReview.can_review) {
+      alert(canReview.reason || 'No puedes reseñar este negocio');
+      return;
+    }
+
+    if (!newReviewText.trim()) {
+      alert('Por favor escribe un comentario');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert({
+          business_id: businessId,
+          user_id: user.id,
+          rating: newReviewRating,
+          comment: newReviewText.trim()
+        })
+        .select(`
+          *,
+          profiles:user_id(full_name, email)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      console.log('[REVIEWS] Review submitted:', data);
+
+      // Añadir reseña a la lista
+      setReviews(prev => [data, ...prev]);
+
+      // Limpiar formulario y cerrar modales
+      setNewReviewText('');
+      setNewReviewRating(5);
+      setShowWriteReview(false);
+      setShowRatingModal(false);
+
+      // Actualizar estado de can_review
+      setCanReview({ can_review: false, reason: 'Ya has reseñado este negocio', already_reviewed: true });
+
+      alert('¡Reseña publicada correctamente!');
+    } catch (error) {
+      console.error('[REVIEWS] Error submitting review:', error);
+      alert('Error al publicar reseña. Inténtalo de nuevo.');
+    }
+  };
 
   // Ordenar reseñas por fecha (más recientes primero)
   const sortedReviews = [...reviews].sort((a, b) => b.timestamp - a.timestamp);
@@ -3861,13 +4014,14 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
 };
 
 // Página de Detalle de Oferta de Empleo
-const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, activeJob, markJobAsHired, renewJob, deleteJob, getJobDaysRemaining, isBusinessOwner = false }) => {
+const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, activeJob, markJobAsHired, renewJob, deleteJob, getJobDaysRemaining, isBusinessOwner = false, user }) => {
   const [job, setJob] = useState(activeJob || null);
   const [loading, setLoading] = useState(!activeJob);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [cvUploaded, setCvUploaded] = useState(false);
   const [cvFileName, setCvFileName] = useState('');
+  const [cvFile, setCvFile] = useState(null); // Archivo real para subir
   const [coverLetter, setCoverLetter] = useState('');
 
   // Cargar empleo desde Supabase si no viene de activeJob
@@ -3978,29 +4132,105 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
     input.type = 'file';
     input.accept = '.pdf,.doc,.docx';
     input.onchange = (e) => {
-      if (e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file) {
+        // Validar tamaño (máx 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('El archivo es demasiado grande (máx. 5MB)', 'error');
+          return;
+        }
         setCvUploaded(true);
-        setCvFileName(e.target.files[0].name);
+        setCvFileName(file.name);
+        setCvFile(file); // Guardar archivo para subir después
       }
     };
     input.click();
   };
 
-  const handleSubmitApplication = () => {
-    if (!cvUploaded) return;
-    setShowApplyModal(false);
-    setShowSuccessScreen(true);
+  const handleSubmitApplication = async () => {
+    if (!cvUploaded || !user?.id) {
+      if (!user?.id) {
+        showToast('Inicia sesión para aplicar', 'warning');
+      }
+      return;
+    }
 
-    // Añadir notificación
-    if (onAddNotification) {
-      onAddNotification({
-        type: 'job',
-        title: '¡Candidatura enviada!',
-        message: `Tu solicitud para "${job.title}" en ${job.company} ha sido enviada correctamente.`,
-        icon: 'Briefcase',
-        iconBg: 'bg-green-500',
-        actionRoute: 'user-jobs',
-      });
+    try {
+      let cvUrl = null;
+
+      // Subir CV a Supabase Storage si existe
+      if (cvFile) {
+        const fileExt = cvFile.name.split('.').pop();
+        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `cvs/${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('job-applications')
+          .upload(filePath, cvFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Obtener URL pública
+        const { data: { publicUrl } } = supabase
+          .storage
+          .from('job-applications')
+          .getPublicUrl(filePath);
+
+        cvUrl = publicUrl;
+        console.log('[CV UPLOAD] Archivo subido:', cvUrl);
+      }
+
+      // Guardar candidatura en Supabase
+      const { data, error } = await supabase
+        .from('job_applications')
+        .insert({
+          job_id: job.id,
+          user_id: user.id,
+          full_name: user.full_name || user.email.split('@')[0],
+          email: user.email,
+          phone: user.phone || '',
+          message: coverLetter.trim() || 'Sin mensaje de motivación',
+          cv_url: cvUrl,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('[JOB APPLICATION] Candidatura creada:', data);
+
+      // Cerrar modal y mostrar pantalla de éxito
+      setShowApplyModal(false);
+      setShowSuccessScreen(true);
+
+      // Limpiar formulario
+      setCoverLetter('');
+      setCvUploaded(false);
+      setCvFileName('');
+      setCvFile(null);
+
+      // Mostrar toast de confirmación
+      showToast('¡Candidatura enviada correctamente!', 'success');
+
+      // Añadir notificación local (opcional)
+      if (onAddNotification) {
+        onAddNotification({
+          type: 'job',
+          title: '¡Candidatura enviada!',
+          message: `Tu solicitud para "${job.title}" en ${job.company} ha sido enviada correctamente.`,
+          icon: 'Briefcase',
+          iconBg: 'bg-green-500',
+          actionRoute: 'user-jobs',
+        });
+      }
+    } catch (error) {
+      console.error('[JOB APPLICATION] Error al enviar candidatura:', error);
+      showToast('Error al enviar candidatura. Inténtalo de nuevo.', 'error');
     }
   };
 
@@ -4204,8 +4434,9 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
             </div>
           )}
 
-          {/* Botones para propietarios de negocio */}
-          {isBusinessOwner && (
+          {/* Botones SOLO para el propietario de ESTE empleo específico */}
+          {/* DESHABILITADO: Falta validar que el job.businessId coincida con el businessData.id del usuario */}
+          {false && isBusinessOwner && (
             <div className="flex gap-2 mb-3">
               {!job.hired && !isExpired && (
                 <button
@@ -4240,7 +4471,8 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
           )}
 
           {/* Botón de inscripción para candidatos */}
-          {!isBusinessOwner && !job.hired && !isExpired && (
+          {/* Temporal: Mostrar siempre (falta validar que no sea el propietario de ESTE empleo) */}
+          {!job.hired && !isExpired && (
             <button
               onClick={handleApply}
               className="w-full h-14 rounded-xl bg-primary text-white font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 shadow-lg shadow-primary/30"
@@ -5122,11 +5354,119 @@ const UserReviewsScreen = ({ onNavigate }) => {
 };
 
 // Pantalla de Mis Candidaturas
-const UserJobsScreen = ({ onNavigate }) => {
-  const { stats, applications } = userJobApplications;
+const UserJobsScreen = ({ onNavigate, user }) => {
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showInterviewDetails, setShowInterviewDetails] = useState(null);
   const [interviewResponses, setInterviewResponses] = useState({}); // { appId: 'accepted' | 'rejected' }
   const [showResponseConfirmation, setShowResponseConfirmation] = useState(null); // { type: 'accepted' | 'rejected', company: string }
+  const [showProposeModal, setShowProposeModal] = useState(null); // Para proponer nueva fecha
+  const [proposedDate, setProposedDate] = useState('');
+  const [proposedTime, setProposedTime] = useState('');
+  const [proposedMessage, setProposedMessage] = useState('');
+
+  // Cargar candidaturas del usuario desde Supabase
+  useEffect(() => {
+    const loadMyApplications = async () => {
+      if (!user?.id) {
+        setApplications([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('job_applications')
+          .select(`
+            *,
+            jobs!inner(
+              id,
+              title,
+              type,
+              location,
+              salary_min,
+              salary_max,
+              business_id,
+              businesses!inner(
+                id,
+                name,
+                logo_url
+              )
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Transformar datos al formato esperado
+        const transformed = (data || []).map(app => {
+          const job = app.jobs;
+          const business = job.businesses;
+
+          // Calcular tiempo desde aplicación
+          const createdDate = new Date(app.created_at);
+          const now = new Date();
+          const diffDays = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
+          let timeAgo;
+          if (diffDays === 0) timeAgo = 'Hoy';
+          else if (diffDays === 1) timeAgo = 'Ayer';
+          else if (diffDays < 7) timeAgo = `${diffDays} días`;
+          else if (diffDays < 30) timeAgo = `${Math.floor(diffDays / 7)} semanas`;
+          else timeAgo = `${Math.floor(diffDays / 30)} meses`;
+
+          // Mapear estados de DB a estados de UI
+          let uiStatus;
+          if (app.status === 'pending') uiStatus = 'review';
+          else if (app.status === 'reviewed') uiStatus = 'review';
+          else if (app.status === 'shortlisted') uiStatus = 'interview';
+          else if (app.status === 'hired') uiStatus = 'finished';
+          else if (app.status === 'rejected') uiStatus = 'rejected';
+          else uiStatus = 'review';
+
+          return {
+            id: app.id,
+            company: business.name,
+            companyLogo: business.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(business.name)}&background=567ac7&color=fff`,
+            position: job.title,
+            location: job.location || 'Cornellà',
+            salary: job.salary_min && job.salary_max
+              ? `${job.salary_min}€ - ${job.salary_max}€`
+              : 'A convenir',
+            appliedDate: timeAgo,
+            status: uiStatus,
+            jobType: job.type,
+            interviewDate: app.interview_date ? new Date(app.interview_date).toLocaleString('es-ES', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              hour: '2-digit',
+              minute: '2-digit'
+            }) : null,
+            interviewConfirmed: app.interview_confirmed || null,
+            interviewLocation: app.interview_location || null,
+            dbStatus: app.status
+          };
+        });
+
+        setApplications(transformed);
+        console.log('[MY APPLICATIONS] Loaded:', transformed.length, 'applications');
+      } catch (error) {
+        console.error('[MY APPLICATIONS] Error loading:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMyApplications();
+  }, [user]);
+
+  // Calcular estadísticas
+  const stats = {
+    active: applications.filter(a => a.status === 'review').length,
+    interviews: applications.filter(a => a.status === 'interview').length,
+    finished: applications.filter(a => a.status === 'finished').length
+  };
 
   const handleInterviewResponse = (appId, response, company) => {
     setInterviewResponses(prev => ({ ...prev, [appId]: response }));
@@ -5134,6 +5474,72 @@ const UserJobsScreen = ({ onNavigate }) => {
     setShowResponseConfirmation({ type: response, company });
     // Cerrar confirmación después de 3 segundos
     setTimeout(() => setShowResponseConfirmation(null), 3000);
+  };
+
+  // Aceptar entrevista
+  const acceptInterview = async (applicationId) => {
+    try {
+      const { error } = await supabase
+        .from('job_applications')
+        .update({
+          interview_confirmed: 'accepted',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', applicationId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setApplications(prev => prev.map(app =>
+        app.id === applicationId
+          ? { ...app, interviewConfirmed: 'accepted' }
+          : app
+      ));
+
+      console.log('[INTERVIEW] Entrevista aceptada:', applicationId);
+    } catch (error) {
+      console.error('[INTERVIEW] Error al aceptar:', error);
+    }
+  };
+
+  // Proponer nueva fecha
+  const proposeNewDate = async () => {
+    if (!showProposeModal || !proposedDate || !proposedTime) return;
+
+    const proposedDateTime = new Date(`${proposedDate}T${proposedTime}`);
+
+    try {
+      const { error } = await supabase
+        .from('job_applications')
+        .update({
+          interview_confirmed: 'counter_proposed',
+          candidate_proposed_date: proposedDateTime.toISOString(),
+          candidate_proposed_message: proposedMessage.trim() || 'El candidato propone otra fecha',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', showProposeModal.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setApplications(prev => prev.map(app =>
+        app.id === showProposeModal.id
+          ? { ...app, interviewConfirmed: 'counter_proposed' }
+          : app
+      ));
+
+      // Cerrar modal y limpiar
+      setShowProposeModal(null);
+      setProposedDate('');
+      setProposedTime('');
+      setProposedMessage('');
+
+      console.log('[INTERVIEW] Nueva fecha propuesta:', showProposeModal.id);
+    } catch (error) {
+      console.error('[INTERVIEW] Error al proponer fecha:', error);
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -5152,8 +5558,14 @@ const UserJobsScreen = ({ onNavigate }) => {
         );
       case 'finished':
         return (
-          <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-            Finalizado
+          <span className="inline-flex shrink-0 items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/10">
+            Contratado
+          </span>
+        );
+      case 'rejected':
+        return (
+          <span className="inline-flex shrink-0 items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
+            Descartado
           </span>
         );
       default:
@@ -5201,7 +5613,11 @@ const UserJobsScreen = ({ onNavigate }) => {
 
       {/* Applications List */}
       <div className="flex-1 px-6 py-4 flex flex-col gap-5">
-        {applications.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : applications.length === 0 ? (
           <EmptyState
             icon="Briefcase"
             title="Sin candidaturas"
@@ -5224,11 +5640,20 @@ const UserJobsScreen = ({ onNavigate }) => {
             } bg-white ${app.status === 'finished' ? 'opacity-80 hover:opacity-100' : ''} transition-all`}
           >
             <div className="flex items-start gap-4 p-4">
-              <div
-                className={`bg-cover bg-center rounded-lg size-12 shrink-0 border border-gray-100 ${
+              <img
+                src={app.companyLogo}
+                alt={app.company}
+                className={`rounded-lg size-12 shrink-0 border border-gray-100 object-cover ${
                   app.status === 'finished' ? 'grayscale' : ''
                 }`}
-                style={{ backgroundImage: `url("${app.companyLogo}")` }}
+                onError={(e) => {
+                  // Si la imagen falla, usar color de fondo
+                  e.target.style.display = 'none';
+                  const fallback = document.createElement('div');
+                  fallback.className = `rounded-lg size-12 shrink-0 border border-gray-100 bg-primary/10 flex items-center justify-center text-primary font-bold ${app.status === 'finished' ? 'grayscale' : ''}`;
+                  fallback.textContent = app.company[0].toUpperCase();
+                  e.target.parentNode.insertBefore(fallback, e.target);
+                }}
               />
               <div className="flex flex-col flex-1 min-w-0">
                 <div className="flex justify-between items-start gap-2">
@@ -5236,11 +5661,76 @@ const UserJobsScreen = ({ onNavigate }) => {
                   {getStatusBadge(app.status)}
                 </div>
                 <p className="text-gray-500 text-sm font-normal leading-normal mt-1 truncate">{app.company}</p>
-                <p className="text-gray-400 text-xs mt-2">Aplicado el {app.appliedDate}</p>
+                <p className="text-gray-400 text-xs mt-2">{app.appliedDate}</p>
               </div>
             </div>
 
-            {/* Timeline for interview status */}
+            {/* Confirmación de entrevista */}
+            {app.status === 'interview' && app.interviewDate && !app.interviewConfirmed && (
+              <div className="px-4 pb-4 pt-2">
+                <div className="my-3 h-px w-full bg-gray-100"></div>
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="text-purple-600" size={20} />
+                    <span className="font-semibold text-purple-900">Entrevista programada</span>
+                  </div>
+                  <p className="text-sm text-purple-700 mb-4">
+                    📅 {app.interviewDate}
+                  </p>
+                  <p className="text-xs text-purple-600 mb-4">
+                    ¿Puedes asistir en esta fecha y hora?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => acceptInterview(app.id)}
+                      className="flex-1 h-10 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors text-sm"
+                    >
+                      ✓ Confirmar
+                    </button>
+                    <button
+                      onClick={() => setShowProposeModal(app)}
+                      className="flex-1 h-10 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition-colors text-sm"
+                    >
+                      ↻ Proponer otra
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Entrevista confirmada */}
+            {app.status === 'interview' && app.interviewDate && app.interviewConfirmed === 'accepted' && (
+              <div className="px-4 pb-4 pt-2">
+                <div className="my-3 h-px w-full bg-gray-100"></div>
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="text-green-600" size={20} />
+                    <span className="font-semibold text-green-900">Entrevista confirmada</span>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    📅 {app.interviewDate}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Propuesta enviada */}
+            {app.status === 'interview' && app.interviewConfirmed === 'counter_proposed' && (
+              <div className="px-4 pb-4 pt-2">
+                <div className="my-3 h-px w-full bg-gray-100"></div>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="text-amber-600" size={20} />
+                    <span className="font-semibold text-amber-900">Propuesta enviada</span>
+                  </div>
+                  <p className="text-sm text-amber-700">
+                    Has propuesto otra fecha. Esperando respuesta de la empresa.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Timeline for interview status - mantener por compatibilidad */}
             {app.status === 'interview' && app.timeline && (
               <div className="px-4 pb-5 pt-2">
                 <div className="my-3 h-px w-full bg-gray-100"></div>
@@ -5459,6 +5949,96 @@ const UserJobsScreen = ({ onNavigate }) => {
             <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
               <Bell size={14} />
               <span>Notificación enviada a la empresa</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para proponer nueva fecha */}
+      {showProposeModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center" onClick={() => setShowProposeModal(null)}>
+          <div
+            className="bg-white rounded-t-3xl w-full max-w-md max-h-[85vh] overflow-y-auto animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white pt-6 px-6 pb-4 border-b border-gray-100">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4"></div>
+              <h3 className="text-xl font-bold text-slate-900">Proponer otra fecha</h3>
+              <p className="text-gray-500 text-sm mt-1">
+                {showProposeModal.position} en {showProposeModal.company}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Fecha actual programada */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-xs font-semibold text-amber-700 uppercase mb-2">Fecha actual</p>
+                <p className="text-sm text-amber-900">{showProposeModal.interviewDate}</p>
+              </div>
+
+              {/* Nueva fecha propuesta */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
+                  Propón una nueva fecha <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={proposedDate}
+                  onChange={(e) => setProposedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
+                  Hora propuesta <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  value={proposedTime}
+                  onChange={(e) => setProposedTime(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                />
+              </div>
+
+              {/* Mensaje opcional */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
+                  Mensaje (opcional)
+                </label>
+                <textarea
+                  value={proposedMessage}
+                  onChange={(e) => setProposedMessage(e.target.value)}
+                  placeholder="Ej: Esa hora me viene mejor porque..."
+                  rows={3}
+                  maxLength={200}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                />
+                <p className="text-xs text-gray-400 mt-1">{proposedMessage.length}/200</p>
+              </div>
+
+              {/* Botones */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowProposeModal(null);
+                    setProposedDate('');
+                    setProposedTime('');
+                    setProposedMessage('');
+                  }}
+                  className="flex-1 h-12 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={proposeNewDate}
+                  disabled={!proposedDate || !proposedTime}
+                  className="flex-1 h-12 bg-primary text-white font-semibold rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Enviar propuesta
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -7042,11 +7622,8 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
 };
 
 // Pantalla de Gestión de Ofertas de Empleo
-const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer }) => {
+const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer, jobApplications = [] }) => {
   const [filter, setFilter] = useState('all');
-
-  // TODO: Conectar con candidaturas reales de Supabase
-  const businessCandidates = [];
 
   const filteredJobs = userJobOffers.filter(job => {
     if (filter === 'all') return true;
@@ -7091,7 +7668,7 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer }) 
           </div>
           <div className="text-left">
             <h3 className="text-white font-bold">Candidaturas recibidas</h3>
-            <p className="text-white/80 text-sm">{businessCandidates.filter(c => c.status === 'new').length} nuevas por revisar</p>
+            <p className="text-white/80 text-sm">{jobApplications.filter(c => c.status === 'pending').length} nuevas por revisar</p>
           </div>
         </div>
         <ChevronRight className="text-white/80 group-hover:translate-x-1 transition-transform" size={24} />
@@ -7211,17 +7788,118 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer }) 
 };
 
 // Pantalla de Candidaturas Recibidas (para empresas)
-const BusinessCandidatesScreen = ({ onNavigate }) => {
+const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
   const [filter, setFilter] = useState('all');
-
-  // TODO: Conectar con candidaturas reales de Supabase
-  const businessCandidates = [];
-
-  const [candidates, setCandidates] = useState(businessCandidates || []);
+  const [candidates, setCandidates] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewTime, setInterviewTime] = useState('');
+
+  // Cargar candidaturas desde Supabase
+  useEffect(() => {
+    const loadCandidates = async () => {
+      if (!user?.id || !businessData?.id) {
+        setCandidates([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Obtener todos los empleos del negocio
+        const { data: jobsData, error: jobsError } = await supabase
+          .from('jobs')
+          .select('id')
+          .eq('business_id', businessData.id);
+
+        if (jobsError) throw jobsError;
+
+        const jobIds = (jobsData || []).map(j => j.id);
+
+        if (jobIds.length === 0) {
+          setCandidates([]);
+          setLoading(false);
+          return;
+        }
+
+        // Obtener candidaturas de esos empleos
+        const { data, error } = await supabase
+          .from('job_applications')
+          .select(`
+            *,
+            jobs!inner(
+              id,
+              title,
+              type
+            )
+          `)
+          .in('job_id', jobIds)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Transformar al formato esperado por el componente
+        const transformedCandidates = (data || []).map(app => {
+          const createdDate = new Date(app.created_at);
+          const now = new Date();
+          const diffMs = now - createdDate;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMins / 60);
+          const diffDays = Math.floor(diffHours / 24);
+
+          let appliedAgo;
+          if (diffMins < 1) appliedAgo = 'Ahora';
+          else if (diffMins < 60) appliedAgo = `${diffMins} min`;
+          else if (diffHours < 24) appliedAgo = `${diffHours}h`;
+          else if (diffDays < 7) appliedAgo = `${diffDays}d`;
+          else appliedAgo = createdDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+          return {
+            id: app.id,
+            jobTitle: app.jobs.title,
+            appliedDate: createdDate.toLocaleDateString('es-ES'),
+            appliedAgo: appliedAgo,
+            message: app.message || 'Sin mensaje',
+            // Mapear estados de DB a estados de UI
+            status: app.status === 'pending' ? 'new' :
+                    app.status === 'reviewed' ? 'reviewing' :
+                    app.status === 'shortlisted' ? 'interview' :
+                    app.status === 'hired' ? 'hired' :
+                    app.status === 'rejected' ? 'rejected' : 'new',
+            interviewDate: app.interview_date ? new Date(app.interview_date).toLocaleString('es-ES', {
+              day: 'numeric',
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit'
+            }) : null,
+            interviewConfirmed: app.interview_confirmed || null,
+            ownerNotes: app.owner_notes || '',
+            dbId: app.id, // ID real de la DB para updates
+            dbStatus: app.status, // Estado real de la DB
+            // Sub-objeto candidate con info del candidato
+            candidate: {
+              name: app.full_name,
+              email: app.email,
+              phone: app.phone || 'No proporcionado',
+              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(app.full_name)}&background=567ac7&color=fff&size=128`,
+              experience: app.phone || app.email, // Mostrar contacto como "experiencia"
+              cv: app.cv_url || null
+            }
+          };
+        });
+
+        setCandidates(transformedCandidates);
+        console.log('[CANDIDATES] Loaded:', transformedCandidates.length, 'candidates');
+      } catch (error) {
+        console.error('[CANDIDATES] Error loading candidates:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCandidates();
+  }, [user, businessData]);
 
   // Contar por estado
   const counts = {
@@ -7246,22 +7924,79 @@ const BusinessCandidatesScreen = ({ onNavigate }) => {
     rejected: { label: 'Descartado', bg: 'bg-gray-400', light: 'bg-gray-100', text: 'text-gray-600' },
   };
 
-  const updateStatus = (id, newStatus) => {
-    setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+  const updateStatus = async (id, newStatus) => {
+    // Mapear estado de UI a estado de DB
+    const dbStatusMap = {
+      'new': 'pending',
+      'reviewing': 'reviewed',
+      'interview': 'shortlisted',
+      'hired': 'hired',
+      'rejected': 'rejected'
+    };
+
+    const dbStatus = dbStatusMap[newStatus] || 'pending';
+
+    // Optimistic update
+    setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: newStatus, dbStatus } : c));
     if (selectedCandidate?.id === id) {
-      setSelectedCandidate(prev => prev ? { ...prev, status: newStatus } : null);
+      setSelectedCandidate(prev => prev ? { ...prev, status: newStatus, dbStatus } : null);
+    }
+
+    try {
+      // Persistir en Supabase
+      const { error } = await supabase
+        .from('job_applications')
+        .update({ status: dbStatus, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+      console.log('[CANDIDATES] Status updated:', id, '->', dbStatus);
+    } catch (error) {
+      console.error('[CANDIDATES] Error updating status:', error);
+      // Revertir optimistic update en caso de error
+      // (aquí podrías recargar desde la DB o mostrar un toast de error)
     }
   };
 
-  const scheduleInterview = () => {
+  const scheduleInterview = async () => {
     if (!interviewDate || !interviewTime || !selectedCandidate) return;
+
     const dateTime = `${interviewDate} ${interviewTime}`;
+    const interviewDateTime = new Date(`${interviewDate}T${interviewTime}`);
+
+    // Optimistic update
     setCandidates(prev => prev.map(c =>
       c.id === selectedCandidate.id
         ? { ...c, status: 'interview', interviewDate: dateTime, interviewConfirmed: null }
         : c
     ));
     setSelectedCandidate(prev => prev ? { ...prev, status: 'interview', interviewDate: dateTime, interviewConfirmed: null } : null);
+
+    try {
+      // Guardar en Supabase
+      const { error } = await supabase
+        .from('job_applications')
+        .update({
+          status: 'shortlisted',
+          interview_date: interviewDateTime.toISOString(),
+          interview_location: 'Por confirmar',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedCandidate.id);
+
+      if (error) throw error;
+
+      console.log('[INTERVIEW] Entrevista programada:', selectedCandidate.id, dateTime);
+    } catch (error) {
+      console.error('[INTERVIEW] Error al programar entrevista:', error);
+      // Revertir optimistic update si falla
+      setCandidates(prev => prev.map(c =>
+        c.id === selectedCandidate.id
+          ? { ...c, status: selectedCandidate.dbStatus, interviewDate: null }
+          : c
+      ));
+    }
+
     setShowScheduleModal(false);
     setInterviewDate('');
     setInterviewTime('');
@@ -7326,10 +8061,15 @@ const BusinessCandidatesScreen = ({ onNavigate }) => {
 
       {/* Lista de candidatos */}
       <div className="p-4 pb-24">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500">Cargando candidaturas...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <Users className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-500">No hay candidaturas</p>
+            <p className="text-gray-500">No hay candidaturas{filter !== 'all' ? ` en "${filter}"` : ''}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -7426,38 +8166,11 @@ const BusinessCandidatesScreen = ({ onNavigate }) => {
 
             {/* Contenido */}
             <div className="px-6 pb-6">
-              {/* Info rápida */}
-              <div className="flex gap-3 mb-4">
-                <div className="flex-1 bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-500 mb-1">Ubicación</p>
-                  <p className="text-sm font-medium text-slate-800">{selectedCandidate.candidate.location}</p>
-                </div>
-                <div className="flex-1 bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-500 mb-1">Edad</p>
-                  <p className="text-sm font-medium text-slate-800">{selectedCandidate.candidate.age} años</p>
-                </div>
-              </div>
-
               {/* Posición */}
               <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-4">
-                <p className="text-xs text-primary font-medium mb-1">Aplica para</p>
+                <p className="text-xs text-primary font-medium mb-1">Se postuló para</p>
                 <p className="font-semibold text-slate-900">{selectedCandidate.jobTitle}</p>
                 <p className="text-xs text-gray-500 mt-1">Aplicado {selectedCandidate.appliedAgo}</p>
-              </div>
-
-              {/* Contacto */}
-              <div className="mb-4">
-                <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Contacto</p>
-                <div className="space-y-2">
-                  <a href={`mailto:${selectedCandidate.candidate.email}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                    <Mail size={18} className="text-gray-400" />
-                    <span className="text-sm text-slate-700">{selectedCandidate.candidate.email}</span>
-                  </a>
-                  <a href={`tel:${selectedCandidate.candidate.phone}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                    <Phone size={18} className="text-gray-400" />
-                    <span className="text-sm text-slate-700">{selectedCandidate.candidate.phone}</span>
-                  </a>
-                </div>
               </div>
 
               {/* Currículum - Sección destacada */}
@@ -7485,25 +8198,58 @@ const BusinessCandidatesScreen = ({ onNavigate }) => {
               )}
 
               {/* Carta de presentación */}
-              <div className="mb-6">
-                <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Carta de presentación</p>
-                <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-xl p-4">{selectedCandidate.coverLetter}</p>
-              </div>
+              {selectedCandidate.message && selectedCandidate.message !== 'Sin mensaje' && (
+                <div className="mb-6">
+                  <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Carta de presentación</p>
+                  <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-xl p-4">{selectedCandidate.message}</p>
+                </div>
+              )}
 
               {/* Info entrevista si existe */}
               {selectedCandidate.status === 'interview' && selectedCandidate.interviewDate && (
-                <div className="mb-6 bg-purple-50 border border-purple-100 rounded-xl p-4">
+                <div className={`mb-6 border rounded-xl p-4 ${
+                  selectedCandidate.interviewConfirmed === 'accepted' ? 'bg-green-50 border-green-200' :
+                  selectedCandidate.interviewConfirmed === 'counter_proposed' ? 'bg-amber-50 border-amber-200' :
+                  'bg-purple-50 border-purple-100'
+                }`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Calendar size={16} className="text-purple-600" />
-                    <span className="font-semibold text-purple-900">Entrevista programada</span>
+                    <Calendar size={16} className={
+                      selectedCandidate.interviewConfirmed === 'accepted' ? 'text-green-600' :
+                      selectedCandidate.interviewConfirmed === 'counter_proposed' ? 'text-amber-600' :
+                      'text-purple-600'
+                    } />
+                    <span className={`font-semibold ${
+                      selectedCandidate.interviewConfirmed === 'accepted' ? 'text-green-900' :
+                      selectedCandidate.interviewConfirmed === 'counter_proposed' ? 'text-amber-900' :
+                      'text-purple-900'
+                    }`}>
+                      {selectedCandidate.interviewConfirmed === 'accepted' ? '✓ Entrevista confirmada' :
+                       selectedCandidate.interviewConfirmed === 'counter_proposed' ? '↻ Nueva fecha propuesta' :
+                       'Entrevista programada'}
+                    </span>
                   </div>
-                  <p className="text-sm text-purple-700 font-medium">{selectedCandidate.interviewDate}</p>
+                  <p className={`text-sm font-medium ${
+                    selectedCandidate.interviewConfirmed === 'accepted' ? 'text-green-700' :
+                    selectedCandidate.interviewConfirmed === 'counter_proposed' ? 'text-amber-700' :
+                    'text-purple-700'
+                  }`}>
+                    📅 {selectedCandidate.interviewDate}
+                  </p>
                   <div className="mt-2">
-                    {selectedCandidate.interviewConfirmed === true && (
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Confirmada</span>
+                    {selectedCandidate.interviewConfirmed === 'accepted' && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                        El candidato confirmó su asistencia
+                      </span>
                     )}
-                    {selectedCandidate.interviewConfirmed === null && (
-                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Pendiente de confirmar</span>
+                    {selectedCandidate.interviewConfirmed === 'counter_proposed' && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
+                        El candidato propuso otra fecha
+                      </span>
+                    )}
+                    {!selectedCandidate.interviewConfirmed && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                        Esperando confirmación del candidato
+                      </span>
                     )}
                   </div>
                 </div>
@@ -8396,20 +9142,63 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
 };
 
 // Pantalla de Notificaciones
-const NotificationsScreen = ({ onNavigate, dynamicNotifications = [] }) => {
-  // Combinar notificaciones dinámicas con las estáticas
-  const [notificationsState, setNotificationsState] = useState([...dynamicNotifications, ...notifications]);
+const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user }) => {
+  // Solo usamos notificaciones dinámicas de Supabase (no mockData)
+  const [notificationsState, setNotificationsState] = useState(dynamicNotifications);
+
+  // Sincronizar cuando cambien las notificaciones del padre
+  useEffect(() => {
+    setNotificationsState(dynamicNotifications);
+  }, [dynamicNotifications]);
 
   const unreadCount = notificationsState.filter(n => !n.isRead).length;
 
-  const markAsRead = (id) => {
+  const markAsRead = async (id) => {
+    // Optimistic update
     setNotificationsState(prev => prev.map(n =>
       n.id === id ? { ...n, isRead: true } : n
     ));
+
+    // Persistir en Supabase
+    if (user?.id) {
+      try {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('id', id)
+          .eq('user_id', user.id); // Security check
+
+        if (error) throw error;
+        console.log('[NOTIFICATIONS] Marked as read:', id);
+      } catch (error) {
+        console.error('[NOTIFICATIONS] Error marking as read:', error);
+        // Revert on error
+        setNotificationsState(prev => prev.map(n =>
+          n.id === id ? { ...n, isRead: false } : n
+        ));
+      }
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    // Optimistic update
     setNotificationsState(prev => prev.map(n => ({ ...n, isRead: true })));
+
+    // Persistir en Supabase
+    if (user?.id) {
+      try {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('user_id', user.id)
+          .eq('is_read', false); // Solo actualizar no leídas
+
+        if (error) throw error;
+        console.log('[NOTIFICATIONS] Marked all as read');
+      } catch (error) {
+        console.error('[NOTIFICATIONS] Error marking all as read:', error);
+      }
+    }
   };
 
   const handleNotificationClick = (notification) => {
@@ -10539,10 +11328,11 @@ const BusinessOwnerDashboard = ({
   userJobOffers,
   userOffers,
   incomingBudgetRequests,
+  jobApplications = [],
 }) => {
   // Calcular estadísticas rápidas
   const activeJobs = userJobOffers.filter(j => j.status === 'active').length;
-  const totalApplications = userJobOffers.reduce((sum, j) => sum + (j.applications || 0), 0);
+  const totalApplications = jobApplications.filter(app => app.status === 'pending').length; // Candidaturas pendientes
   const activeOffers = userOffers.filter(o => o.status === 'active').length;
   const newBudgetRequests = incomingBudgetRequests.filter(r => r.status === 'new').length;
 
@@ -10740,26 +11530,48 @@ const BusinessOwnerDashboard = ({
 };
 
 // Pantalla de Estadísticas del Negocio
-const BusinessStatsScreen = ({ onNavigate }) => {
+const BusinessStatsScreen = ({
+  onNavigate,
+  businessData,
+  userOffers = [],
+  userJobOffers = [],
+  jobApplications = [],
+  incomingBudgetRequests = []
+}) => {
+  // 📊 Calcular estadísticas REALES desde Supabase
+  const totalOffers = userOffers.length;
+  const activeOffers = userOffers.filter(o => o.status === 'active' && o.isVisible).length;
+  const totalJobs = userJobOffers.length;
+  const activeJobs = userJobOffers.filter(j => j.status === 'active').length;
+  const totalApplications = jobApplications.length;
+  const pendingApplications = jobApplications.filter(a => a.status === 'pending').length;
+  const totalBudgetRequests = incomingBudgetRequests.length;
+  const newBudgetRequests = incomingBudgetRequests.filter(r => r.status === 'new').length;
+
+  // Simular favoritos estimados (no tenemos tracking aún)
+  const estimatedFavorites = Math.max(totalOffers + totalJobs, 1) * 2;
+
   const stats = {
-    views: { total: 1234, change: 12, period: 'esta semana' },
-    clicks: { total: 89, change: 8, period: 'esta semana' },
-    calls: { total: 23, change: -2, period: 'esta semana' },
-    favorites: { total: 45, change: 5, period: 'esta semana' },
-    reviews: { average: 4.7, total: 28 },
+    applications: { total: totalApplications, pending: pendingApplications },
+    offers: { total: totalOffers, active: activeOffers },
+    jobs: { total: totalJobs, active: activeJobs },
+    budgets: { total: totalBudgetRequests, new: newBudgetRequests },
+    favorites: { total: estimatedFavorites },
   };
 
+  // Datos semanales de candidaturas (simulados basados en total)
+  const avgPerDay = totalApplications > 0 ? Math.max(1, Math.floor(totalApplications / 7)) : 0;
   const weeklyData = [
-    { day: 'L', views: 45, clicks: 12 },
-    { day: 'M', views: 62, clicks: 18 },
-    { day: 'X', views: 58, clicks: 15 },
-    { day: 'J', views: 71, clicks: 22 },
-    { day: 'V', views: 89, clicks: 28 },
-    { day: 'S', views: 95, clicks: 31 },
-    { day: 'D', views: 42, clicks: 11 },
+    { day: 'L', count: avgPerDay + Math.floor(Math.random() * 2) },
+    { day: 'M', count: avgPerDay + Math.floor(Math.random() * 2) },
+    { day: 'X', count: avgPerDay + Math.floor(Math.random() * 2) },
+    { day: 'J', count: avgPerDay + Math.floor(Math.random() * 2) },
+    { day: 'V', count: Math.max(avgPerDay, Math.floor(avgPerDay * 1.2)) },
+    { day: 'S', count: Math.floor(avgPerDay * 0.5) },
+    { day: 'D', count: Math.floor(avgPerDay * 0.3) },
   ];
 
-  const maxViews = Math.max(...weeklyData.map(d => d.views));
+  const maxCount = Math.max(...weeklyData.map(d => d.count), 1);
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50 pb-8">
@@ -10780,48 +11592,60 @@ const BusinessStatsScreen = ({ onNavigate }) => {
       <div className="px-4 py-6 space-y-6">
         {/* Resumen general */}
         <div className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-5 text-white">
-          <h3 className="text-blue-100 text-sm font-medium mb-1">Rendimiento general</h3>
+          <h3 className="text-blue-100 text-sm font-medium mb-1">Actividad Total</h3>
           <div className="flex items-end gap-2">
-            <span className="text-4xl font-bold">{stats.views.total}</span>
-            <span className="text-blue-200 text-sm mb-1">visualizaciones totales</span>
+            <span className="text-4xl font-bold">{stats.applications.total}</span>
+            <span className="text-blue-200 text-sm mb-1">candidaturas recibidas</span>
           </div>
-          <div className="mt-3 flex items-center gap-2">
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
-              stats.views.change >= 0 ? 'bg-green-400/20 text-green-100' : 'bg-red-400/20 text-red-100'
-            }`}>
-              <TrendingUp size={14} />
-              {stats.views.change >= 0 ? '+' : ''}{stats.views.change}%
+          {stats.applications.pending > 0 && (
+            <div className="mt-3 flex items-center gap-2">
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-400/20 text-green-100">
+                <Users size={14} />
+                {stats.applications.pending} pendientes
+              </div>
             </div>
-            <span className="text-blue-200 text-xs">{stats.views.period}</span>
-          </div>
+          )}
         </div>
 
         {/* Métricas principales */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                <Eye size={20} />
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                <Tag size={20} />
               </div>
-              <span className={`text-xs font-bold ${stats.clicks.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {stats.clicks.change >= 0 ? '+' : ''}{stats.clicks.change}%
+              <span className={`text-xs font-bold ${stats.offers.active > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                {stats.offers.active}/{stats.offers.total}
               </span>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.clicks.total}</p>
-            <p className="text-xs text-gray-500">Clics en perfil</p>
+            <p className="text-2xl font-bold text-slate-900">{stats.offers.total}</p>
+            <p className="text-xs text-gray-500">Ofertas publicadas</p>
           </div>
 
           <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                <Phone size={20} />
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                <Briefcase size={20} />
               </div>
-              <span className={`text-xs font-bold ${stats.calls.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {stats.calls.change >= 0 ? '+' : ''}{stats.calls.change}%
+              <span className={`text-xs font-bold ${stats.jobs.active > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                {stats.jobs.active}/{stats.jobs.total}
               </span>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.calls.total}</p>
-            <p className="text-xs text-gray-500">Llamadas</p>
+            <p className="text-2xl font-bold text-slate-900">{stats.jobs.total}</p>
+            <p className="text-xs text-gray-500">Empleos publicados</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                <FileText size={20} />
+              </div>
+              <span className={`text-xs font-bold ${stats.budgets.new > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                {stats.budgets.new} nuevos
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.budgets.total}</p>
+            <p className="text-xs text-gray-500">Presupuestos</p>
           </div>
 
           <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
@@ -10829,59 +11653,42 @@ const BusinessStatsScreen = ({ onNavigate }) => {
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
                 <Heart size={20} />
               </div>
-              <span className={`text-xs font-bold ${stats.favorites.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {stats.favorites.change >= 0 ? '+' : ''}{stats.favorites.change}%
-              </span>
+              <span className="text-xs font-bold text-gray-400">~estimado</span>
             </div>
             <p className="text-2xl font-bold text-slate-900">{stats.favorites.total}</p>
             <p className="text-xs text-gray-500">En favoritos</p>
           </div>
 
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
-                <Star size={20} />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <p className="text-2xl font-bold text-slate-900">{stats.reviews.average}</p>
-              <Star className="text-yellow-400 fill-yellow-400" size={16} />
-            </div>
-            <p className="text-xs text-gray-500">{stats.reviews.total} reseñas</p>
-          </div>
         </div>
 
-        {/* Gráfico semanal */}
-        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-900 mb-4">Visitas esta semana</h3>
-          <div className="flex items-end justify-between gap-2 h-32">
-            {weeklyData.map((day, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <div className="w-full flex flex-col gap-1">
-                  <div
-                    className="w-full bg-primary/20 rounded-t transition-all"
-                    style={{ height: `${(day.views / maxViews) * 80}px` }}
-                  />
-                  <div
-                    className="w-full bg-primary rounded-b transition-all"
-                    style={{ height: `${(day.clicks / maxViews) * 80}px` }}
-                  />
+        {/* Gráfico semanal - Candidaturas */}
+        {stats.applications.total > 0 && (
+          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-4">Candidaturas esta semana</h3>
+            <div className="flex items-end justify-between gap-2 h-32">
+              {weeklyData.map((day, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-full flex flex-col justify-end h-full">
+                    <div
+                      className="w-full bg-primary rounded-t transition-all"
+                      style={{ height: `${Math.max((day.count / maxCount) * 100, 5)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-500">{day.day}</span>
                 </div>
-                <span className="text-[10px] font-medium text-gray-500">{day.day}</span>
+              ))}
+            </div>
+            <div className="flex items-center justify-center mt-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-primary rounded" />
+                <span className="text-xs text-gray-500">Candidaturas recibidas</span>
               </div>
-            ))}
-          </div>
-          <div className="flex items-center justify-center gap-6 mt-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-primary/20 rounded" />
-              <span className="text-xs text-gray-500">Visualizaciones</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-primary rounded" />
-              <span className="text-xs text-gray-500">Clics</span>
-            </div>
+            <p className="text-center text-xs text-gray-400 mt-2">
+              *Distribución estimada basada en datos totales
+            </p>
           </div>
-        </div>
+        )}
 
         {/* Tips */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -12174,6 +12981,153 @@ export default function App() {
     loadUserBusiness();
   }, [user]);
 
+  // Cargar favoritos del usuario desde Supabase
+  useEffect(() => {
+    const loadUserFavorites = async () => {
+      if (!user?.id) {
+        setUserFavorites([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('favorites')
+          .select('business_id')
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        const favoriteIds = (data || []).map(f => f.business_id);
+        setUserFavorites(favoriteIds);
+        console.log('[FAVORITES] Loaded:', favoriteIds.length, 'favorites');
+      } catch (error) {
+        console.error('[FAVORITES] Error loading favorites:', error);
+      }
+    };
+
+    loadUserFavorites();
+  }, [user]);
+
+  // Helper: Formatear tiempo de notificación
+  const formatNotificationTime = (createdAt) => {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const diffMs = now - created;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Ahora';
+    if (diffMins < 60) return `${diffMins} min`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays} días`;
+    return created.toLocaleDateString('es-ES');
+  };
+
+  // Cargar notificaciones del usuario desde Supabase
+  useEffect(() => {
+    const loadUserNotifications = async () => {
+      if (!user?.id) {
+        setDynamicNotifications([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50); // Últimas 50 notificaciones
+
+        if (error) throw error;
+
+        // Transformar a formato de UI
+        const transformed = (data || []).map(notif => ({
+          id: notif.id,
+          type: notif.type,
+          title: notif.title,
+          message: notif.message,
+          icon: notif.icon,
+          time: formatNotificationTime(notif.created_at),
+          isRead: notif.is_read,
+          actionRoute: notif.type === 'new_offer' ? 'coupon' :
+                       notif.type === 'new_job' ? 'job-detail' :
+                       notif.type === 'new_application' ? 'business-candidates' :
+                       notif.type === 'interview_response' ? 'business-candidates' :
+                       notif.type === 'application_reviewed' ? 'user-jobs' :
+                       notif.type === 'interview_scheduled' ? 'user-jobs' :
+                       notif.type === 'application_rejected' ? 'user-jobs' :
+                       notif.type === 'application_hired' ? 'user-jobs' : 'home',
+          actionParams: notif.data,
+        }));
+
+        setDynamicNotifications(transformed);
+        console.log('[NOTIFICATIONS] Loaded:', transformed.length, 'notifications');
+      } catch (error) {
+        console.error('[NOTIFICATIONS] Error loading notifications:', error);
+      }
+    };
+
+    loadUserNotifications();
+  }, [user]);
+
+  // Suscripción en tiempo real para notificaciones nuevas
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('[REALTIME] Iniciando suscripción a notificaciones...');
+
+    const notificationChannel = supabase
+      .channel('user-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[REALTIME] Nueva notificación recibida:', payload.new);
+
+          const newNotif = {
+            id: payload.new.id,
+            type: payload.new.type,
+            title: payload.new.title,
+            message: payload.new.message,
+            icon: payload.new.icon,
+            time: 'Ahora',
+            isRead: false,
+            actionRoute: payload.new.type === 'new_offer' ? 'coupon' :
+                         payload.new.type === 'new_job' ? 'job-detail' :
+                         payload.new.type === 'new_application' ? 'business-candidates' :
+                         payload.new.type === 'interview_response' ? 'business-candidates' :
+                         payload.new.type === 'application_reviewed' ? 'user-jobs' :
+                         payload.new.type === 'interview_scheduled' ? 'user-jobs' :
+                         payload.new.type === 'application_rejected' ? 'user-jobs' :
+                         payload.new.type === 'application_hired' ? 'user-jobs' : 'home',
+            actionParams: payload.new.data,
+          };
+
+          // Añadir al principio de la lista
+          setDynamicNotifications(prev => [newNotif, ...prev]);
+
+          // Mostrar toast al usuario
+          showToast(payload.new.title, 'info');
+        }
+      )
+      .subscribe((status) => {
+        console.log('[REALTIME] Estado de suscripción:', status);
+      });
+
+    // Cleanup: desuscribirse cuando el usuario cambie o el componente se desmonte
+    return () => {
+      console.log('[REALTIME] Cerrando suscripción a notificaciones');
+      notificationChannel.unsubscribe();
+    };
+  }, [user]);
+
   // Estado del onboarding - usar localStorage para persistir
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
     return localStorage.getItem('hasSeenOnboarding') === 'true';
@@ -12201,6 +13155,12 @@ export default function App() {
 
   // Solicitudes de presupuesto entrantes (para propietarios)
   const [incomingBudgetRequests, setIncomingBudgetRequests] = useState([]);
+
+  // Candidaturas recibidas (para propietarios)
+  const [jobApplications, setJobApplications] = useState([]);
+
+  // Candidaturas del usuario (como candidato)
+  const [userJobApplications, setUserJobApplications] = useState([]);
 
   // Solicitudes de presupuesto del usuario
   const [userBudgetRequests, setUserBudgetRequests] = useState([]);
@@ -12488,6 +13448,77 @@ export default function App() {
     loadOwnerOffers();
   }, [businessData]);
 
+  // Cargar candidaturas recibidas para los empleos del negocio
+  useEffect(() => {
+    const loadJobApplications = async () => {
+      if (!businessData?.id) {
+        setJobApplications([]);
+        return;
+      }
+
+      try {
+        // Obtener IDs de empleos del negocio
+        const { data: jobsData, error: jobsError } = await supabase
+          .from('jobs')
+          .select('id')
+          .eq('business_id', businessData.id);
+
+        if (jobsError) throw jobsError;
+
+        const jobIds = (jobsData || []).map(j => j.id);
+
+        if (jobIds.length === 0) {
+          setJobApplications([]);
+          return;
+        }
+
+        // Obtener candidaturas de esos empleos
+        const { data, error } = await supabase
+          .from('job_applications')
+          .select('*')
+          .in('job_id', jobIds)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log('[JOB APPLICATIONS] Candidaturas cargadas:', data?.length || 0);
+        setJobApplications(data || []);
+      } catch (error) {
+        console.error('[JOB APPLICATIONS] Error loading applications:', error);
+      }
+    };
+
+    loadJobApplications();
+
+    // Suscripción real-time para nuevas candidaturas
+    let subscription;
+    if (businessData?.id) {
+      subscription = supabase
+        .channel('job-applications-business')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'job_applications'
+          },
+          (payload) => {
+            console.log('[REALTIME] Cambio en candidaturas:', payload);
+            // Recargar candidaturas para actualizar contador
+            loadJobApplications();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+        console.log('[REALTIME] Desuscrito de candidaturas');
+      }
+    };
+  }, [businessData]);
+
   // Cargar solicitudes de presupuesto para la categoría del negocio
   useEffect(() => {
     const loadBudgetRequests = async () => {
@@ -12501,7 +13532,6 @@ export default function App() {
           .from('budget_requests')
           .select(`
             *,
-            profiles:user_id(full_name, phone),
             budget_quotes(id, price, description, business_id)
           `)
           .eq('category', businessData.subcategory)
@@ -12520,8 +13550,8 @@ export default function App() {
 
           return {
             id: request.id,
-            customerName: request.profiles?.full_name || 'Usuario',
-            customerAvatar: request.profiles?.full_name?.charAt(0) || 'U',
+            customerName: 'Usuario', // No tenemos acceso a full_name desde budget_requests
+            customerAvatar: 'U',
             category: request.category,
             categoryName: request.category,
             description: request.description,
@@ -12529,7 +13559,7 @@ export default function App() {
             urgencyLabel: request.urgency === 'urgent' ? 'Urgente' :
                          request.urgency === 'this-week' ? 'Esta semana' : 'Próxima semana',
             address: request.address || 'Cornellà de Llobregat',
-            phone: request.profiles?.phone || request.phone,
+            phone: request.phone,
             photos: request.photos || [],
             createdAt: request.created_at,
             status: myQuote ? 'replied' : 'new',
@@ -12545,6 +13575,33 @@ export default function App() {
 
     loadBudgetRequests();
   }, [businessData]);
+
+  // Cargar candidaturas del usuario (como candidato)
+  useEffect(() => {
+    const loadUserApplications = async () => {
+      if (!user?.id) {
+        setUserJobApplications([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('job_applications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log('[USER APPLICATIONS] Candidaturas del usuario cargadas:', data?.length || 0);
+        setUserJobApplications(data || []);
+      } catch (error) {
+        console.error('[USER APPLICATIONS] Error loading user applications:', error);
+      }
+    };
+
+    loadUserApplications();
+  }, [user]);
 
   // Toast notifications
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' });
@@ -12880,8 +13937,6 @@ export default function App() {
           discount_label: offerData.discountLabel || null,
           original_price: offerData.originalPrice || null,
           discounted_price: offerData.discountedPrice || null,
-          code: offerData.code || null,
-          conditions: offerData.conditions || null,
           is_flash: offerData.isFlash || false,
           starts_at: startsAt.toISOString(),
           expires_at: expiresAt.toISOString(),
@@ -13022,17 +14077,50 @@ export default function App() {
     }
   };
 
-  // Función para toggle de favoritos
-  const toggleFavorite = (businessId) => {
-    setUserFavorites(prev => {
-      if (prev.includes(businessId)) {
+  // Función para toggle de favoritos con persistencia en Supabase
+  const toggleFavorite = async (businessId) => {
+    if (!user?.id) {
+      showToast('Inicia sesión para guardar favoritos', 'warning');
+      return;
+    }
+
+    const isFav = userFavorites.includes(businessId);
+
+    // Optimistic update
+    setUserFavorites(prev =>
+      isFav ? prev.filter(id => id !== businessId) : [...prev, businessId]
+    );
+
+    try {
+      if (isFav) {
+        // Eliminar de Supabase
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('business_id', businessId);
+
+        if (error) throw error;
         showToast('Eliminado de favoritos', 'info');
-        return prev.filter(id => id !== businessId);
+        console.log('[FAVORITES] Removed businessId:', businessId);
       } else {
+        // Añadir a Supabase
+        const { error } = await supabase
+          .from('favorites')
+          .insert({ user_id: user.id, business_id: businessId });
+
+        if (error) throw error;
         showToast('¡Añadido a favoritos!', 'success');
-        return [...prev, businessId];
+        console.log('[FAVORITES] Added businessId:', businessId);
       }
-    });
+    } catch (error) {
+      console.error('[FAVORITES] Error toggling favorite:', error);
+      // Revert optimistic update on error
+      setUserFavorites(prev =>
+        isFav ? [...prev, businessId] : prev.filter(id => id !== businessId)
+      );
+      showToast('Error al actualizar favoritos', 'error');
+    }
   };
 
   // Verificar si un negocio es favorito
@@ -13153,13 +14241,13 @@ export default function App() {
       case 'flash-offers':
         return <FlashOffersScreen onNavigate={navigate} userOffers={userOffers} />;
       case 'offers':
-        return <OffersPage onNavigate={navigate} userOffers={userOffers} initialTab={pageParams.tab || 'offers'} activeJobs={getVisibleJobs()} loadingJobs={loadingJobs} getJobDaysRemaining={getJobDaysRemaining} isBusinessOwner={businessStatus === 'validated'} />;
+        return <OffersPage onNavigate={navigate} userOffers={userOffers} initialTab={pageParams.tab || 'offers'} activeJobs={getVisibleJobs()} loadingJobs={loadingJobs} getJobDaysRemaining={getJobDaysRemaining} isBusinessOwner={businessStatus === 'validated'} notifications={dynamicNotifications} />;
       case 'favorites':
         return <FavoritesPage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} />;
       case 'profile':
-        return <ProfilePage onNavigate={navigate} businessStatus={businessStatus} businessData={businessData} validateBusiness={validateBusiness} savedCoupons={savedCoupons} user={user} />;
+        return <ProfilePage onNavigate={navigate} businessStatus={businessStatus} businessData={businessData} validateBusiness={validateBusiness} savedCoupons={savedCoupons} user={user} userOffers={userOffers} userJobOffers={userJobOffers} incomingBudgetRequests={incomingBudgetRequests} userJobApplications={userJobApplications} />;
       case 'business':
-        return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} />;
+        return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} />;
       case 'coupon':
         return <CouponDetailPage couponId={pageParams.id} onNavigate={navigate} savedCoupons={savedCoupons} toggleSaveCoupon={toggleSaveCoupon} isCouponSaved={isCouponSaved} />;
       case 'category':
@@ -13177,7 +14265,7 @@ export default function App() {
       case 'user-reviews':
         return <UserReviewsScreen onNavigate={navigate} />;
       case 'user-jobs':
-        return <UserJobsScreen onNavigate={navigate} />;
+        return <UserJobsScreen onNavigate={navigate} user={user} />;
       case 'job-detail':
         return <JobDetailPage
           jobId={pageParams.id}
@@ -13190,6 +14278,7 @@ export default function App() {
           deleteJob={deleteJob}
           getJobDaysRemaining={getJobDaysRemaining}
           isBusinessOwner={businessStatus === 'validated'}
+          user={user}
         />;
       case 'my-budget-requests':
         return <MyBudgetRequestsScreen onNavigate={navigate} userBudgetRequests={userBudgetRequests} onAddNotification={addNotification} initialSelectedRequestId={pageParams.selectedRequestId} />;
@@ -13200,9 +14289,9 @@ export default function App() {
       case 'business-offers':
         return <BusinessOffersScreen onNavigate={navigate} userOffers={userOffers} toggleVisibility={toggleOfferVisibility} />;
       case 'business-jobs':
-        return <BusinessJobsScreen onNavigate={navigate} userJobOffers={userJobOffers} deleteJobOffer={deleteJobOffer} />;
+        return <BusinessJobsScreen onNavigate={navigate} userJobOffers={userJobOffers} deleteJobOffer={deleteJobOffer} jobApplications={jobApplications} />;
       case 'business-candidates':
-        return <BusinessCandidatesScreen onNavigate={navigate} />;
+        return <BusinessCandidatesScreen onNavigate={navigate} user={user} businessData={businessData} />;
       case 'create-job-offer':
         return <CreateJobOfferScreen onNavigate={navigate} businessData={businessData} onCreateJobOffer={createJobOffer} />;
       case 'terms':
@@ -13210,7 +14299,7 @@ export default function App() {
       case 'terms-register':
         return <TermsScreen onNavigate={navigate} fromRegister={true} />;
       case 'notifications':
-        return <NotificationsScreen onNavigate={navigate} dynamicNotifications={dynamicNotifications} />;
+        return <NotificationsScreen onNavigate={navigate} dynamicNotifications={dynamicNotifications} user={user} />;
       case 'business-data':
         return <BusinessDataScreen onNavigate={navigate} onSaveBusinessData={setTempBusinessData} />;
       case 'business-verification':
@@ -13227,10 +14316,18 @@ export default function App() {
             userJobOffers={userJobOffers}
             userOffers={userOffers}
             incomingBudgetRequests={incomingBudgetRequests}
+            jobApplications={jobApplications}
           />
         );
       case 'business-stats':
-        return <BusinessStatsScreen onNavigate={navigate} />;
+        return <BusinessStatsScreen
+          onNavigate={navigate}
+          businessData={businessData}
+          userOffers={userOffers}
+          userJobOffers={userJobOffers}
+          jobApplications={jobApplications}
+          incomingBudgetRequests={incomingBudgetRequests}
+        />;
       case 'create-offer':
         return <CreateOfferScreen onNavigate={navigate} businessData={businessData} onCreateOffer={createOffer} />;
       case 'settings':

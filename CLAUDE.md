@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-02)
+## ESTADO DEL PROYECTO (Actualizado: 2026-02-03)
 
 ### ✅ Completado
 
@@ -76,13 +76,73 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Accesos rápidos a todas las funciones
   - Botón destacado en ProfilePage
 
-### ✅ BUGS CORREGIDOS - 2026-02-02
+#### Sistema de Favoritos y Notificaciones (2026-02-03) - ✅ COMPLETADO
+- [x] **Favoritos persistentes con Supabase**
+  - toggleFavorite() guarda/elimina en tabla `favorites`
+  - Favoritos se cargan automáticamente al login
+  - Optimistic updates con rollback en caso de error
+  - FavoritesPage carga negocios dinámicamente desde Supabase
 
-**Problemas identificados y solucionados**:
+- [x] **Notificaciones automáticas con triggers PostgreSQL**
+  - Trigger `notify_favorited_users_new_offer()` para ofertas
+  - Trigger `notify_favorited_users_new_job()` para empleos
+  - Se ejecutan automáticamente al crear ofertas/empleos
+  - Notifican a todos los usuarios que favoritearon el negocio
+  - Script completo: `supabase/setup-notifications-complete.sql`
+
+- [x] **Notificaciones en tiempo real con Supabase Realtime**
+  - Suscripción a tabla `notifications` con filtro por `user_id`
+  - Notificaciones aparecen instantáneamente sin refrescar
+  - Toast automático cuando llega nueva notificación
+  - Desuscripción automática al logout
+
+- [x] **Badge de notificaciones no leídas**
+  - Contador en icono de Bell (HomePage, OffersPage)
+  - Badge rojo con número de notificaciones sin leer
+  - Se actualiza en tiempo real
+  - markAsRead() persiste en Supabase
+
+#### Sistema de Candidaturas a Empleos (2026-02-03) - ✅ COMPLETADO
+- [x] **Tabla job_applications en Supabase**
+  - Schema completo con campos: user_id, job_id, full_name, email, phone, message, status
+  - 5 estados: pending, reviewed, shortlisted, rejected, hired
+  - Políticas RLS: usuarios ven sus candidaturas, propietarios ven candidaturas de sus empleos
+  - 5 índices optimizados para queries rápidas
+  - Script: `supabase/setup-job-applications-complete.sql`
+
+- [x] **Formulario de aplicación funcional**
+  - JobDetailPage: botón "Aplicar" con modal de formulario
+  - Campos: CV (simulado), mensaje de motivación
+  - `handleSubmitApplication()` guarda en Supabase
+  - Validación de usuario logueado
+  - Toast de confirmación
+
+- [x] **Panel de candidatos para propietarios**
+  - BusinessCandidatesScreen carga candidaturas desde Supabase
+  - JOIN con tabla jobs para obtener solo candidaturas del negocio
+  - Filtros por estado: Todos, Nuevos, En revisión, Entrevista
+  - `updateStatus()` persiste cambios de estado en Supabase
+  - Loading spinner mientras carga
+
+- [x] **Notificación automática al recibir candidatura**
+  - Trigger `notify_business_new_application()` en base de datos
+  - Se ejecuta automáticamente al INSERT en job_applications
+  - Crea notificación tipo 'new_application' para propietario
+  - Incluye datos del candidato y job_id en metadata
+
+- [x] **Dashboard actualizado con contador**
+  - BusinessOwnerDashboard muestra candidaturas pendientes
+  - useEffect carga `jobApplications` desde Supabase
+  - Contador en tiempo real
+  - Enlace directo al panel de candidatos
+
+### ✅ BUGS CORREGIDOS - 2026-02-03
+
+**Sesión 1: Correcciones iniciales (2026-02-02)**:
 
 1. ✅ **CRÍTICO**: `offers.business_id` tenía tipo UUID en lugar de INTEGER
    - Schema corregido en `schema-offers-FIXED.sql`
-   - Script de migración en `fix-owner-panel.sql`
+   - Script de migración en `fix-owner-panel-v2.sql`
 
 2. ✅ **Sincronización**: `is_verified` no estaba sincronizado con `verification_status`
    - Trigger automático creado para mantener sincronización
@@ -92,35 +152,79 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - Policy "Propietarios ven todas sus ofertas" añadida
    - Ahora pueden ver ofertas pausadas/invisibles
 
-4. ✅ **Documentación**: Creado `README-FIX.md` con guía completa de corrección
+**Sesión 2: Correcciones de login y datos (2026-02-03)**:
 
-**Archivos creados para la corrección**:
-- `supabase/fix-owner-panel.sql` - Script de migración/corrección
+4. ✅ **CRÍTICO**: Login con timeout - Faltaban políticas RLS en `profiles`
+   - Añadidas 6 políticas RLS para SELECT, UPDATE, INSERT
+   - Script: `supabase/fix-profiles-rls.sql`
+   - Login ahora funciona sin timeout
+
+5. ✅ **LocalStorage corrupto**: Sesiones antiguas causaban timeouts
+   - Limpieza manual de localStorage resolvió el problema
+   - Documentado el proceso de limpieza
+
+6. ✅ **Query de presupuestos fallaba**: JOIN con `profiles` no existía
+   - Eliminado JOIN problemático `profiles:user_id(...)`
+   - Uso directo de campos de `budget_requests`
+   - Error 400 eliminado
+
+7. ✅ **Números del panel incorrectos**: Datos hardcodeados en ProfilePage
+   - ProfilePage ahora recibe props reales: `userOffers, userJobOffers, incomingBudgetRequests`
+   - Números calculados dinámicamente desde Supabase
+   - Presupuestos, ofertas y empleos muestran contadores correctos
+
+8. ✅ **createOffer() fallaba al insertar**: Intentaba insertar columnas inexistentes
+   - Eliminados campos `code` y `conditions` que no existen en schema
+   - INSERT ahora funciona correctamente
+
+9. ✅ **NotificationsScreen crash**: Variable `notifications` no definida
+   - Eliminada referencia a mockData estático
+   - Componente usa solo `dynamicNotifications` de Supabase
+   - Añadido useEffect para sincronizar con prop
+
+**Archivos creados/modificados**:
+- `supabase/fix-owner-panel-v2.sql` - Script corregido (elimina policies primero)
+- `supabase/fix-profiles-rls.sql` - Políticas RLS para profiles
 - `supabase/schema-offers-FIXED.sql` - Schema corregido de offers
-- `supabase/README-FIX.md` - Guía paso a paso para aplicar correcciones
+- `supabase/README-FIX.md` - Guía paso a paso
+- `supabase/setup-notifications-complete.sql` - ⭐ Triggers para notificaciones automáticas
+- `supabase/setup-job-applications-complete.sql` - ⭐ **NUEVO**: Sistema completo de candidaturas
+- `src/App.jsx` - Correcciones en ProfilePage, createOffer(), NotificationsScreen, favoritos, notificaciones, JobDetailPage, BusinessCandidatesScreen, BusinessOwnerDashboard
 
 ---
 
 ## 🔜 Pendientes Futuros
 
 ### Inmediato
-- [ ] **Ejecutar script de corrección** `fix-owner-panel.sql` en Supabase
-- [ ] Aprobar un negocio de prueba con `verification_status = 'approved'`
-- [ ] Testing completo del flujo de propietario
+- [x] **Ejecutar script de corrección** `fix-owner-panel-v2.sql` en Supabase ✅
+- [x] **Ejecutar script de corrección** `fix-profiles-rls.sql` en Supabase ✅
+- [x] Aprobar negocios de prueba con `verification_status = 'approved'` ✅
+- [x] Testing completo del flujo de propietario ✅
+- [x] Corregir números del panel (ahora usan datos reales) ✅
+- [x] **Ejecutar script** `setup-job-applications-complete.sql` en Supabase ✅ COMPLETADO (2026-02-03)
 
 ### Corto plazo
-- [ ] Sistema de favoritos con Supabase
+- [x] **Sistema de favoritos con Supabase** ✅ COMPLETADO
+- [x] **Notificaciones automáticas al crear ofertas/empleos** ✅ COMPLETADO
+- [x] **Sistema de notificaciones en tiempo real** ✅ COMPLETADO
+- [x] **Sistema completo de candidaturas a empleos** ✅ COMPLETADO
+  - Formulario de aplicación funcional
+  - Panel de propietarios para ver candidatos
+  - Notificación automática al recibir candidatura
+  - Estados actualizables (pending → reviewed → shortlisted → hired/rejected)
 - [ ] Notificaciones por email para presupuestos
-- [ ] Panel para ver/gestionar candidaturas a empleos
-- [ ] Estadísticas reales (no mockData)
+- [ ] Estadísticas reales (no mockData) - Actualmente usa datos de ejemplo
 - [ ] Contador de vistas/clics en negocios
+- [ ] Mejorar sistema de búsqueda con filtros avanzados
+- [ ] Sistema de reseñas totalmente funcional (verificación de 30 días)
 
 ### Medio plazo
 - [ ] Conectar dominio: **CornellaLocal.es**
 - [ ] Deploy a Vercel
 - [ ] Configurar dominio en Supabase
-- [ ] Sistema de reseñas funcional
 - [ ] Notificaciones push para nuevos presupuestos
+- [ ] Sistema de mensajería entre usuarios y negocios
+- [ ] Panel de administración para aprobar negocios
 
 ---
 
@@ -192,8 +296,19 @@ WHERE owner_id = auth.uid();
 - **`supabase/schema-budget-requests.sql`**: Solicitudes de presupuesto
 - **`supabase/schema-budget-quotes.sql`**: Cotizaciones de propietarios
 
-### Scripts de Corrección (NUEVO)
-- **`supabase/fix-owner-panel.sql`**: ⭐ Script para corregir bugs del panel
+### Scripts de Corrección y Features
+- **`supabase/fix-owner-panel-v2.sql`**: Script para corregir bugs del panel (v2 mejorado)
+- **`supabase/fix-profiles-rls.sql`**: Políticas RLS para tabla profiles
+- **`supabase/setup-notifications-complete.sql`**: ⭐ Sistema de notificaciones automáticas
+  - 2 triggers (ofertas y empleos)
+  - 1 política RLS para inserts
+  - 4 índices para optimización
+- **`supabase/setup-job-applications-complete.sql`**: ⭐ Sistema de candidaturas a empleos
+  - Tabla job_applications con 5 estados
+  - 4 políticas RLS (usuarios + propietarios)
+  - 2 triggers (notificaciones + updated_at)
+  - 5 índices optimizados
+  - Queries de verificación incluidas
 - **`supabase/README-FIX.md`**: Guía completa de corrección paso a paso
 
 ### Datos de Ejemplo
@@ -287,6 +402,30 @@ Custom colors in `tailwind.config.js`:
 
 ## Últimos Cambios
 
+### Sesión 3: Correcciones Finales y Panel Funcional (2026-02-03)
+
+**Tarea**: Corregir login, políticas RLS, y números del panel
+
+**Problemas solucionados**:
+1. ✅ Login con timeout → Añadidas políticas RLS a `profiles` (`fix-profiles-rls.sql`)
+2. ✅ LocalStorage corrupto → Limpieza manual resolvió timeouts
+3. ✅ Query de presupuestos fallaba → Eliminado JOIN problemático con `profiles`
+4. ✅ Números del panel incorrectos → ProfilePage ahora usa datos reales de Supabase
+
+**Cambios en código**:
+- `src/App.jsx` líneas ~12500: Eliminado JOIN `profiles:user_id` en query de presupuestos
+- `src/App.jsx` líneas ~2654: ProfilePage recibe props `userOffers, userJobOffers, incomingBudgetRequests`
+- `src/App.jsx` líneas ~2920-2960: Números dinámicos en panel (no hardcodeados)
+- `src/App.jsx` línea ~13159: Pasar props reales al renderizar ProfilePage
+
+**Archivos creados**:
+- `supabase/fix-profiles-rls.sql` - Políticas RLS para tabla profiles
+- `supabase/fix-owner-panel-v2.sql` - Versión corregida (elimina policies antes de alterar columna)
+
+**Estado**: ✅ **TODO FUNCIONANDO** - Login, panel, y contadores correctos
+
+---
+
 ### Sesión 2: Debug y Corrección del Panel (2026-02-02)
 
 **Tarea**: Debuggear errores del panel de propietarios
@@ -321,9 +460,22 @@ Custom colors in `tailwind.config.js`:
 
 ---
 
-## Usuario de Prueba
+## Usuarios de Prueba
 
-- **Email**: test@cornella.local
+### Usuario 1: carlos@test.com (ACTIVO)
+- **Email**: carlos@test.com
 - **Password**: (configurado en Supabase Auth)
 - **Rol**: Usuario normal + Propietario de negocio
-- **Negocio**: Debe tener un negocio con verification_status = 'approved'
+- **Negocio**: Café del Barrio (id: 14)
+- **Estado**: verification_status = 'approved' ✅
+- **Datos en panel**:
+  - 1 empleo activo
+  - 1 oferta activa
+  - 0 presupuestos entrantes
+
+### Usuario 2: test@cornella.local
+- **Email**: test@cornella.local
+- **Password**: (configurado en Supabase Auth)
+- **Rol**: Usuario normal + Propietario (múltiples negocios)
+- **Negocios**: 8 negocios asociados
+- **Estado**: verification_status = 'approved' ✅

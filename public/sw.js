@@ -172,44 +172,88 @@ async function networkFirstWithOffline(request) {
 
 // Manejar notificaciones push
 self.addEventListener('push', (event) => {
+  console.log('[SW] Push recibido:', event);
+
   if (event.data) {
     const data = event.data.json();
+
+    // Configurar opciones según el tipo de notificación
     const options = {
-      body: data.body || 'Nueva notificación de Cornellà Local',
-      icon: '/icons/icon-192x192.png',
+      body: data.message || data.body || 'Nueva notificación de CornellaLocal',
+      icon: data.icon || '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
-      vibrate: [100, 50, 100],
+      vibrate: data.vibrate || [200, 100, 200],
+      tag: data.tag || 'cornella-notification',
+      requireInteraction: data.requireInteraction || false,
       data: {
-        url: data.url || '/'
+        url: data.url || '/',
+        type: data.type || 'general',
+        metadata: data.metadata || {}
       },
       actions: [
-        { action: 'open', title: 'Ver' },
-        { action: 'close', title: 'Cerrar' }
+        { action: 'open', title: '👀 Ver', icon: '/icons/icon-72x72.png' },
+        { action: 'close', title: '✕ Cerrar' }
       ]
     };
+
+    // Personalizar según el tipo
+    if (data.type === 'new_application') {
+      options.requireInteraction = true; // Requiere acción del usuario
+      options.vibrate = [300, 100, 300, 100, 300]; // Vibración más larga
+    }
+
+    if (data.type === 'hired') {
+      options.requireInteraction = true;
+      options.vibrate = [400, 200, 400]; // Vibración especial para contratación
+    }
+
     event.waitUntil(
-      self.registration.showNotification(data.title || 'Cornellà Local', options)
+      self.registration.showNotification(
+        data.title || '🔔 CornellaLocal',
+        options
+      )
     );
   }
 });
 
 // Manejar clic en notificación
 self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Click en notificación:', event.action, event.notification.data);
+
   event.notification.close();
 
+  // Si el usuario cerró la notificación, no hacer nada
   if (event.action === 'close') return;
 
+  // URL a la que navegar
+  const urlToOpen = new URL(event.notification.data.url || '/', self.location.origin).href;
+
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((clientList) => {
-      // Si ya hay una ventana abierta, enfocarla
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then((clientList) => {
+      // Si ya hay una ventana abierta de la app, enfocarla y navegar
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          console.log('[SW] Enfocando cliente existente');
+          return client.focus().then(client => {
+            // Navegar a la URL específica usando postMessage
+            client.postMessage({
+              type: 'NAVIGATE',
+              url: event.notification.data.url,
+              notificationType: event.notification.data.type,
+              metadata: event.notification.data.metadata
+            });
+            return client;
+          });
         }
       }
-      // Si no, abrir una nueva
+
+      // Si no hay ventana abierta, abrir una nueva
       if (clients.openWindow) {
-        return clients.openWindow(event.notification.data.url || '/');
+        console.log('[SW] Abriendo nueva ventana:', urlToOpen);
+        return clients.openWindow(urlToOpen);
       }
     })
   );

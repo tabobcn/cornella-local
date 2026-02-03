@@ -19,7 +19,7 @@ import {
   PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
-  Sandwich, Utensils, Circle, Droplets, Hand
+  Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick
 } from 'lucide-react';
 
 import {
@@ -50,7 +50,7 @@ const iconMap = {
   PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
-  Sandwich, Utensils, Circle, Droplets, Hand
+  Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick
 };
 
 const Icon = ({ name, className = "", size = 24 }) => {
@@ -11486,6 +11486,26 @@ const BusinessOwnerDashboard = ({
               <div className="text-xs text-white/80">Presupuestos</div>
             </div>
           </div>
+
+          {/* Analytics: vistas y clics */}
+          {(businessData?.view_count > 0 || businessData?.click_count > 0) && (
+            <div className="flex items-center justify-around gap-3 mt-3 pt-3 border-t border-white/20">
+              <div className="flex items-center gap-2">
+                <Eye size={16} className="text-white/70" />
+                <div className="text-left">
+                  <div className="text-lg font-bold">{businessData?.view_count || 0}</div>
+                  <div className="text-[10px] text-white/70">vistas</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <MousePointerClick size={16} className="text-white/70" />
+                <div className="text-left">
+                  <div className="text-lg font-bold">{businessData?.click_count || 0}</div>
+                  <div className="text-[10px] text-white/70">clics</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Acciones rápidas */}
@@ -11637,6 +11657,19 @@ const BusinessStatsScreen = ({
   const totalBudgetRequests = incomingBudgetRequests.length;
   const newBudgetRequests = incomingBudgetRequests.filter(r => r.status === 'new').length;
 
+  // 📈 Analytics: vistas y clics
+  const businessViews = businessData?.view_count || 0;
+  const businessClicks = businessData?.click_count || 0;
+
+  // Sumar vistas de todas las ofertas
+  const totalOfferViews = userOffers.reduce((sum, offer) => sum + (offer.view_count || 0), 0);
+
+  // Sumar vistas de todos los empleos
+  const totalJobViews = userJobOffers.reduce((sum, job) => sum + (job.view_count || 0), 0);
+
+  // Total de vistas combinadas
+  const totalViews = businessViews + totalOfferViews + totalJobViews;
+
   // Simular favoritos estimados (no tenemos tracking aún)
   const estimatedFavorites = Math.max(totalOffers + totalJobs, 1) * 2;
 
@@ -11646,6 +11679,13 @@ const BusinessStatsScreen = ({
     jobs: { total: totalJobs, active: activeJobs },
     budgets: { total: totalBudgetRequests, new: newBudgetRequests },
     favorites: { total: estimatedFavorites },
+    analytics: {
+      businessViews,
+      businessClicks,
+      offerViews: totalOfferViews,
+      jobViews: totalJobViews,
+      totalViews,
+    },
   };
 
   // Datos semanales de candidaturas (simulados basados en total)
@@ -11748,7 +11788,85 @@ const BusinessStatsScreen = ({
             <p className="text-xs text-gray-500">En favoritos</p>
           </div>
 
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                <Eye size={20} />
+              </div>
+              <span className="text-xs font-bold text-green-600">
+                +{stats.analytics.totalViews}
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.analytics.businessViews}</p>
+            <p className="text-xs text-gray-500">Vistas al negocio</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center text-cyan-600">
+                <MousePointerClick size={20} />
+              </div>
+              <span className="text-xs font-bold text-cyan-600">
+                total
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.analytics.businessClicks}</p>
+            <p className="text-xs text-gray-500">Clics (tel/web/mapa)</p>
+          </div>
+
         </div>
+
+        {/* Desglose de vistas */}
+        {stats.analytics.totalViews > 0 && (
+          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Eye size={18} className="text-primary" />
+              Desglose de Vistas
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Store size={16} className="text-green-600" />
+                  </div>
+                  <span className="text-sm text-gray-700">Página del negocio</span>
+                </div>
+                <span className="text-lg font-bold text-slate-900">{stats.analytics.businessViews}</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Tag size={16} className="text-orange-600" />
+                  </div>
+                  <span className="text-sm text-gray-700">Tus ofertas</span>
+                </div>
+                <span className="text-lg font-bold text-slate-900">{stats.analytics.offerViews}</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Briefcase size={16} className="text-blue-600" />
+                  </div>
+                  <span className="text-sm text-gray-700">Tus empleos</span>
+                </div>
+                <span className="text-lg font-bold text-slate-900">{stats.analytics.jobViews}</span>
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-900">Total combinado</span>
+                <span className="text-xl font-bold text-primary">{stats.analytics.totalViews}</span>
+              </div>
+            </div>
+
+            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-xs text-green-800">
+                <span className="font-bold">💡 Consejo:</span> Las vistas indican cuántas veces los usuarios han visitado tu negocio, ofertas y empleos. ¡Más vistas = más oportunidades!
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Gráfico semanal - Candidaturas */}
         {stats.applications.total > 0 && (

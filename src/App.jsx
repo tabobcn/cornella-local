@@ -12861,7 +12861,7 @@ export default function App() {
   useEffect(() => {
     console.log('[AUTH] Iniciando verificación de sesión...');
 
-    // Timeout de seguridad (60 segundos para conexiones lentas)
+    // Timeout de seguridad para conexiones lentas (60s)
     const authTimeout = setTimeout(() => {
       console.warn('[AUTH] Timeout alcanzado, continuando sin sesión');
       setLoadingAuth(false);

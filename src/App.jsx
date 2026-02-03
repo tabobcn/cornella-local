@@ -12861,58 +12861,56 @@ export default function App() {
   useEffect(() => {
     console.log('[AUTH] Iniciando verificación de sesión...');
 
-    // Timeout de seguridad (30 segundos para conexiones lentas)
+    // Timeout de seguridad (60 segundos para conexiones lentas)
     const authTimeout = setTimeout(() => {
       console.warn('[AUTH] Timeout alcanzado, continuando sin sesión');
       setLoadingAuth(false);
       setCurrentPage('login');
-    }, 30000);
+    }, 60000);
 
     // Verificar sesión actual
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(authTimeout);
-      console.log('[AUTH] Sesión obtenida:', session ? 'Existe sesión' : 'No hay sesión');
-      if (session) {
-        console.log('[AUTH] Cargando perfil del usuario...');
-        // Cargar datos del usuario
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (data && !error) {
-              console.log('[AUTH] Perfil cargado correctamente:', data);
-              setUser(data);
-              setCurrentPage('home');
-            } else {
-              console.error('[AUTH] Error loading profile:', error);
-              // Si hay error, cerrar sesión y redirigir a login
-              supabase.auth.signOut();
-              setUser(null);
-              setCurrentPage('login');
-            }
-          })
-          .catch((err) => {
-            console.error('[AUTH] Error fetching profile:', err);
-            // Si hay error, cerrar sesión y redirigir a login
-            supabase.auth.signOut();
-            setUser(null);
-            setCurrentPage('login');
-          })
-          .finally(() => {
-            console.log('[AUTH] Finalizando carga de autenticación');
-            setLoadingAuth(false);
-          });
-      } else {
-        console.log('[AUTH] No hay sesión, mostrando login');
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        clearTimeout(authTimeout);
+        console.log('[AUTH] Sesión obtenida:', session ? 'Existe sesión' : 'No hay sesión');
+
+        if (session) {
+          console.log('[AUTH] Cargando perfil del usuario...');
+          // Cargar datos del usuario
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (data && !error) {
+            console.log('[AUTH] Perfil cargado correctamente');
+            setUser(data);
+            setCurrentPage('home');
+          } else {
+            console.error('[AUTH] Error loading profile:', error);
+            // Si no se puede cargar el perfil, crear uno básico
+            const basicUser = {
+              id: session.user.id,
+              email: session.user.email,
+              full_name: session.user.email?.split('@')[0] || 'Usuario',
+            };
+            setUser(basicUser);
+            setCurrentPage('home');
+          }
+        } else {
+          console.log('[AUTH] No hay sesión, mostrando login');
+          setCurrentPage('login');
+        }
+
         setLoadingAuth(false);
-      }
-    }).catch((err) => {
-      clearTimeout(authTimeout);
-      console.error('[AUTH] Error getting session:', err);
-      setLoadingAuth(false);
-    });
+      })
+      .catch((err) => {
+        clearTimeout(authTimeout);
+        console.error('[AUTH] Error getting session:', err);
+        setLoadingAuth(false);
+        setCurrentPage('login');
+      });
 
     // Escuchar cambios de autenticación
     const {

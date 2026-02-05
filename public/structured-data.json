@@ -1,0 +1,238 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "name": "CornellaLocal",
+      "url": "https://cornellalocal.es",
+      "description": "Conecta con comercios locales de Cornellà de Llobregat. Descubre ofertas flash, solicita presupuestos y encuentra empleo local.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "CornellaLocal"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "127",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "featureList": [
+        "Descubre comercios locales",
+        "Ofertas flash exclusivas",
+        "Solicitud de presupuestos",
+        "Búsqueda de empleo local",
+        "Reseñas verificadas",
+        "Notificaciones push",
+        "Favoritos"
+      ]
+    },
+    {
+      "@type": "Organization",
+      "name": "CornellaLocal",
+      "url": "https://cornellalocal.es",
+      "logo": "https://cornellalocal.es/logo.png",
+      "description": "Plataforma digital que conecta a residentes de Cornellà de Llobregat con negocios locales",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "",
+        "addressLocality": "Cornellà de Llobregat",
+        "postalCode": "08940",
+        "addressRegion": "Catalunya",
+        "addressCountry": "ES"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "41.3558",
+        "longitude": "2.0741"
+      },
+      "areaServed": {
+        "@type": "City",
+        "name": "Cornellà de Llobregat",
+        "containedInPlace": {
+          "@type": "AdministrativeArea",
+          "name": "Barcelona"
+        }
+      },
+      "sameAs": [
+        "https://twitter.com/cornellalocal",
+        "https://facebook.com/cornellalocal",
+        "https://instagram.com/cornellalocal"
+      ]
+    },
+    {
+      "@type": "LocalBusiness",
+      "name": "CornellaLocal - Directorio de Comercios",
+      "image": "https://cornellalocal.es/icons/icon-512x512.png",
+      "telephone": "+34-XXX-XXX-XXX",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "",
+        "addressLocality": "Cornellà de Llobregat",
+        "postalCode": "08940",
+        "addressRegion": "Catalunya",
+        "addressCountry": "ES"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "41.3558",
+        "longitude": "2.0741"
+      },
+      "url": "https://cornellalocal.es",
+      "priceRange": "Gratis",
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ],
+        "opens": "00:00",
+        "closes": "23:59"
+      }
+    },
+    {
+      "@type": "Service",
+      "serviceType": "Descubrimiento de Comercios Locales",
+      "provider": {
+        "@type": "Organization",
+        "name": "CornellaLocal"
+      },
+      "areaServed": {
+        "@type": "City",
+        "name": "Cornellà de Llobregat"
+      },
+      "description": "Encuentra negocios locales, ofertas y servicios en Cornellà de Llobregat"
+    },
+    {
+      "@type": "Service",
+      "serviceType": "Solicitud de Presupuestos",
+      "provider": {
+        "@type": "Organization",
+        "name": "CornellaLocal"
+      },
+      "areaServed": {
+        "@type": "City",
+        "name": "Cornellà de Llobregat"
+      },
+      "description": "Recibe presupuestos de profesionales verificados: fontaneros, electricistas, pintores y más"
+    },
+    {
+      "@type": "Service",
+      "serviceType": "Empleo Local",
+      "provider": {
+        "@type": "Organization",
+        "name": "CornellaLocal"
+      },
+      "areaServed": {
+        "@type": "City",
+        "name": "Cornellà de Llobregat"
+      },
+      "description": "Ofertas de trabajo en negocios locales de Cornellà"
+    },
+    {
+      "@type": "MobileApplication",
+      "name": "CornellaLocal PWA",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "description": "App móvil progresiva para conectar con el comercio local de Cornellà",
+      "screenshot": "https://cornellalocal.es/icons/icon-512x512.png"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Inicio",
+          "item": "https://cornellalocal.es"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Comercios",
+          "item": "https://cornellalocal.es/businesses"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Ofertas",
+          "item": "https://cornellalocal.es/offers"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Empleo",
+          "item": "https://cornellalocal.es/jobs"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Presupuestos",
+          "item": "https://cornellalocal.es/budget-request"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Es gratis usar CornellaLocal?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, CornellaLocal es 100% gratuito para usuarios. Puedes descubrir negocios, ver ofertas, solicitar presupuestos y buscar empleo sin coste alguno."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cómo solicito un presupuesto?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Desde el menú principal, selecciona 'Solicitar presupuesto', elige la categoría del servicio que necesitas, describe el trabajo y proporciona tus datos de contacto. Tu solicitud se enviará a profesionales verificados de Cornellà."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cómo puedo dejar una reseña?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Para dejar una reseña, tu cuenta debe tener al menos 30 días de antigüedad y tu email debe estar verificado. Luego, ve a la página del negocio y haz clic en 'Escribir reseña'."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Puedo usar CornellaLocal en mi móvil?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, CornellaLocal es una aplicación web progresiva (PWA) que puedes instalar en tu teléfono iOS o Android. Funciona como una app nativa con notificaciones push y acceso offline."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Los negocios están verificados?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, todos los negocios pasan por un proceso de verificación antes de aparecer en la plataforma. Buscamos negocios reales con licencia para operar en Cornellà de Llobregat."
+          }
+        }
+      ]
+    }
+  ]
+}

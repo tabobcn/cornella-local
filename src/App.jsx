@@ -13340,6 +13340,11 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 // APP PRINCIPAL CON ROUTER
 // ==============================================
 
+// VAPID Public Key para Web Push Notifications
+// TODO: Reemplazar con tu clave pública después de generar las VAPID keys
+// Ejecutar: node supabase/generate-vapid-keys.js
+const VAPID_PUBLIC_KEY = 'PLACEHOLDER_GENERATE_VAPID_KEYS';
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [pageParams, setPageParams] = useState({});
@@ -13347,6 +13352,10 @@ export default function App() {
   // Estado del usuario autenticado
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+
+  // Estado para Push Notifications
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushPermission, setPushPermission] = useState('default');
 
   // Persistir sesión con Supabase Auth
   useEffect(() => {
@@ -13425,6 +13434,170 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Verificar soporte de Push Notifications
+  useEffect(() => {
+    if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+      setPushSupported(true);
+      setPushPermission(Notification.permission);
+      console.log('[PUSH] Push notifications soportadas. Permission:', Notification.permission);
+    } else {
+      console.log('[PUSH] Push notifications NO soportadas en este navegador');
+    }
+  }, []);
+
+  // Función para convertir VAPID key de base64 a Uint8Array
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  // Función para solicitar permisos y suscribirse a push notifications
+  const requestPushPermission = async () => {
+    if (!pushSupported) {
+      showToast('Tu navegador no soporta notificaciones push', 'error');
+      return false;
+    }
+
+    if (VAPID_PUBLIC_KEY === 'PLACEHOLDER_GENERATE_VAPID_KEYS') {
+      console.error('[PUSH] VAPID_PUBLIC_KEY no configurada. Ejecuta: node supabase/generate-vapid-keys.js');
+      showToast('Push notifications no configuradas', 'error');
+      return false;
+    }
+
+    if (!user?.id) {
+      console.error('[PUSH] Usuario no autenticado');
+      return false;
+    }
+
+    try {
+      console.log('[PUSH] Solicitando permiso...');
+      const permission = await Notification.requestPermission();
+      setPushPermission(permission);
+
+      if (permission !== 'granted') {
+        showToast('Necesitamos permisos para enviarte notificaciones', 'warning');
+        return false;
+      }
+
+      console.log('[PUSH] Permiso concedido, registrando subscription...');
+
+      // Esperar a que el Service Worker esté listo
+      const registration = await navigator.serviceWorker.ready;
+
+      // Verificar si ya existe una subscription
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        // Crear nueva subscription
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+        console.log('[PUSH] Nueva subscription creada');
+      } else {
+        console.log('[PUSH] Subscription existente encontrada');
+      }
+
+      // Guardar subscription en Supabase
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+          user_id: user.id,
+          subscription: subscription.toJSON(),
+          user_agent: navigator.userAgent
+        }, {
+          onConflict: 'user_id,subscription->endpoint'
+        });
+
+      if (error) {
+        console.error('[PUSH] Error guardando subscription:', error);
+        showToast('Error al activar notificaciones', 'error');
+        return false;
+      }
+
+      console.log('[PUSH] Subscription guardada correctamente en Supabase');
+      showToast('¡Notificaciones activadas! 🔔', 'success');
+      return true;
+
+    } catch (error) {
+      console.error('[PUSH] Error al suscribirse:', error);
+      if (error.name === 'NotAllowedError') {
+        showToast('Permisos de notificación bloqueados. Habilítalos en configuración del navegador.', 'warning');
+      } else {
+        showToast('Error al activar notificaciones', 'error');
+      }
+      return false;
+    }
+  };
+
+  // Escuchar mensajes del Service Worker (para navegación desde push)
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const messageHandler = (event) => {
+        if (event.data && event.data.type === 'NAVIGATE') {
+          console.log('[PUSH] Navegando desde notificación push:', event.data);
+          // Navegar a la URL especificada
+          const url = event.data.url;
+          if (url) {
+            // Parsear la URL y extraer la ruta
+            const path = url.replace(/^.*#\//, '');
+            if (path) {
+              // Usar tu función de navegación
+              navigate(path, event.data.metadata || {});
+            }
+          }
+        }
+      };
+
+      navigator.serviceWorker.addEventListener('message', messageHandler);
+
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', messageHandler);
+      };
+    }
+  }, []);
+
+  // Solicitar permisos de push después del login (solo primera vez)
+  useEffect(() => {
+    const askForPushPermission = async () => {
+      // Solo preguntar si:
+      // 1. Usuario está logueado
+      // 2. Push está soportado
+      // 3. Nunca ha respondido (permission = default)
+      // 4. No preguntar inmediatamente, esperar 3 segundos
+      if (user && pushSupported && pushPermission === 'default') {
+        // Verificar si ya preguntamos antes (localStorage)
+        const askedBefore = localStorage.getItem('push-asked');
+        if (askedBefore) return;
+
+        setTimeout(async () => {
+          const shouldAsk = confirm(
+            '🔔 ¿Quieres recibir notificaciones instantáneas?\n\n' +
+            '✅ Nuevas candidaturas a tus empleos\n' +
+            '✅ Respuestas a tus presupuestos\n' +
+            '✅ Ofertas de tus negocios favoritos\n' +
+            '✅ Actualizaciones de tus solicitudes\n\n' +
+            'Las notificaciones llegarán aunque la app esté cerrada, como WhatsApp.'
+          );
+
+          localStorage.setItem('push-asked', 'true');
+
+          if (shouldAsk) {
+            await requestPushPermission();
+          }
+        }, 3000);
+      }
+    };
+
+    askForPushPermission();
+  }, [user, pushPermission, pushSupported]);
 
   // Cargar negocio del propietario cuando cambie el usuario
   useEffect(() => {

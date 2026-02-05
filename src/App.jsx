@@ -123,6 +123,144 @@ const Toast = ({ message, type = 'success', isVisible, onClose }) => {
   );
 };
 
+// ==============================================
+// FUNCIONES DE VALIDACIÓN Y FORMATEO
+// ==============================================
+
+// Validación de email
+const validateEmail = (email) => {
+  if (!email || email.trim() === '') {
+    return { isValid: false, error: 'El email es obligatorio' };
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { isValid: false, error: 'Email no válido' };
+  }
+  return { isValid: true, error: null };
+};
+
+// Validación de teléfono español
+const validatePhone = (phone) => {
+  if (!phone || phone.trim() === '') {
+    return { isValid: false, error: 'El teléfono es obligatorio' };
+  }
+  // Eliminar espacios, guiones y paréntesis
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+  // Formatos válidos: 9 dígitos, +34 seguido de 9 dígitos, o 0034 seguido de 9 dígitos
+  const phoneRegex = /^(\+34|0034)?[6-9]\d{8}$/;
+  if (!phoneRegex.test(cleanPhone)) {
+    return { isValid: false, error: 'Teléfono no válido (ej: 612345678)' };
+  }
+  return { isValid: true, error: null };
+};
+
+// Formatear teléfono español (añadir +34 si no lo tiene)
+const formatPhone = (phone) => {
+  if (!phone) return '';
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+  if (cleanPhone.startsWith('+34')) return cleanPhone;
+  if (cleanPhone.startsWith('0034')) return '+34' + cleanPhone.slice(4);
+  if (cleanPhone.length === 9) return '+34' + cleanPhone;
+  return cleanPhone;
+};
+
+// Validación de campo requerido
+const validateRequired = (value, fieldName = 'Este campo') => {
+  if (!value || (typeof value === 'string' && value.trim() === '')) {
+    return { isValid: false, error: `${fieldName} es obligatorio` };
+  }
+  return { isValid: true, error: null };
+};
+
+// Validación de longitud mínima
+const validateMinLength = (value, minLength, fieldName = 'Este campo') => {
+  if (!value || value.length < minLength) {
+    return { isValid: false, error: `${fieldName} debe tener al menos ${minLength} caracteres` };
+  }
+  return { isValid: true, error: null };
+};
+
+// Validación de longitud máxima
+const validateMaxLength = (value, maxLength, fieldName = 'Este campo') => {
+  if (value && value.length > maxLength) {
+    return { isValid: false, error: `${fieldName} no puede superar los ${maxLength} caracteres` };
+  }
+  return { isValid: true, error: null };
+};
+
+// Validación de URL
+const validateUrl = (url) => {
+  if (!url || url.trim() === '') {
+    return { isValid: true, error: null }; // URL es opcional
+  }
+  try {
+    new URL(url);
+    return { isValid: true, error: null };
+  } catch {
+    return { isValid: false, error: 'URL no válida (debe empezar con http:// o https://)' };
+  }
+};
+
+// Verificar antigüedad de cuenta (para reseñas: mínimo 30 días)
+const verifyAccountAge = (userCreatedAt, minDays = 30) => {
+  if (!userCreatedAt) {
+    return { isValid: false, error: 'No se pudo verificar la fecha de creación de la cuenta', daysOld: 0 };
+  }
+
+  const createdDate = new Date(userCreatedAt);
+  const now = new Date();
+  const diffTime = Math.abs(now - createdDate);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < minDays) {
+    const remainingDays = minDays - diffDays;
+    return {
+      isValid: false,
+      error: `Tu cuenta debe tener al menos ${minDays} días para publicar reseñas (faltan ${remainingDays} días)`,
+      daysOld: diffDays
+    };
+  }
+
+  return { isValid: true, error: null, daysOld: diffDays };
+};
+
+// Validación de código postal español
+const validatePostalCode = (postalCode) => {
+  if (!postalCode || postalCode.trim() === '') {
+    return { isValid: false, error: 'El código postal es obligatorio' };
+  }
+  const postalCodeRegex = /^[0-5]\d{4}$/;
+  if (!postalCodeRegex.test(postalCode)) {
+    return { isValid: false, error: 'Código postal no válido (5 dígitos, ej: 08940)' };
+  }
+  return { isValid: true, error: null };
+};
+
+// Validación de NIF/CIF/NIE español
+const validateNifCif = (nifCif) => {
+  if (!nifCif || nifCif.trim() === '') {
+    return { isValid: true, error: null }; // Es opcional
+  }
+  const cleanNif = nifCif.toUpperCase().replace(/[\s\-]/g, '');
+  // Formatos válidos: NIF (8 dígitos + letra), CIF (letra + 7 dígitos + dígito/letra), NIE (X/Y/Z + 7 dígitos + letra)
+  const nifRegex = /^(\d{8}[A-Z]|[A-Z]\d{7}[A-Z0-9]|[XYZ]\d{7}[A-Z])$/;
+  if (!nifRegex.test(cleanNif)) {
+    return { isValid: false, error: 'NIF/CIF/NIE no válido' };
+  }
+  return { isValid: true, error: null };
+};
+
+// Sanitizar texto (prevenir XSS básico)
+const sanitizeText = (text) => {
+  if (!text) return '';
+  return text
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+};
+
 // Componente de Onboarding
 const OnboardingScreen = ({ onComplete, onCompleteWithNotifications }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -1919,8 +2057,12 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
   const categoriaSeleccionada = categorias.find(c => c.id === formData.category);
 
   const canPaso1 = formData.category !== null;
-  const canPaso2 = formData.description.trim() !== '';
-  const canPaso3 = formData.urgency !== null && formData.address.trim() !== '' && formData.phone.trim() !== '';
+  const canPaso2 = formData.description.trim() !== '' && formData.description.trim().length >= 20;
+
+  // Validaciones para Paso 3
+  const phoneValidation = validatePhone(formData.phone);
+  const addressValidation = validateRequired(formData.address, 'La dirección');
+  const canPaso3 = formData.urgency !== null && addressValidation.isValid && phoneValidation.isValid;
 
   // Pantalla de éxito
   if (enviado && categoriaSeleccionada) {
@@ -2038,15 +2180,27 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
 
             <div>
               <label className="block text-sm font-bold text-slate-900 mb-2">
-                Describe el trabajo que necesitas *
+                Describe el trabajo que necesitas * <span className="text-xs text-gray-500 font-normal">(mínimo 20 caracteres)</span>
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Ej: Necesito arreglar una fuga en el baño, debajo del lavabo..."
+                placeholder="Ej: Necesito arreglar una fuga en el baño, debajo del lavabo. Gotea constantemente y se está mojando el suelo..."
                 rows={5}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400"
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-slate-900 placeholder:text-gray-400 ${
+                  formData.description && formData.description.trim().length < 20
+                    ? 'border-red-300 focus:border-red-400'
+                    : 'border-gray-200 focus:border-primary'
+                }`}
               />
+              <div className="mt-1 flex justify-between items-center">
+                <span className={`text-xs ${
+                  formData.description.trim().length >= 20 ? 'text-green-600' : 'text-gray-400'
+                }`}>
+                  {formData.description.trim().length >= 20 ? '✓ Descripción válida' : `${formData.description.trim().length}/20 caracteres`}
+                </span>
+                <span className="text-xs text-gray-400">{formData.description.length}/500</span>
+              </div>
             </div>
 
             <div>
@@ -2121,19 +2275,38 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
                 value={formData.address}
                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                 placeholder="C/ Mayor 45, Cornellà de Llobregat"
-                className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400"
+                className={`w-full h-12 px-4 rounded-xl border bg-white text-slate-900 placeholder:text-gray-400 ${
+                  formData.address && !addressValidation.isValid
+                    ? 'border-red-300 focus:border-red-400'
+                    : formData.address ? 'border-green-300 focus:border-green-400' : 'border-gray-200 focus:border-primary'
+                }`}
               />
+              {formData.address && !addressValidation.isValid && (
+                <p className="mt-1 text-xs text-red-500">{addressValidation.error}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-900 mb-2">Teléfono de contacto *</label>
+              <label className="block text-sm font-bold text-slate-900 mb-2">
+                Teléfono de contacto * <span className="text-xs text-gray-500 font-normal">(ej: 612345678)</span>
+              </label>
               <input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="612 345 678"
-                className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400"
+                className={`w-full h-12 px-4 rounded-xl border bg-white text-slate-900 placeholder:text-gray-400 ${
+                  formData.phone && !phoneValidation.isValid
+                    ? 'border-red-300 focus:border-red-400'
+                    : formData.phone && phoneValidation.isValid ? 'border-green-300 focus:border-green-400' : 'border-gray-200 focus:border-primary'
+                }`}
               />
+              {formData.phone && !phoneValidation.isValid && (
+                <p className="mt-1 text-xs text-red-500">{phoneValidation.error}</p>
+              )}
+              {formData.phone && phoneValidation.isValid && (
+                <p className="mt-1 text-xs text-green-600">✓ Teléfono válido</p>
+              )}
             </div>
           </div>
         )}
@@ -3620,29 +3793,56 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
   // Función para enviar nueva reseña
   const handleSubmitReview = async () => {
+    // Validación 1: Usuario debe estar logueado
     if (!user?.id) {
       alert('Debes iniciar sesión para dejar una reseña');
       return;
     }
 
+    // Validación 2: Verificar si puede reseñar (30 días, email verificado, etc.)
     if (!canReview.can_review) {
       alert(canReview.reason || 'No puedes reseñar este negocio');
       return;
     }
 
-    if (!newReviewText.trim()) {
-      alert('Por favor escribe un comentario');
+    // Validación 3: Comentario requerido
+    const commentValidation = validateRequired(newReviewText, 'El comentario');
+    if (!commentValidation.isValid) {
+      alert(commentValidation.error);
+      return;
+    }
+
+    // Validación 4: Longitud mínima del comentario (10 caracteres)
+    const minLengthValidation = validateMinLength(newReviewText.trim(), 10, 'El comentario');
+    if (!minLengthValidation.isValid) {
+      alert(minLengthValidation.error);
+      return;
+    }
+
+    // Validación 5: Longitud máxima del comentario (500 caracteres)
+    const maxLengthValidation = validateMaxLength(newReviewText.trim(), 500, 'El comentario');
+    if (!maxLengthValidation.isValid) {
+      alert(maxLengthValidation.error);
+      return;
+    }
+
+    // Validación 6: Rating válido (1-5)
+    if (!newReviewRating || newReviewRating < 1 || newReviewRating > 5) {
+      alert('La calificación debe estar entre 1 y 5 estrellas');
       return;
     }
 
     try {
+      // Sanitizar texto para prevenir XSS
+      const sanitizedComment = sanitizeText(newReviewText.trim());
+
       const { data, error } = await supabase
         .from('reviews')
         .insert({
           business_id: businessId,
           user_id: user.id,
           rating: newReviewRating,
-          comment: newReviewText.trim()
+          comment: sanitizedComment
         })
         .select(`
           *,
@@ -3669,7 +3869,15 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
       alert('¡Reseña publicada correctamente!');
     } catch (error) {
       console.error('[REVIEWS] Error submitting review:', error);
-      alert('Error al publicar reseña. Inténtalo de nuevo.');
+
+      // Mensaje de error más detallado
+      const errorMessage = error.message?.includes('unique')
+        ? 'Ya has publicado una reseña en este negocio'
+        : error.message?.includes('foreign key')
+        ? 'Negocio no encontrado'
+        : 'Error al publicar reseña. Inténtalo de nuevo.';
+
+      alert(errorMessage);
     }
   };
 

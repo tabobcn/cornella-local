@@ -3871,7 +3871,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
       // Actualizar estado de can_review
       setCanReview({ can_review: false, reason: 'Ya has reseñado este negocio', already_reviewed: true });
 
-      showToast('¡Reseña publicada correctamente!', 'success');
+      showToast(SUCCESS_MESSAGES.created, 'success');
     } catch (error) {
       console.error('[REVIEWS] Error submitting review:', error);
 
@@ -14591,7 +14591,7 @@ export default function App() {
     window.addEventListener('appinstalled', () => {
       setShowInstallBanner(false);
       setDeferredPrompt(null);
-      showToast('¡App instalada correctamente!', 'success');
+      showToast(SUCCESS_MESSAGES.saved, 'success');
     });
 
     return () => {
@@ -14644,7 +14644,7 @@ export default function App() {
         showToast('Cupón eliminado de guardados', 'info');
         return prev.filter(c => c.id !== coupon.id);
       } else {
-        showToast('¡Cupón guardado!', 'success');
+        showToast(SUCCESS_MESSAGES.saved, 'success');
         return [...prev, { ...coupon, savedAt: new Date().toISOString() }];
       }
     });

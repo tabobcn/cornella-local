@@ -8127,11 +8127,24 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
 
   const confirmDelete = async () => {
     if (offerToDelete) {
-      // TODO: Implementar delete en Supabase
-      console.log('[OFFERS] Delete offer:', offerToDelete.id);
-      setOffersState(prev => prev.filter(o => o.id !== offerToDelete.id));
-      setShowDeleteConfirm(false);
-      setOfferToDelete(null);
+      try {
+        const { error } = await supabase
+          .from('offers')
+          .delete()
+          .eq('id', offerToDelete.id);
+
+        if (error) throw error;
+
+        console.log('[OFFERS] Offer deleted:', offerToDelete.id);
+        setOffersState(prev => prev.filter(o => o.id !== offerToDelete.id));
+        showToast(SUCCESS_MESSAGES.deleted, 'success');
+      } catch (error) {
+        console.error('[OFFERS] Error deleting offer:', error);
+        showToast(formatSupabaseError(error), 'error');
+      } finally {
+        setShowDeleteConfirm(false);
+        setOfferToDelete(null);
+      }
     }
   };
 

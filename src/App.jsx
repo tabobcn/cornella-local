@@ -5530,7 +5530,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900">{subcategory.name}</h1>
-              <p className="text-sm text-gray-500">{displayBusinesses.length} comercios encontrados</p>
+              <p className="text-sm text-gray-500">{pluralize(displayBusinesses.length, 'comercio encontrado', 'comercios encontrados')}</p>
             </div>
           </div>
         </div>

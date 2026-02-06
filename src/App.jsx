@@ -28,17 +28,23 @@ import {
 } from './data/mockData';
 
 // Utilidades y Helpers
-import { LIMITS, TIMING, ERROR_MESSAGES, SUCCESS_MESSAGES } from './constants';
+import { LIMITS, TIMING, ERROR_MESSAGES, SUCCESS_MESSAGES, SERVICE_CATEGORIES, REGEX_PATTERNS } from './constants';
 import { formatDate, formatRelativeTime, formatCurrency, getInitials, pluralize } from './utils/formatters';
-import { debounce, copyToClipboard, shareContent, formatSupabaseError } from './utils/helpers';
+import { debounce, copyToClipboard, shareContent, formatSupabaseError, scrollToTop } from './utils/helpers';
 import {
   BusinessListSkeleton,
+  BusinessCardSkeleton,
   OfferCardSkeleton,
+  JobCardSkeleton,
   JobListSkeleton,
   BusinessDetailSkeleton,
-  NotificationSkeleton
+  NotificationSkeleton,
+  ReviewSkeleton,
+  ApplicationSkeleton,
+  StatCardSkeleton,
+  CategoryGridSkeleton
 } from './components/LoadingSkeletons';
-import { DeleteConfirmModal } from './components/ConfirmModal';
+import { DeleteConfirmModal, DeactivateConfirmModal } from './components/ConfirmModal';
 
 // ==============================================
 // COMPONENTES REUTILIZABLES
@@ -8066,6 +8072,8 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
   const [offersState, setOffersState] = useState(userOffers);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState(null);
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [offerToToggle, setOfferToToggle] = useState(null);
 
   // Actualizar estado cuando cambien userOffers
   useEffect(() => {
@@ -8078,6 +8086,26 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
     if (filter === 'paused') return offer.status === 'paused';
     return true;
   });
+
+  const handleToggleVisibility = (id) => {
+    const offer = offersState.find(o => o.id === id);
+    if (offer && offer.status === 'active') {
+      // Si está activa, mostrar confirmación antes de pausar
+      setOfferToToggle(offer);
+      setShowDeactivateConfirm(true);
+    } else {
+      // Si está pausada, reactivar directamente
+      toggleVisibility(id);
+    }
+  };
+
+  const confirmToggle = () => {
+    if (offerToToggle) {
+      toggleVisibility(offerToToggle.id);
+      setShowDeactivateConfirm(false);
+      setOfferToToggle(null);
+    }
+  };
 
   const toggleVisibility = (id) => {
     const offer = offersState.find(o => o.id === id);
@@ -8206,7 +8234,7 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
                 <input
                   type="checkbox"
                   checked={offer.isVisible}
-                  onChange={() => toggleVisibility(offer.id)}
+                  onChange={() => handleToggleVisibility(offer.id)}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
@@ -8226,7 +8254,7 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
         ))}
       </div>
 
-      {/* Modal de confirmación */}
+      {/* Modal de confirmación de eliminación */}
       <DeleteConfirmModal
         isOpen={showDeleteConfirm}
         onClose={() => {
@@ -8235,6 +8263,18 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
         }}
         onConfirm={confirmDelete}
         itemName={`la oferta "${offerToDelete?.title || 'esta oferta'}"`}
+      />
+
+      {/* Modal de confirmación de pausar */}
+      <DeactivateConfirmModal
+        isOpen={showDeactivateConfirm}
+        onClose={() => {
+          setShowDeactivateConfirm(false);
+          setOfferToToggle(null);
+        }}
+        onConfirm={confirmToggle}
+        itemName={offerToToggle?.title || 'esta oferta'}
+        action="pausar"
       />
     </div>
   );

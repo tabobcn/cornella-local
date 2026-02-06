@@ -3471,7 +3471,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 </div>
                 <div>
                   <span className="font-medium text-slate-700 block">Ofertas de Empleo</span>
-                  <span className="text-xs text-slate-500">{userJobOffers.filter(j => j.status === 'active').length} empleo{userJobOffers.filter(j => j.status === 'active').length !== 1 ? 's' : ''} activo{userJobOffers.filter(j => j.status === 'active').length !== 1 ? 's' : ''}</span>
+                  <span className="text-xs text-slate-500">{pluralize(userJobOffers.filter(j => j.status === 'active').length, 'empleo activo', 'empleos activos')}</span>
                 </div>
               </div>
               <ChevronRight className="text-slate-400" size={20} />

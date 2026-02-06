@@ -3119,12 +3119,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
     <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 no-scrollbar">
       <div className="flex flex-col gap-4">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-              <p className="mt-4 text-sm text-gray-500">Cargando favoritos...</p>
-            </div>
-          </div>
+          <BusinessListSkeleton count={3} />
         ) : favoriteBusinesses.length > 0 ? (
           favoriteBusinesses.map(business => (
             <BusinessCard

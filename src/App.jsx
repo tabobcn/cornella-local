@@ -27,6 +27,19 @@ import {
   userReviews, userJobApplications, businessOffers
 } from './data/mockData';
 
+// Utilidades y Helpers
+import { LIMITS, TIMING, ERROR_MESSAGES, SUCCESS_MESSAGES } from './constants';
+import { formatDate, formatRelativeTime, formatCurrency, getInitials, pluralize } from './utils/formatters';
+import { debounce, copyToClipboard, shareContent, formatSupabaseError } from './utils/helpers';
+import {
+  BusinessListSkeleton,
+  OfferCardSkeleton,
+  JobListSkeleton,
+  BusinessDetailSkeleton,
+  NotificationSkeleton
+} from './components/LoadingSkeletons';
+import { DeleteConfirmModal } from './components/ConfirmModal';
+
 // ==============================================
 // COMPONENTES REUTILIZABLES
 // ==============================================
@@ -2057,7 +2070,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
   const categoriaSeleccionada = categorias.find(c => c.id === formData.category);
 
   const canPaso1 = formData.category !== null;
-  const canPaso2 = formData.description.trim() !== '' && formData.description.trim().length >= 20;
+  const canPaso2 = formData.description.trim() !== '' && formData.description.trim().length >= LIMITS.budgetRequest.descriptionMinLength;
 
   // Validaciones para Paso 3
   const phoneValidation = validatePhone(formData.phone);
@@ -3204,7 +3217,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
             <span className="text-green-600" size={18}>🌱</span>
             <span className="text-sm font-semibold text-green-700">Vecino Local</span>
           </div>
-          <p className="text-sm text-slate-500 mt-2">Miembro desde {user?.created_at ? new Date(user.created_at).getFullYear() : '2025'}</p>
+          <p className="text-sm text-slate-500 mt-2">Miembro desde {user?.created_at ? formatDate(user.created_at, 'short') : 'hace poco'}</p>
         </div>
       </section>
 
@@ -3685,14 +3698,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   };
 
   if (loadingBusiness) {
-    return (
-      <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <RefreshCw className="animate-spin text-primary mx-auto mb-4" size={40} />
-          <p className="text-gray-500">Cargando negocio...</p>
-        </div>
-      </div>
-    );
+    return <BusinessDetailSkeleton />;
   }
 
   if (!business) {
@@ -3812,15 +3818,15 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
       return;
     }
 
-    // Validación 4: Longitud mínima del comentario (10 caracteres)
-    const minLengthValidation = validateMinLength(newReviewText.trim(), 10, 'El comentario');
+    // Validación 4: Longitud mínima del comentario
+    const minLengthValidation = validateMinLength(newReviewText.trim(), LIMITS.review.minLength, 'El comentario');
     if (!minLengthValidation.isValid) {
       alert(minLengthValidation.error);
       return;
     }
 
-    // Validación 5: Longitud máxima del comentario (500 caracteres)
-    const maxLengthValidation = validateMaxLength(newReviewText.trim(), 500, 'El comentario');
+    // Validación 5: Longitud máxima del comentario
+    const maxLengthValidation = validateMaxLength(newReviewText.trim(), LIMITS.review.maxLength, 'El comentario');
     if (!maxLengthValidation.isValid) {
       alert(maxLengthValidation.error);
       return;
@@ -8205,6 +8211,8 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
 // Pantalla de Gestión de Ofertas de Empleo
 const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer, jobApplications = [] }) => {
   const [filter, setFilter] = useState('all');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState(null);
 
   const filteredJobs = userJobOffers.filter(job => {
     if (filter === 'all') return true;
@@ -8213,9 +8221,16 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer, jo
     return true;
   });
 
-  const handleDelete = (jobId) => {
-    if (confirm('¿Estás seguro de que quieres eliminar esta oferta de empleo?')) {
-      deleteJobOffer(jobId);
+  const handleDelete = (job) => {
+    setJobToDelete(job);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (jobToDelete) {
+      await deleteJobOffer(jobToDelete.id);
+      setShowDeleteConfirm(false);
+      setJobToDelete(null);
     }
   };
 
@@ -8353,7 +8368,7 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer, jo
                   <span>Publicada {job.postedAgo}</span>
                 </div>
                 <button
-                  onClick={() => handleDelete(job.id)}
+                  onClick={() => handleDelete(job)}
                   className="flex items-center justify-center h-9 px-4 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm font-medium gap-1.5"
                 >
                   <Trash2 size={16} />
@@ -8364,6 +8379,17 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer, jo
           ))
         )}
       </div>
+
+      {/* Modal de confirmación */}
+      <DeleteConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setJobToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        itemName={`la oferta "${jobToDelete?.title || 'esta oferta'}"`}
+      />
     </div>
   );
 };

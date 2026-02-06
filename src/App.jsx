@@ -6961,8 +6961,8 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
     // Volver a la lista
     setSelectedRequest(null);
 
-    // Mostrar confirmación
-    alert(`¡Listo! Has aceptado el presupuesto de ${quote.businessName} por ${quote.price}€.\n\nLa empresa ha sido notificada y puedes contactarla por WhatsApp o teléfono.`);
+    // Mostrar confirmación con toast
+    showToast(`¡Presupuesto aceptado! ${quote.businessName} ha sido notificada. Puedes contactarla por WhatsApp o teléfono.`, 'success');
   };
 
   const handleSubmitRating = () => {
@@ -13010,11 +13010,11 @@ const RegisterScreen = ({ onNavigate }) => {
 };
 
 // Pantalla de Recuperar Contraseña
-const ForgotPasswordScreen = ({ onNavigate }) => {
+const ForgotPasswordScreen = ({ onNavigate, showToast }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Simular envío de email y volver a login
-    alert('Se han enviado las instrucciones a tu email');
+    showToast('Se han enviado las instrucciones a tu email', 'success');
     onNavigate('login');
   };
 
@@ -14277,6 +14277,22 @@ export default function App() {
 
         console.log('[OWNER JOBS] Empleos del propietario cargados:', data?.length || 0);
 
+        // Contar candidaturas por empleo
+        const jobIds = (data || []).map(job => job.id);
+        let applicationCounts = {};
+
+        if (jobIds.length > 0) {
+          const { data: applicationsData } = await supabase
+            .from('job_applications')
+            .select('job_id')
+            .in('job_id', jobIds);
+
+          // Crear mapa de conteo
+          applicationsData?.forEach(app => {
+            applicationCounts[app.job_id] = (applicationCounts[app.job_id] || 0) + 1;
+          });
+        }
+
         // Transformar al formato esperado por el UI
         const transformedJobs = (data || []).map(job => {
           // Calcular tiempo transcurrido
@@ -14308,7 +14324,7 @@ export default function App() {
             benefits: job.benefits || [],
             createdAt: job.created_at,
             status: job.status,
-            applications: 0, // TODO: Contar candidaturas reales
+            applications: applicationCounts[job.id] || 0, // Conteo real desde Supabase
             postedAgo: getTimeAgo(job.created_at),
           };
         });
@@ -15213,7 +15229,7 @@ export default function App() {
       case 'register':
         return <RegisterScreen onNavigate={navigate} />;
       case 'forgot-password':
-        return <ForgotPasswordScreen onNavigate={navigate} />;
+        return <ForgotPasswordScreen onNavigate={navigate} showToast={showToast} />;
       case 'owner-welcome':
         return <OwnerWelcomeScreen onNavigate={navigate} />;
       case 'user-reviews':

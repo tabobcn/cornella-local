@@ -1309,7 +1309,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
   // Pull to refresh
   const handleRefresh = async () => {
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simular carga
+    await new Promise(resolve => setTimeout(resolve, TIMING.autoSaveDelay)); // Simular carga
   };
   const { pullDistance, isRefreshing, handlers } = usePullToRefresh(handleRefresh);
 

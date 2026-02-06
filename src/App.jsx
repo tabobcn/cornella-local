@@ -1179,11 +1179,11 @@ const FlashOfferCard = ({ offer, onClick }) => {
         <h3 className="font-semibold text-sm truncate">{offer.title}</h3>
         <div className="flex items-center justify-between mt-2">
           <div className="flex flex-col">
-            <span className="text-[10px] text-gray-400 line-through">{offer.originalPrice?.toFixed(2) || '0.00'}€</span>
+            <span className="text-[10px] text-gray-400 line-through">{formatCurrency(offer.originalPrice || 0)}</span>
             <span className="text-base font-bold text-primary">
               {offer.discountType === 'free' || offer.discountedPrice === 0
                 ? 'GRATIS'
-                : `${offer.discountedPrice?.toFixed(2) || '0.00'}€`}
+                : formatCurrency(offer.discountedPrice || 0)}
             </span>
           </div>
           <button
@@ -2775,12 +2775,12 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
                     </div>
                     <div className="text-right">
                       {offer.originalPrice > 0 && (
-                        <span className="text-xs text-gray-400 line-through mr-1">{offer.originalPrice.toFixed(2)}€</span>
+                        <span className="text-xs text-gray-400 line-through mr-1">{formatCurrency(offer.originalPrice)}</span>
                       )}
                       <span className="text-sm font-bold text-primary">
                         {offer.discountType === 'free' || offer.discountedPrice === 0
                           ? 'GRATIS'
-                          : `${offer.discountedPrice?.toFixed(2) || '0.00'}€`}
+                          : formatCurrency(offer.discountedPrice || 0)}
                       </span>
                     </div>
                   </div>
@@ -2914,7 +2914,9 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
             </div>
             <div className="px-4 space-y-4 pb-6">
               {/* Todas las ofertas con mismo diseño */}
-              {allOffers.map(offer => (
+              {loadingOffers ? (
+                <OfferListSkeleton count={4} />
+              ) : allOffers.map(offer => (
                 <div
                   key={offer.id}
                   onClick={() => onNavigate('coupon', { id: offer.id })}
@@ -2961,7 +2963,7 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
                     </button>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </div>
         ) : (
@@ -2972,9 +2974,7 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
             </div>
             <div className="px-4 space-y-4 pb-6">
               {loadingJobs ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-                </div>
+                <JobListSkeleton count={3} />
               ) : activeJobs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Briefcase size={48} className="text-slate-300 mb-3" />
@@ -4378,14 +4378,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
   }, [couponId]);
 
   if (loading) {
-    return (
-      <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando oferta...</p>
-        </div>
-      </div>
-    );
+    return <OfferCardSkeleton />;
   }
 
   if (!offer) {
@@ -4517,8 +4510,29 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
               <p className="text-xs font-bold text-white/90 uppercase tracking-wider">Escanea para canjear</p>
             </div>
             <img src={coupon.qrCode} alt="QR Code" className="w-56 h-56 rounded-xl" />
-            <div className="flex flex-col items-center">
-              <p className="text-2xl font-mono font-bold text-white tracking-widest">{coupon.code}</p>
+            <div className="flex flex-col items-center w-full">
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-mono font-bold text-white tracking-widest">{coupon.code}</p>
+                <button
+                  onClick={async () => {
+                    const success = await copyToClipboard(coupon.code);
+                    if (success) {
+                      // Feedback visual temporal
+                      const btn = event.currentTarget;
+                      btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                      setTimeout(() => {
+                        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>';
+                      }, 2000);
+                    }
+                  }}
+                  className="p-1.5 hover:bg-white/20 rounded-lg transition-colors active:scale-95"
+                  title="Copiar código"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                  </svg>
+                </button>
+              </div>
               <p className="text-xs text-white/80 mt-1">O muestra este código al personal</p>
             </div>
           </div>
@@ -4817,7 +4831,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
       }
     } catch (error) {
       console.error('[JOB APPLICATION] Error al enviar candidatura:', error);
-      showToast('Error al enviar candidatura. Inténtalo de nuevo.', 'error');
+      showToast(formatSupabaseError(error), 'error');
     }
   };
 
@@ -4845,8 +4859,9 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
               <ArrowLeft size={24} />
             </button>
           </header>
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="px-4 py-6">
+            <JobCardSkeleton />
+            <JobCardSkeleton />
           </div>
         </div>
       </div>
@@ -4918,7 +4933,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
               <span className="text-xs font-bold text-primary uppercase tracking-wider">Salario Bruto Anual</span>
             </div>
             <p className="text-2xl font-bold text-slate-900">
-              {job.salaryMin?.toLocaleString()}€ - {job.salaryMax?.toLocaleString()}€
+              {formatCurrency(job.salaryMin || 0, false)} - {formatCurrency(job.salaryMax || 0, false)}
             </p>
             <p className="text-sm text-gray-500 mt-1">{job.salaryNote}</p>
           </div>
@@ -6018,7 +6033,7 @@ const UserJobsScreen = ({ onNavigate, user }) => {
             position: job.title,
             location: job.location || 'Cornellà',
             salary: job.salary_min && job.salary_max
-              ? `${job.salary_min}€ - ${job.salary_max}€`
+              ? `${formatCurrency(job.salary_min, false)} - ${formatCurrency(job.salary_max, false)}`
               : 'A convenir',
             appliedDate: timeAgo,
             status: uiStatus,
@@ -6201,9 +6216,11 @@ const UserJobsScreen = ({ onNavigate, user }) => {
       {/* Applications List */}
       <div className="flex-1 px-6 py-4 flex flex-col gap-5">
         {loading ? (
-          <div className="flex justify-center items-center py-16">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
+          <>
+            <ApplicationSkeleton />
+            <ApplicationSkeleton />
+            <ApplicationSkeleton />
+          </>
         ) : applications.length === 0 ? (
           <EmptyState
             icon="Briefcase"
@@ -7060,7 +7077,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-slate-700">{request.acceptedQuote.businessName}</p>
-                        <p className="text-lg font-bold text-green-600">{request.acceptedQuote.price}€</p>
+                        <p className="text-lg font-bold text-green-600">{formatCurrency(request.acceptedQuote.price, false)}</p>
                       </div>
                       <div className="flex gap-2">
                         {/* Botón valorar si needsRating y no está valorado ni cancelado */}
@@ -7213,7 +7230,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-green-600">{acceptedQuote.price}€</p>
+                        <p className="text-3xl font-bold text-green-600">{formatCurrency(acceptedQuote.price, false)}</p>
                       </div>
                     </div>
 
@@ -7313,7 +7330,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">{quote.price}€</p>
+                    <p className="text-2xl font-bold text-primary">{formatCurrency(quote.price, false)}</p>
                     {index === 0 && !acceptedRequests[selectedRequest.id] && (
                       <span className="text-[10px] text-green-600 font-medium">Mejor precio</span>
                     )}
@@ -7342,7 +7359,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                       )}
                       <div className="flex items-center gap-2 text-gray-700">
                         <Tag size={14} className="text-green-600" />
-                        <span>Presupuesto aceptado: <strong>{quote.price}€</strong></span>
+                        <span>Presupuesto aceptado: <strong>{formatCurrency(quote.price, false)}</strong></span>
                       </div>
                     </div>
                   </div>
@@ -7564,8 +7581,9 @@ const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onA
       setReplyPrice('');
       setReplyMessage('');
     } catch (error) {
+      console.error('[BUDGET] Error sending quote:', error);
       if (showToast) {
-        showToast('Error al enviar el presupuesto', 'error');
+        showToast(formatSupabaseError(error), 'error');
       }
     }
   };
@@ -8060,8 +8078,9 @@ const BusinessBudgetReplyScreen = ({ onNavigate }) => {
 // Pantalla de Gestión de Ofertas (para dueños de negocio)
 const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: toggleVisibilityProp }) => {
   const [filter, setFilter] = useState('all');
-  // Usar solo ofertas del usuario (ya no necesitamos mock)
   const [offersState, setOffersState] = useState(userOffers);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [offerToDelete, setOfferToDelete] = useState(null);
 
   // Actualizar estado cuando cambien userOffers
   useEffect(() => {
@@ -8086,6 +8105,21 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
         ? { ...offer, isVisible: !offer.isVisible, status: offer.status === 'active' ? 'paused' : 'active' }
         : offer
     ));
+  };
+
+  const handleDeleteOffer = (offer) => {
+    setOfferToDelete(offer);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (offerToDelete) {
+      // TODO: Implementar delete en Supabase
+      console.log('[OFFERS] Delete offer:', offerToDelete.id);
+      setOffersState(prev => prev.filter(o => o.id !== offerToDelete.id));
+      setShowDeleteConfirm(false);
+      setOfferToDelete(null);
+    }
   };
 
   return (
@@ -8195,7 +8229,10 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
                   {offer.isVisible ? 'Visible' : 'Pausada'}
                 </span>
               </label>
-              <button className="flex items-center justify-center h-9 px-4 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm font-medium gap-1.5">
+              <button
+                onClick={() => handleDeleteOffer(offer)}
+                className="flex items-center justify-center h-9 px-4 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm font-medium gap-1.5"
+              >
                 <Trash2 size={16} />
                 Borrar
               </button>
@@ -8204,6 +8241,16 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
         ))}
       </div>
 
+      {/* Modal de confirmación */}
+      <DeleteConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setOfferToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        itemName={`la oferta "${offerToDelete?.title || 'esta oferta'}"`}
+      />
     </div>
   );
 };
@@ -8448,25 +8495,11 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
 
         // Transformar al formato esperado por el componente
         const transformedCandidates = (data || []).map(app => {
-          const createdDate = new Date(app.created_at);
-          const now = new Date();
-          const diffMs = now - createdDate;
-          const diffMins = Math.floor(diffMs / 60000);
-          const diffHours = Math.floor(diffMins / 60);
-          const diffDays = Math.floor(diffHours / 24);
-
-          let appliedAgo;
-          if (diffMins < 1) appliedAgo = 'Ahora';
-          else if (diffMins < 60) appliedAgo = `${diffMins} min`;
-          else if (diffHours < 24) appliedAgo = `${diffHours}h`;
-          else if (diffDays < 7) appliedAgo = `${diffDays}d`;
-          else appliedAgo = createdDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-
           return {
             id: app.id,
             jobTitle: app.jobs.title,
-            appliedDate: createdDate.toLocaleDateString('es-ES'),
-            appliedAgo: appliedAgo,
+            appliedDate: formatDate(app.created_at, 'short'),
+            appliedAgo: formatRelativeTime(app.created_at),
             message: app.message || 'Sin mensaje',
             // Mapear estados de DB a estados de UI
             status: app.status === 'pending' ? 'new' :
@@ -8669,10 +8702,12 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
       {/* Lista de candidatos */}
       <div className="p-4 pb-24">
         {loading ? (
-          <div className="text-center py-16">
-            <div className="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500">Cargando candidaturas...</p>
-          </div>
+          <>
+            <ApplicationSkeleton />
+            <ApplicationSkeleton />
+            <ApplicationSkeleton />
+            <ApplicationSkeleton />
+          </>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <Users className="mx-auto text-gray-300 mb-4" size={48} />
@@ -13905,21 +13940,6 @@ export default function App() {
   }, [user]);
 
   // Helper: Formatear tiempo de notificación
-  const formatNotificationTime = (createdAt) => {
-    const now = new Date();
-    const created = new Date(createdAt);
-    const diffMs = now - created;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Ahora';
-    if (diffMins < 60) return `${diffMins} min`;
-    if (diffHours < 24) return `${diffHours}h`;
-    if (diffDays < 7) return `${diffDays} días`;
-    return created.toLocaleDateString('es-ES');
-  };
-
   // Cargar notificaciones del usuario desde Supabase
   useEffect(() => {
     const loadUserNotifications = async () => {
@@ -13945,7 +13965,7 @@ export default function App() {
           title: notif.title,
           message: notif.message,
           icon: notif.icon,
-          time: formatNotificationTime(notif.created_at),
+          time: formatRelativeTime(notif.created_at),
           isRead: notif.is_read,
           actionRoute: notif.type === 'new_offer' ? 'coupon' :
                        notif.type === 'new_job' ? 'job-detail' :

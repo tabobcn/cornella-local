@@ -3717,12 +3717,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   }
 
   // Categorías de servicios/oficios que pueden recibir presupuestos directos
-  const serviceCategories = [
-    'Albañil y reformas', 'Carpintero', 'Cerrajero', 'Climatización',
-    'Electricista', 'Fontanero', 'Jardinería', 'Limpieza', 'Mudanzas',
-    'Pintor', 'Reparación móviles', 'Reformas', 'Construcción', 'Mantenimiento'
-  ];
-  const isServiceBusiness = serviceCategories.some(cat =>
+  const isServiceBusiness = SERVICE_CATEGORIES.some(cat =>
     business.category?.toLowerCase().includes(cat.toLowerCase()) ||
     business.subcategory?.toLowerCase().includes(cat.toLowerCase())
   );
@@ -3799,40 +3794,40 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   const handleSubmitReview = async () => {
     // Validación 1: Usuario debe estar logueado
     if (!user?.id) {
-      alert('Debes iniciar sesión para dejar una reseña');
+      showToast(ERROR_MESSAGES.unauthorized, 'warning');
       return;
     }
 
     // Validación 2: Verificar si puede reseñar (30 días, email verificado, etc.)
     if (!canReview.can_review) {
-      alert(canReview.reason || 'No puedes reseñar este negocio');
+      showToast(canReview.reason || 'No puedes reseñar este negocio', 'warning');
       return;
     }
 
     // Validación 3: Comentario requerido
     const commentValidation = validateRequired(newReviewText, 'El comentario');
     if (!commentValidation.isValid) {
-      alert(commentValidation.error);
+      showToast(commentValidation.error, 'error');
       return;
     }
 
     // Validación 4: Longitud mínima del comentario
     const minLengthValidation = validateMinLength(newReviewText.trim(), LIMITS.review.minLength, 'El comentario');
     if (!minLengthValidation.isValid) {
-      alert(minLengthValidation.error);
+      showToast(minLengthValidation.error, 'error');
       return;
     }
 
     // Validación 5: Longitud máxima del comentario
     const maxLengthValidation = validateMaxLength(newReviewText.trim(), LIMITS.review.maxLength, 'El comentario');
     if (!maxLengthValidation.isValid) {
-      alert(maxLengthValidation.error);
+      showToast(maxLengthValidation.error, 'error');
       return;
     }
 
     // Validación 6: Rating válido (1-5)
     if (!newReviewRating || newReviewRating < 1 || newReviewRating > 5) {
-      alert('La calificación debe estar entre 1 y 5 estrellas');
+      showToast('La calificación debe estar entre 1 y 5 estrellas', 'error');
       return;
     }
 
@@ -3870,7 +3865,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
       // Actualizar estado de can_review
       setCanReview({ can_review: false, reason: 'Ya has reseñado este negocio', already_reviewed: true });
 
-      alert('¡Reseña publicada correctamente!');
+      showToast('¡Reseña publicada correctamente!', 'success');
     } catch (error) {
       console.error('[REVIEWS] Error submitting review:', error);
 
@@ -3881,7 +3876,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         ? 'Negocio no encontrado'
         : 'Error al publicar reseña. Inténtalo de nuevo.';
 
-      alert(errorMessage);
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -4734,7 +4729,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
       const file = e.target.files[0];
       if (file) {
         // Validar tamaño (máx 5MB)
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > LIMITS.maxFileSize) {
           showToast('El archivo es demasiado grande (máx. 5MB)', 'error');
           return;
         }
@@ -6005,15 +6000,7 @@ const UserJobsScreen = ({ onNavigate, user }) => {
           const business = job.businesses;
 
           // Calcular tiempo desde aplicación
-          const createdDate = new Date(app.created_at);
-          const now = new Date();
-          const diffDays = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
-          let timeAgo;
-          if (diffDays === 0) timeAgo = 'Hoy';
-          else if (diffDays === 1) timeAgo = 'Ayer';
-          else if (diffDays < 7) timeAgo = `${diffDays} días`;
-          else if (diffDays < 30) timeAgo = `${Math.floor(diffDays / 7)} semanas`;
-          else timeAgo = `${Math.floor(diffDays / 30)} meses`;
+          const timeAgo = formatRelativeTime(app.created_at);
 
           // Mapear estados de DB a estados de UI
           let uiStatus;
@@ -8387,7 +8374,7 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer, jo
                   </div>
                   <h3 className="text-slate-900 text-lg font-bold leading-tight">{job.title}</h3>
                   <p className="text-primary text-base font-bold leading-normal mt-0.5">
-                    {job.salaryMin?.toLocaleString()}€ - {job.salaryMax?.toLocaleString()}€
+                    {formatCurrency(job.salaryMin || 0, false)} - {formatCurrency(job.salaryMax || 0, false)}
                   </p>
                   <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                     <MapPin size={14} />

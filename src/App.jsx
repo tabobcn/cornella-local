@@ -6073,7 +6073,7 @@ const UserJobsScreen = ({ onNavigate, user }) => {
     setShowInterviewDetails(null);
     setShowResponseConfirmation({ type: response, company });
     // Cerrar confirmación después de 3 segundos
-    setTimeout(() => setShowResponseConfirmation(null), 3000);
+    setTimeout(() => setShowResponseConfirmation(null), TIMING.toastDuration);
   };
 
   // Aceptar entrevista
@@ -10721,7 +10721,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
       }
 
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => setSaved(false), TIMING.refreshCooldown);
     } catch (err) {
       console.error('Error saving business:', err);
       setError('Error al guardar los cambios');
@@ -14746,7 +14746,7 @@ export default function App() {
     setTimeout(() => {
       setCurrentPage(page);
       setPageParams(params);
-      window.scrollTo(0, 0);
+      scrollToTop();
 
       // Añadir al historial del navegador para que funcione el botón atrás
       if (addToHistory) {

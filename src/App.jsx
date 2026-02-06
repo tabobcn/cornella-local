@@ -145,8 +145,7 @@ const validateEmail = (email) => {
   if (!email || email.trim() === '') {
     return { isValid: false, error: 'El email es obligatorio' };
   }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!REGEX_PATTERNS.email.test(email)) {
     return { isValid: false, error: 'Email no válido' };
   }
   return { isValid: true, error: null };
@@ -159,9 +158,8 @@ const validatePhone = (phone) => {
   }
   // Eliminar espacios, guiones y paréntesis
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-  // Formatos válidos: 9 dígitos, +34 seguido de 9 dígitos, o 0034 seguido de 9 dígitos
-  const phoneRegex = /^(\+34|0034)?[6-9]\d{8}$/;
-  if (!phoneRegex.test(cleanPhone)) {
+  // Validar formato español
+  if (!REGEX_PATTERNS.phoneSpanish.test(cleanPhone)) {
     return { isValid: false, error: 'Teléfono no válido (ej: 612345678)' };
   }
   return { isValid: true, error: null };
@@ -2201,14 +2199,14 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
                 placeholder="Ej: Necesito arreglar una fuga en el baño, debajo del lavabo. Gotea constantemente y se está mojando el suelo..."
                 rows={5}
                 className={`w-full px-4 py-3 rounded-xl border bg-white text-slate-900 placeholder:text-gray-400 ${
-                  formData.description && formData.description.trim().length < 20
+                  formData.description && formData.description.trim().length < LIMITS.budgetRequest.descriptionMinLength
                     ? 'border-red-300 focus:border-red-400'
                     : 'border-gray-200 focus:border-primary'
                 }`}
               />
               <div className="mt-1 flex justify-between items-center">
                 <span className={`text-xs ${
-                  formData.description.trim().length >= 20 ? 'text-green-600' : 'text-gray-400'
+                  formData.description.trim().length >= LIMITS.budgetRequest.descriptionMinLength ? 'text-green-600' : 'text-gray-400'
                 }`}>
                   {formData.description.trim().length >= 20 ? '✓ Descripción válida' : `${formData.description.trim().length}/20 caracteres`}
                 </span>
@@ -2232,7 +2230,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
                     </button>
                   </div>
                 ))}
-                {formData.photos.length < 3 && (
+                {formData.photos.length < LIMITS.budgetRequest.maxPhotos && (
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, photos: [...prev.photos, `https://picsum.photos/200/200?random=${Date.now()}`] }))}
                     className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400"
@@ -2405,7 +2403,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName }) => {
   ];
 
   const handleAddPhoto = () => {
-    if (formData.photos.length < 3) {
+    if (formData.photos.length < LIMITS.budgetRequest.maxPhotos) {
       const newPhoto = `https://picsum.photos/200/200?random=${Date.now()}`;
       setFormData(prev => ({ ...prev, photos: [...prev.photos, newPhoto] }));
     }
@@ -4751,7 +4749,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
   const handleSubmitApplication = async () => {
     if (!cvUploaded || !user?.id) {
       if (!user?.id) {
-        showToast('Inicia sesión para aplicar', 'warning');
+        showToast(ERROR_MESSAGES.unauthorized, 'warning');
       }
       return;
     }
@@ -4816,7 +4814,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
       setCvFile(null);
 
       // Mostrar toast de confirmación
-      showToast('¡Candidatura enviada correctamente!', 'success');
+      showToast(`${SUCCESS_MESSAGES.sent} Tu candidatura ha sido enviada correctamente`, 'success');
 
       // Añadir notificación local (opcional)
       if (onAddNotification) {
@@ -14200,7 +14198,7 @@ export default function App() {
   // Eliminar empleo
   const deleteJob = (jobId) => {
     setActiveJobs(prev => prev.filter(job => job.id !== jobId));
-    showToast('Empleo eliminado', 'success');
+    showToast(SUCCESS_MESSAGES.deleted, 'success');
   };
 
   // Filtrar empleos activos (no expirados y no contratados hace más de 15 días)
@@ -14680,7 +14678,7 @@ export default function App() {
         actionRoute: 'business-jobs',
       });
 
-      showToast('Empleo publicado correctamente', 'success');
+      showToast(SUCCESS_MESSAGES.created, 'success');
       return data;
     } catch (error) {
       console.error('[OWNER JOBS] Error creating job:', error);
@@ -14701,7 +14699,7 @@ export default function App() {
       if (error) throw error;
 
       setUserJobOffers(prev => prev.filter(j => j.id !== jobId));
-      showToast('Empleo eliminado', 'success');
+      showToast(SUCCESS_MESSAGES.deleted, 'success');
     } catch (error) {
       console.error('[OWNER JOBS] Error deleting job:', error);
       showToast('Error al eliminar el empleo', 'error');
@@ -14904,7 +14902,7 @@ export default function App() {
         actionRoute: 'business-offers',
       });
 
-      showToast('Oferta publicada correctamente', 'success');
+      showToast(SUCCESS_MESSAGES.created, 'success');
       return data;
     } catch (error) {
       console.error('[OWNER OFFERS] Error creating offer:', error);
@@ -14974,7 +14972,7 @@ export default function App() {
           : req
       ));
 
-      showToast('Presupuesto enviado correctamente', 'success');
+      showToast(SUCCESS_MESSAGES.sent, 'success');
 
       addNotification({
         type: 'budget',
@@ -14996,7 +14994,7 @@ export default function App() {
   // Función para toggle de favoritos con persistencia en Supabase
   const toggleFavorite = async (businessId) => {
     if (!user?.id) {
-      showToast('Inicia sesión para guardar favoritos', 'warning');
+      showToast(ERROR_MESSAGES.unauthorized, 'warning');
       return;
     }
 

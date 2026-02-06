@@ -4681,7 +4681,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
         setJob(transformedJob);
       } catch (error) {
         console.error('Error loading job:', error);
-        showToast('Error al cargar el empleo', 'error');
+        showToast(ERROR_MESSAGES.generic, 'error');
       } finally {
         setLoading(false);
       }
@@ -7203,7 +7203,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                   <div className="bg-white rounded-xl p-4 mb-4">
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center text-xl font-bold text-primary">
-                        {acceptedQuote.businessName?.charAt(0) || 'E'}
+                        {getInitials(acceptedQuote.businessName || 'Empresa')}
                       </div>
                       <div className="flex-1">
                         <button
@@ -7300,7 +7300,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                       onClick={() => quote.businessId && onNavigate('business', { id: quote.businessId, returnTo: 'my-budget-requests', returnParams: { selectedRequestId: selectedRequest.id } })}
                       className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-lg font-bold text-gray-600 hover:bg-primary/10 hover:text-primary transition-colors"
                     >
-                      {quote.businessName.charAt(0)}
+                      {getInitials(quote.businessName)}
                     </button>
                     <div>
                       <div className="flex items-center gap-2">
@@ -14185,7 +14185,7 @@ export default function App() {
         setActiveJobs(transformedJobs);
       } catch (error) {
         console.error('Error loading jobs:', error);
-        showToast('Error al cargar empleos', 'error');
+        showToast(ERROR_MESSAGES.generic, 'error');
       } finally {
         setLoadingJobs(false);
       }

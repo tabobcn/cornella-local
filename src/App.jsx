@@ -35,6 +35,7 @@ import {
   BusinessListSkeleton,
   BusinessCardSkeleton,
   OfferCardSkeleton,
+  OfferListSkeleton,
   JobCardSkeleton,
   JobListSkeleton,
   BusinessDetailSkeleton,

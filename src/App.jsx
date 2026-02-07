@@ -2920,54 +2920,56 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
               {/* Todas las ofertas con mismo diseño */}
               {loadingOffers ? (
                 <OfferListSkeleton count={4} />
-              ) : allOffers.map(offer => (
-                <div
-                  key={offer.id}
-                  onClick={() => onNavigate('coupon', { id: offer.id })}
-                  className="group bg-white rounded-2xl shadow-soft overflow-hidden transform transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer border border-gray-100"
-                >
-                  <div className="h-40 relative overflow-hidden">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                      style={{ backgroundImage: `url("${offer.image}")` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                    <div className="absolute top-3 left-3 bg-white text-slate-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
-                      {offer.discount}
+              ) : (
+                allOffers.map(offer => (
+                  <div
+                    key={offer.id}
+                    onClick={() => onNavigate('coupon', { id: offer.id })}
+                    className="group bg-white rounded-2xl shadow-soft overflow-hidden transform transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer border border-gray-100"
+                  >
+                    <div className="h-40 relative overflow-hidden">
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                        style={{ backgroundImage: `url("${offer.image}")` }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                      <div className="absolute top-3 left-3 bg-white text-slate-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                        {offer.discount}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const ofertaUrl = `${window.location.origin}${window.location.pathname}?oferta=${offer.id}`;
+                          const text = `¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n👉 Ver oferta: ${ofertaUrl}`;
+                          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                        }}
+                        className="absolute top-3 right-3 w-9 h-9 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg"
+                      >
+                        <MessageCircle size={16} />
+                      </button>
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <p className="text-white/90 text-xs font-medium mb-1 flex items-center gap-1">
+                          <Icon name={offer.businessIcon || 'Store'} size={14} /> {offer.business}
+                        </p>
+                        <h4 className="text-white text-lg font-bold leading-tight">{offer.title}</h4>
+                      </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const ofertaUrl = `${window.location.origin}${window.location.pathname}?oferta=${offer.id}`;
-                        const text = `¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n👉 Ver oferta: ${ofertaUrl}`;
-                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                      }}
-                      className="absolute top-3 right-3 w-9 h-9 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg"
-                    >
-                      <MessageCircle size={16} />
-                    </button>
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <p className="text-white/90 text-xs font-medium mb-1 flex items-center gap-1">
-                        <Icon name={offer.businessIcon || 'Store'} size={14} /> {offer.business}
-                      </p>
-                      <h4 className="text-white text-lg font-bold leading-tight">{offer.title}</h4>
+                    <div className="p-4 flex items-center justify-between">
+                      <div className="flex flex-col">
+                        {offer.expiresIn && (
+                          <span className="text-slate-500 text-xs font-medium">Expira en {offer.expiresIn}</span>
+                        )}
+                        {offer.savings && <span className="text-primary font-bold text-sm">Ahorras {offer.savings}</span>}
+                        {offer.availableToday && <span className="text-slate-900 font-bold text-sm">Disponible hoy</span>}
+                        {offer.validToday && <span className="text-green-600 font-bold text-sm">Válido hoy</span>}
+                      </div>
+                      <button className="bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors shadow-lg shadow-primary/20">
+                        Ver Cupón
+                      </button>
                     </div>
                   </div>
-                  <div className="p-4 flex items-center justify-between">
-                    <div className="flex flex-col">
-                      {offer.expiresIn && (
-                        <span className="text-slate-500 text-xs font-medium">Expira en {offer.expiresIn}</span>
-                      )}
-                      {offer.savings && <span className="text-primary font-bold text-sm">Ahorras {offer.savings}</span>}
-                      {offer.availableToday && <span className="text-slate-900 font-bold text-sm">Disponible hoy</span>}
-                      {offer.validToday && <span className="text-green-600 font-bold text-sm">Válido hoy</span>}
-                    </div>
-                    <button className="bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors shadow-lg shadow-primary/20">
-                      Ver Cupón
-                    </button>
-                  </div>
-                </div>
-              )))}
+                ))
+              )}
             </div>
           </div>
         ) : (

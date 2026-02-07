@@ -8693,6 +8693,21 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         console.log('[CANDIDATES] Notifications sent to hired and rejected candidates');
         showToast(`¡${hiredCandidate.candidate.name} contratado! Se han notificado a todos los candidatos.`, 'success');
       }
+
+      // Si rechazamos manualmente a alguien, enviar notificación
+      if (newStatus === 'rejected' && hiredCandidate) {
+        await supabase.from('notifications').insert({
+          user_id: hiredCandidate.userId,
+          type: 'application_rejected',
+          title: 'Candidatura no seleccionada',
+          message: `Gracias por tu interés en ${hiredCandidate.jobTitle}. Lamentablemente, hemos decidido no continuar con tu candidatura. ¡Te deseamos mucho éxito!`,
+          metadata: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
+          read: false,
+          created_at: new Date().toISOString()
+        });
+        console.log('[CANDIDATES] Rejection notification sent');
+        showToast('Candidato rechazado. Se ha enviado notificación.', 'success');
+      }
     } catch (error) {
       console.error('[CANDIDATES] Error updating status:', error);
       showToast(formatSupabaseError(error), 'error');
@@ -8730,8 +8745,23 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
       if (error) throw error;
 
       console.log('[INTERVIEW] Entrevista programada:', selectedCandidate.id, dateTime);
+
+      // Enviar notificación al candidato
+      await supabase.from('notifications').insert({
+        user_id: selectedCandidate.userId,
+        type: 'interview_scheduled',
+        title: '¡Entrevista programada!',
+        message: `Has sido preseleccionado para ${selectedCandidate.jobTitle}. Fecha: ${interviewDateTime.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. ¡Mucha suerte!`,
+        metadata: { job_id: selectedCandidate.jobId, job_title: selectedCandidate.jobTitle, interview_date: interviewDateTime.toISOString() },
+        read: false,
+        created_at: new Date().toISOString()
+      });
+
+      console.log('[INTERVIEW] Notification sent to candidate');
+      showToast(`Entrevista programada. ${selectedCandidate.candidate.name} ha sido notificado.`, 'success');
     } catch (error) {
       console.error('[INTERVIEW] Error al programar entrevista:', error);
+      showToast('Error al programar entrevista', 'error');
       // Revertir optimistic update si falla
       setCandidates(prev => prev.map(c =>
         c.id === selectedCandidate.id
@@ -14798,6 +14828,32 @@ export default function App() {
         iconBg: 'bg-green-500',
         actionRoute: 'business-jobs',
       });
+
+      // Notificar a usuarios que favoritearon el negocio
+      try {
+        const { data: favoritesData, error: favError } = await supabase
+          .from('favorites')
+          .select('user_id')
+          .eq('business_id', businessData.id);
+
+        if (!favError && favoritesData && favoritesData.length > 0) {
+          const notifications = favoritesData.map(fav => ({
+            user_id: fav.user_id,
+            type: 'new_job',
+            title: `Nueva oferta de empleo en ${businessData.name}`,
+            message: `${businessData.name} ha publicado una nueva oferta: ${jobData.title}. ¡Aplica ahora!`,
+            metadata: { business_id: businessData.id, job_id: data.id, job_title: jobData.title },
+            read: false,
+            created_at: new Date().toISOString()
+          }));
+
+          await supabase.from('notifications').insert(notifications);
+          console.log('[OWNER JOBS] Notified', favoritesData.length, 'users who favorited the business');
+        }
+      } catch (notifError) {
+        console.error('[OWNER JOBS] Error sending notifications to favorites:', notifError);
+        // No bloqueamos el flujo si falla la notificación
+      }
 
       showToast(SUCCESS_MESSAGES.created, 'success');
       return data;

@@ -8478,7 +8478,7 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer, jo
 };
 
 // Pantalla de Candidaturas Recibidas (para empresas)
-const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
+const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast }) => {
   const [filter, setFilter] = useState('all');
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -8535,7 +8535,9 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
         const transformedCandidates = (data || []).map(app => {
           return {
             id: app.id,
+            jobId: app.job_id, // ID del empleo
             jobTitle: app.jobs.title,
+            userId: app.user_id, // ID del candidato
             appliedDate: formatDate(app.created_at, 'short'),
             appliedAgo: formatRelativeTime(app.created_at),
             message: app.message || 'Sin mensaje',
@@ -8614,9 +8616,22 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
     };
 
     const dbStatus = dbStatusMap[newStatus] || 'pending';
+    const hiredCandidate = candidates.find(c => c.id === id);
 
     // Optimistic update
-    setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: newStatus, dbStatus } : c));
+    if (newStatus === 'hired' && hiredCandidate) {
+      // Si contratamos a alguien, rechazar automáticamente a los demás del mismo empleo
+      setCandidates(prev => prev.map(c =>
+        c.jobId === hiredCandidate.jobId && c.id !== id
+          ? { ...c, status: 'rejected', dbStatus: 'rejected' }
+          : c.id === id
+            ? { ...c, status: newStatus, dbStatus }
+            : c
+      ));
+    } else {
+      setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: newStatus, dbStatus } : c));
+    }
+
     if (selectedCandidate?.id === id) {
       setSelectedCandidate(prev => prev ? { ...prev, status: newStatus, dbStatus } : null);
     }
@@ -8630,10 +8645,59 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
 
       if (error) throw error;
       console.log('[CANDIDATES] Status updated:', id, '->', dbStatus);
+
+      // Si contratamos a alguien, rechazar a los demás y enviar notificaciones
+      if (newStatus === 'hired' && hiredCandidate) {
+        // Obtener todos los demás candidatos del mismo empleo
+        const otherCandidates = candidates.filter(c => c.jobId === hiredCandidate.jobId && c.id !== id);
+
+        // Rechazar a los demás en la base de datos
+        if (otherCandidates.length > 0) {
+          const otherIds = otherCandidates.map(c => c.id);
+          const { error: rejectError } = await supabase
+            .from('job_applications')
+            .update({ status: 'rejected', updated_at: new Date().toISOString() })
+            .in('id', otherIds);
+
+          if (rejectError) {
+            console.error('[CANDIDATES] Error rejecting others:', rejectError);
+          } else {
+            console.log('[CANDIDATES] Auto-rejected', otherCandidates.length, 'other candidates');
+          }
+
+          // Crear notificaciones para los rechazados
+          const rejectNotifications = otherCandidates.map(c => ({
+            user_id: c.userId,
+            type: 'application_rejected',
+            title: 'Candidatura no seleccionada',
+            message: `Gracias por tu interés en ${hiredCandidate.jobTitle}. Lamentablemente, hemos seleccionado a otro candidato. ¡Te deseamos mucho éxito en tu búsqueda!`,
+            metadata: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
+            read: false,
+            created_at: new Date().toISOString()
+          }));
+
+          await supabase.from('notifications').insert(rejectNotifications);
+        }
+
+        // Crear notificación para el contratado
+        await supabase.from('notifications').insert({
+          user_id: hiredCandidate.userId,
+          type: 'application_accepted',
+          title: '¡Felicidades! Has sido seleccionado',
+          message: `¡Enhorabuena! Has sido seleccionado para el puesto de ${hiredCandidate.jobTitle}. La empresa se pondrá en contacto contigo pronto.`,
+          metadata: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
+          read: false,
+          created_at: new Date().toISOString()
+        });
+
+        console.log('[CANDIDATES] Notifications sent to hired and rejected candidates');
+        showToast(`¡${hiredCandidate.candidate.name} contratado! Se han notificado a todos los candidatos.`, 'success');
+      }
     } catch (error) {
       console.error('[CANDIDATES] Error updating status:', error);
+      showToast(formatSupabaseError(error), 'error');
       // Revertir optimistic update en caso de error
-      // (aquí podrías recargar desde la DB o mostrar un toast de error)
+      setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: candidates.find(cc => cc.id === id)?.status || 'new' } : c));
     }
   };
 
@@ -15262,7 +15326,7 @@ export default function App() {
       case 'business-jobs':
         return <BusinessJobsScreen onNavigate={navigate} userJobOffers={userJobOffers} deleteJobOffer={deleteJobOffer} jobApplications={jobApplications} />;
       case 'business-candidates':
-        return <BusinessCandidatesScreen onNavigate={navigate} user={user} businessData={businessData} />;
+        return <BusinessCandidatesScreen onNavigate={navigate} user={user} businessData={businessData} showToast={showToast} />;
       case 'create-job-offer':
         return <CreateJobOfferScreen onNavigate={navigate} businessData={businessData} onCreateJobOffer={createJobOffer} />;
       case 'terms':

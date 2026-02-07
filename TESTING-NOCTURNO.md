@@ -71,14 +71,14 @@
 
 #### 5. **Toasts en vez de Alerts**
 **Dónde probar:**
-- Intentar dejar reseña sin login → Toast
-- Validaciones de formularios → Toasts
+- Validaciones de formularios (registro, presupuestos, candidaturas) → Toasts
+- Acciones exitosas (borrar oferta, pausar oferta) → Toasts
 - Errores de carga → Toasts
 
 **Qué verificar:**
 - ✅ NO aparecen alerts nativos del navegador
 - ✅ Todos los mensajes son toasts (esquina superior)
-- ✅ Toasts tienen colores correctos (success=verde, error=rojo)
+- ✅ Toasts tienen colores correctos (success=verde, error=rojo, warning=amarillo)
 - ✅ Desaparecen automáticamente después de 3 segundos
 
 #### 6. **Mensajes de Error Amigables**

@@ -8404,11 +8404,15 @@ const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOffer, jo
                 <div className="flex flex-col gap-1 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${
-                      job.status === 'active'
-                        ? 'bg-green-50 text-green-700 ring-green-600/20'
-                        : 'bg-yellow-50 text-yellow-700 ring-yellow-600/20'
+                      job.status === 'closed'
+                        ? 'bg-gray-50 text-gray-700 ring-gray-600/20'
+                        : job.status === 'active'
+                          ? 'bg-green-50 text-green-700 ring-green-600/20'
+                          : 'bg-yellow-50 text-yellow-700 ring-yellow-600/20'
                     }`}>
-                      {job.status === 'active' ? 'ACTIVA' : 'PAUSADA'}
+                      {job.status === 'closed'
+                        ? `CUBIERTA${job.hiredCandidateName ? ` - ${job.hiredCandidateName}` : ''}`
+                        : job.status === 'active' ? 'ACTIVA' : 'PAUSADA'}
                     </span>
                     {job.applications > 0 && (
                       <button
@@ -8691,7 +8695,20 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         });
 
         console.log('[CANDIDATES] Notifications sent to hired and rejected candidates');
-        showToast(`¡${hiredCandidate.candidate.name} contratado! Se han notificado a todos los candidatos.`, 'success');
+
+        // Cerrar automáticamente la oferta de empleo
+        const { error: jobCloseError } = await supabase
+          .from('jobs')
+          .update({ status: 'closed', updated_at: new Date().toISOString() })
+          .eq('id', hiredCandidate.jobId);
+
+        if (jobCloseError) {
+          console.error('[CANDIDATES] Error closing job:', jobCloseError);
+        } else {
+          console.log('[CANDIDATES] Job closed automatically:', hiredCandidate.jobId);
+        }
+
+        showToast(`¡${hiredCandidate.candidate.name} contratado! Oferta cerrada automáticamente.`, 'success');
       }
 
       // Si rechazamos manualmente a alguien, enviar notificación
@@ -14372,19 +14389,25 @@ export default function App() {
 
         console.log('[OWNER JOBS] Empleos del propietario cargados:', data?.length || 0);
 
-        // Contar candidaturas por empleo
+        // Contar candidaturas y obtener contratados por empleo
         const jobIds = (data || []).map(job => job.id);
         let applicationCounts = {};
+        let hiredCandidates = {};
 
         if (jobIds.length > 0) {
           const { data: applicationsData } = await supabase
             .from('job_applications')
-            .select('job_id')
+            .select('job_id, full_name, status')
             .in('job_id', jobIds);
 
-          // Crear mapa de conteo
+          // Crear mapa de conteo y de contratados
           applicationsData?.forEach(app => {
             applicationCounts[app.job_id] = (applicationCounts[app.job_id] || 0) + 1;
+
+            // Guardar el nombre del contratado
+            if (app.status === 'hired') {
+              hiredCandidates[app.job_id] = app.full_name;
+            }
           });
         }
 
@@ -14421,6 +14444,7 @@ export default function App() {
             status: job.status,
             applications: applicationCounts[job.id] || 0, // Conteo real desde Supabase
             postedAgo: getTimeAgo(job.created_at),
+            hiredCandidateName: hiredCandidates[job.id] || null, // Nombre del contratado
           };
         });
 

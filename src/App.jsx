@@ -8489,8 +8489,10 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
 
   // Cargar candidaturas desde Supabase
   useEffect(() => {
+    console.log('[CANDIDATES] useEffect ejecutado. user:', user?.id, 'businessData:', businessData?.id);
     const loadCandidates = async () => {
       if (!user?.id || !businessData?.id) {
+        console.log('[CANDIDATES] Saliendo temprano. user?.id:', user?.id, 'businessData?.id:', businessData?.id);
         setCandidates([]);
         setLoading(false);
         return;
@@ -8571,6 +8573,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData }) => {
         console.error('[CANDIDATES] Error loading candidates:', error);
       } finally {
         setLoading(false);
+        console.log('[CANDIDATES] Loading finished, setLoading(false) executed');
       }
     };
 

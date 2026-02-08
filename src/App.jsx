@@ -7551,14 +7551,26 @@ const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onA
   const incomingRequests = requests;
 
   const handleSendQuote = async () => {
-    if (!replyPrice || !replyMessage.trim()) return;
+    console.log('[BUDGET] handleSendQuote called');
+    console.log('[BUDGET] replyPrice:', replyPrice);
+    console.log('[BUDGET] replyMessage:', replyMessage);
+    console.log('[BUDGET] selectedRequest:', selectedRequest);
+
+    if (!replyPrice || !replyMessage.trim()) {
+      console.log('[BUDGET] Validation failed - missing price or message');
+      return;
+    }
 
     try {
+      console.log('[BUDGET] Calling onSendQuote...');
       if (onSendQuote) {
         await onSendQuote(selectedRequest.id, {
           price: replyPrice,
           message: replyMessage,
         });
+        console.log('[BUDGET] onSendQuote completed successfully');
+      } else {
+        console.log('[BUDGET] ERROR: onSendQuote is not defined!');
       }
 
       // Mostrar toast de éxito
@@ -15163,6 +15175,16 @@ export default function App() {
     }
 
     try {
+      // 1. Obtener el user_id del budget_request
+      const { data: budgetRequest, error: fetchError } = await supabase
+        .from('budget_requests')
+        .select('user_id')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 2. Insertar la cotización
       const { data, error } = await supabase
         .from('budget_quotes')
         .insert({
@@ -15179,7 +15201,34 @@ export default function App() {
 
       console.log('[BUDGET QUOTE] Presupuesto enviado:', data);
 
-      // Actualizar estado local
+      // 3. Actualizar estado del budget_request a 'quoted'
+      const { error: updateError } = await supabase
+        .from('budget_requests')
+        .update({ status: 'quoted' })
+        .eq('id', requestId);
+
+      if (updateError) console.error('[BUDGET QUOTE] Error updating status:', updateError);
+
+      // 4. Crear notificación para el USUARIO que solicitó el presupuesto
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: budgetRequest.user_id,
+          type: 'budget_quote_received',
+          title: 'Nuevo presupuesto recibido',
+          message: `${businessData.name} te ha enviado un presupuesto de ${quoteData.price}€`,
+          is_read: false,
+          metadata: {
+            budget_request_id: requestId,
+            business_id: businessData.id,
+            business_name: businessData.name,
+            price: parseFloat(quoteData.price),
+          },
+        });
+
+      if (notifError) console.error('[BUDGET QUOTE] Error creating notification:', notifError);
+
+      // 5. Actualizar estado local
       setIncomingBudgetRequests(prev => prev.map(req =>
         req.id === requestId
           ? { ...req, status: 'replied', myQuote: { price: data.price, message: data.description } }
@@ -15188,6 +15237,7 @@ export default function App() {
 
       showToast(SUCCESS_MESSAGES.sent, 'success');
 
+      // 6. Notificación local para el propietario
       addNotification({
         type: 'budget',
         title: 'Presupuesto enviado',
@@ -15202,6 +15252,63 @@ export default function App() {
       console.error('[BUDGET QUOTE] Error sending quote:', error);
       showToast('Error al enviar el presupuesto', 'error');
       throw error;
+    }
+  };
+
+  // Aceptar un presupuesto y notificar al negocio
+  const acceptBudgetQuote = async (requestId, quote) => {
+    if (!user?.id) {
+      showToast(ERROR_MESSAGES.unauthorized, 'warning');
+      return;
+    }
+
+    try {
+      console.log('[ACCEPT QUOTE] Accepting quote:', { requestId, quoteId: quote.id, businessId: quote.businessId });
+
+      // 1. Actualizar el estado del budget_request a 'accepted'
+      const { error: updateError } = await supabase
+        .from('budget_requests')
+        .update({ status: 'accepted' })
+        .eq('id', requestId);
+
+      if (updateError) throw updateError;
+
+      // 2. Obtener información del negocio
+      const { data: business, error: businessError } = await supabase
+        .from('businesses')
+        .select('name, owner_id')
+        .eq('id', quote.businessId)
+        .single();
+
+      if (businessError) {
+        console.error('[ACCEPT QUOTE] Error fetching business:', businessError);
+      }
+
+      // 3. Crear notificación para el propietario del negocio
+      if (business?.owner_id) {
+        const { error: notifError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: business.owner_id,
+            type: 'budget_quote_accepted',
+            title: '¡Presupuesto aceptado!',
+            message: `Un cliente ha aceptado tu presupuesto de ${quote.price}€`,
+            is_read: false,
+            metadata: {
+              budget_request_id: requestId,
+              business_id: quote.businessId,
+              price: quote.price,
+            },
+          });
+
+        if (notifError) console.error('[ACCEPT QUOTE] Error creating notification:', notifError);
+      }
+
+      console.log('[ACCEPT QUOTE] Quote accepted successfully');
+      showToast(`¡Presupuesto de ${business?.name || 'negocio'} aceptado!`, 'success');
+    } catch (error) {
+      console.error('[ACCEPT QUOTE] Error accepting quote:', error);
+      showToast('Error al aceptar el presupuesto', 'error');
     }
   };
 
@@ -15409,7 +15516,7 @@ export default function App() {
           user={user}
         />;
       case 'my-budget-requests':
-        return <MyBudgetRequestsScreen onNavigate={navigate} userBudgetRequests={userBudgetRequests} onAddNotification={addNotification} initialSelectedRequestId={pageParams.selectedRequestId} />;
+        return <MyBudgetRequestsScreen onNavigate={navigate} userBudgetRequests={userBudgetRequests} onAddNotification={addNotification} onAcceptQuote={acceptBudgetQuote} initialSelectedRequestId={pageParams.selectedRequestId} />;
       case 'incoming-budget-requests':
         return <IncomingBudgetRequestsScreen onNavigate={navigate} businessData={businessData} showToast={showToast} onAddNotification={addNotification} requests={incomingBudgetRequests} onSendQuote={respondToBudgetRequest} />;
       case 'business-budget':

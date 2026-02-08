@@ -8624,14 +8624,28 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
 
     // Optimistic update
     if (newStatus === 'hired' && hiredCandidate) {
-      // Si contratamos a alguien, rechazar automáticamente a los demás del mismo empleo
+      // Primero, actualizar solo el contratado
       setCandidates(prev => prev.map(c =>
-        c.jobId === hiredCandidate.jobId && c.id !== id
-          ? { ...c, status: 'rejected', dbStatus: 'rejected' }
-          : c.id === id
-            ? { ...c, status: newStatus, dbStatus }
-            : c
+        c.id === id ? { ...c, status: newStatus, dbStatus } : c
       ));
+
+      // Después de 1.5 segundos, rechazar a los demás (transición suave)
+      const otherCandidatesCount = candidates.filter(c => c.jobId === hiredCandidate.jobId && c.id !== id).length;
+
+      setTimeout(() => {
+        setCandidates(prev => prev.map(c =>
+          c.jobId === hiredCandidate.jobId && c.id !== id
+            ? { ...c, status: 'rejected', dbStatus: 'rejected' }
+            : c
+        ));
+      }, 1500);
+
+      // Toast informativo con número de rechazados
+      if (otherCandidatesCount > 0) {
+        showToast(`¡${hiredCandidate.candidate.name} contratado! ${otherCandidatesCount} candidato${otherCandidatesCount > 1 ? 's' : ''} rechazado${otherCandidatesCount > 1 ? 's' : ''} automáticamente.`, 'success');
+      } else {
+        showToast(`¡${hiredCandidate.candidate.name} contratado!`, 'success');
+      }
     } else {
       setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: newStatus, dbStatus } : c));
     }
@@ -8707,8 +8721,6 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         } else {
           console.log('[CANDIDATES] Job closed automatically:', hiredCandidate.jobId);
         }
-
-        showToast(`¡${hiredCandidate.candidate.name} contratado! Oferta cerrada automáticamente.`, 'success');
       }
 
       // Si rechazamos manualmente a alguien, enviar notificación

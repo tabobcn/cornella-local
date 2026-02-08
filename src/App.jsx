@@ -15060,7 +15060,8 @@ export default function App() {
           title: offerData.title,
           description: offerData.description,
           discount_type: offerData.discountType,
-          discount_value: offerData.discount || null,
+          // Solo guardar valor numérico si es porcentaje
+          discount_value: offerData.discountType === 'percentage' ? (offerData.discount || null) : null,
           discount_label: offerData.discountLabel || null,
           original_price: offerData.originalPrice || null,
           discounted_price: offerData.discountedPrice || null,

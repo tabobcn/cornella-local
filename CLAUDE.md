@@ -193,6 +193,77 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+### ✅ SESIÓN 3: Testing y Nuevas Notificaciones (2026-02-09)
+
+#### Nuevas Funcionalidades Implementadas
+
+1. ✅ **Notificación cuando usuario recibe presupuesto**
+   - Modificada función `respondToBudgetRequest()` (línea 15171)
+   - Obtiene user_id del budget_request
+   - Inserta notificación en Supabase tipo 'budget_quote_received'
+   - Mensaje: "[Negocio] te ha enviado un presupuesto de X€"
+   - Notificación aparece en tiempo real vía Realtime
+
+2. ✅ **Notificación cuando negocio recibe aceptación de presupuesto**
+   - Nueva función `acceptBudgetQuote()` (línea 15258)
+   - Actualiza budget_request.status a 'accepted'
+   - Obtiene owner_id del negocio
+   - Inserta notificación en Supabase tipo 'budget_quote_accepted'
+   - Mensaje: "Un cliente ha aceptado tu presupuesto de X€"
+   - Función pasada como prop a MyBudgetRequestsScreen
+
+3. ✅ **Carga de presupuestos del usuario desde Supabase**
+   - Nuevo useEffect `loadUserBudgetRequests()` (línea 14719)
+   - Carga budget_requests del usuario con JOIN a budget_quotes
+   - Transforma datos al formato esperado por MyBudgetRequestsScreen
+   - Ahora "Mis Presupuestos" muestra datos reales desde base de datos
+
+#### Bugs Corregidos
+
+10. ✅ **Mismatch de categorías en presupuestos**
+    - Problema: Panel vacío a pesar de tener solicitudes
+    - Causa: businesses.subcategory no coincidía con budget_requests.category
+    - Solución: Script `fix-budget-category-mismatch.sql`
+    - Estado: Resuelto
+
+11. ✅ **Error al crear ofertas 2x1/gratis**
+    - Problema: Error 22P02 - Invalid input syntax for type numeric: "2x1"
+    - Causa: Intentaba insertar string en campo discount_value (numeric)
+    - Solución: discount_value solo se guarda cuando discountType === 'percentage'
+    - Estado: Resuelto
+
+12. ✅ **Transición abrupta al rechazar candidatos**
+    - Problema: Candidatos desaparecían instantáneamente al contratar
+    - Causa: Optimistic update sin delay
+    - Solución: setTimeout(1500ms) para transición suave
+    - Toast informativo con contador de candidatos rechazados
+    - Estado: Resuelto
+
+13. ✅ **userBudgetRequests no se cargaban desde Supabase**
+    - Problema: "Mis Presupuestos" solo mostraba mockData
+    - Causa: Faltaba useEffect que cargue presupuestos del usuario
+    - Solución: Nuevo useEffect loadUserBudgetRequests() con JOIN a budget_quotes
+    - Estado: Resuelto
+
+#### Testing Completado
+
+- ✅ **Sistema de candidaturas**: Contratar, auto-rechazar, notificaciones, cierre automático
+- ✅ **Sistema de notificaciones**: 21+ notificaciones en tiempo real funcionando
+- ✅ **Sistema de presupuestos**: Recibir, responder, aceptar, notificaciones bidireccionales
+- ✅ **Sistema de ofertas**: Crear (%, 2x1, gratis), pausar, reactivar
+- ✅ **Transición suave**: Delay de 1.5s al auto-rechazar candidatos
+
+**Archivos creados**:
+- `supabase/insert-test-candidates.sql` - 5 candidatos de prueba
+- `supabase/insert-test-budget-requests.sql` - 3 presupuestos de prueba
+- `supabase/check-business-data.sql` - Verificación de datos
+- `supabase/fix-budget-category-mismatch.sql` - Corrección de categorías
+
+**Archivos modificados**:
+- `src/App.jsx` - +120 líneas (notificaciones de presupuestos, acceptBudgetQuote, loadUserBudgetRequests, logs de debug)
+
+---
+
 ## 🔜 Pendientes Futuros
 
 ### Inmediato
@@ -203,7 +274,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Corregir números del panel (ahora usan datos reales) ✅
 - [x] **Ejecutar script** `setup-job-applications-complete.sql` en Supabase ✅ COMPLETADO (2026-02-03)
 
-### Corto plazo
+### Corto plazo - PRIORITARIO ⭐
+
+- [ ] **Notificaciones clickeables** - ⚡ ALTA PRIORIDAD
+  - Hacer que todas las notificaciones naveguen a la pantalla correspondiente al hacer clic
+  - Presupuesto aceptado → `navigate('incoming-budget-requests')`
+  - Nueva candidatura → `navigate('business-candidates')`
+  - Candidato contratado → `navigate('user-jobs')`
+  - Nueva oferta de favorito → `navigate('business', { id })`
+  - Mejora UX crítica - Standard en todas las apps modernas
+  - Usar metadata de notificaciones para parámetros de navegación
+
+- [ ] **Auto-rechazar presupuestos no seleccionados**
+  - Similar a sistema de candidaturas
+  - Al aceptar un presupuesto, rechazar automáticamente los demás
+  - Notificar a negocios no seleccionados
+  - Actualizar budget_quotes con status 'rejected'
+
+- [ ] **Corregir duplicación en "Mis Presupuestos"**
+  - Bug UX: Presupuesto aceptado aparece 2 veces
+  - Arriba en "Presupuesto Aceptado" (correcto)
+  - Abajo en "Otros presupuestos" (debería excluirse)
+
+### Corto plazo - Mejoras Generales
+
 - [x] **Sistema de favoritos con Supabase** ✅ COMPLETADO
 - [x] **Notificaciones automáticas al crear ofertas/empleos** ✅ COMPLETADO
 - [x] **Sistema de notificaciones en tiempo real** ✅ COMPLETADO
@@ -212,6 +306,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Panel de propietarios para ver candidatos
   - Notificación automática al recibir candidatura
   - Estados actualizables (pending → reviewed → shortlisted → hired/rejected)
+- [x] **Notificaciones de presupuestos** ✅ COMPLETADO (2026-02-09)
+  - Usuario recibe notificación al recibir presupuesto
+  - Negocio recibe notificación al aceptar presupuesto
 - [ ] Notificaciones por email para presupuestos
 - [ ] Estadísticas reales (no mockData) - Actualmente usa datos de ejemplo
 - [ ] Contador de vistas/clics en negocios

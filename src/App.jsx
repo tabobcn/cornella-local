@@ -14716,6 +14716,58 @@ export default function App() {
     loadUserApplications();
   }, [user]);
 
+  // Cargar presupuestos del usuario
+  useEffect(() => {
+    const loadUserBudgetRequests = async () => {
+      if (!user?.id) {
+        setUserBudgetRequests([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('budget_requests')
+          .select(`
+            *,
+            budget_quotes(id, price, description, business_id, businesses(id, name))
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log('[USER BUDGET REQUESTS] Presupuestos del usuario cargados:', data?.length || 0);
+
+        // Transformar al formato esperado por MyBudgetRequestsScreen
+        const transformed = (data || []).map(request => ({
+          id: request.id,
+          category: request.category,
+          description: request.description,
+          urgency: request.urgency,
+          address: request.address,
+          phone: request.phone,
+          photos: request.photos || [],
+          status: request.status,
+          createdAt: request.created_at,
+          // Transformar las cotizaciones recibidas
+          responses: (request.budget_quotes || []).map(quote => ({
+            id: quote.id,
+            businessId: quote.business_id,
+            businessName: quote.businesses?.name || 'Negocio',
+            price: quote.price,
+            message: quote.description,
+          })),
+        }));
+
+        setUserBudgetRequests(transformed);
+      } catch (error) {
+        console.error('[USER BUDGET REQUESTS] Error loading:', error);
+      }
+    };
+
+    loadUserBudgetRequests();
+  }, [user]);
+
   // Toast notifications
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' });
   const showToast = (message, type = 'success') => {

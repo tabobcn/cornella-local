@@ -7277,13 +7277,22 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
             </>
           )}
 
-          {(acceptedRequests[selectedRequest.id] || selectedRequest.acceptedQuote) && selectedRequest.quotes?.length > 0 && (
+          {(acceptedRequests[selectedRequest.id] || selectedRequest.acceptedQuote) && selectedRequest.quotes?.length > 1 && (
             <h3 className="font-bold text-slate-900 px-1">
               Otros presupuestos recibidos
             </h3>
           )}
 
-          {selectedRequest.quotes?.map((quote, index) => {
+          {selectedRequest.quotes?.filter((quote) => {
+            // Si hay presupuesto aceptado, excluirlo de esta lista
+            const acceptedQuoteId = acceptedRequests[selectedRequest.id] ||
+                                    (selectedRequest.acceptedQuote && selectedRequest.acceptedQuote.id);
+            // Solo mostrar el presupuesto aceptado si NO hay presupuesto aceptado aún
+            if (acceptedQuoteId) {
+              return quote.id !== acceptedQuoteId;
+            }
+            return true; // Mostrar todos si no hay aceptado
+          }).map((quote, index) => {
             const isAccepted = acceptedRequests[selectedRequest.id] === quote.id;
             const hasAcceptedAnother = acceptedRequests[selectedRequest.id] && acceptedRequests[selectedRequest.id] !== quote.id;
 
@@ -15361,7 +15370,21 @@ export default function App() {
     try {
       console.log('[ACCEPT QUOTE] Accepting quote:', { requestId, quoteId: quote.id, businessId: quote.businessId });
 
-      // 1. Actualizar el estado del budget_request a 'accepted'
+      // 1. Obtener TODOS los budget_quotes para este request
+      const { data: allQuotes, error: quotesError } = await supabase
+        .from('budget_quotes')
+        .select('id, business_id, price, businesses(name, owner_id)')
+        .eq('budget_request_id', requestId);
+
+      if (quotesError) {
+        console.error('[ACCEPT QUOTE] Error fetching quotes:', quotesError);
+      }
+
+      // 2. Identificar quotes rechazados (todos menos el aceptado)
+      const rejectedQuotes = (allQuotes || []).filter(q => q.id !== quote.id);
+      console.log('[ACCEPT QUOTE] Rejected quotes:', rejectedQuotes.length);
+
+      // 3. Actualizar el estado del budget_request a 'accepted'
       const { error: updateError } = await supabase
         .from('budget_requests')
         .update({ status: 'accepted' })
@@ -15369,7 +15392,7 @@ export default function App() {
 
       if (updateError) throw updateError;
 
-      // 2. Obtener información del negocio
+      // 4. Obtener información del negocio aceptado
       const { data: business, error: businessError } = await supabase
         .from('businesses')
         .select('name, owner_id')
@@ -15380,7 +15403,7 @@ export default function App() {
         console.error('[ACCEPT QUOTE] Error fetching business:', businessError);
       }
 
-      // 3. Crear notificación para el propietario del negocio
+      // 5. Crear notificación para el propietario del negocio ACEPTADO
       if (business?.owner_id) {
         const { error: notifError } = await supabase
           .from('notifications')
@@ -15400,8 +15423,40 @@ export default function App() {
         if (notifError) console.error('[ACCEPT QUOTE] Error creating notification:', notifError);
       }
 
+      // 6. Notificar a los negocios NO seleccionados
+      if (rejectedQuotes.length > 0) {
+        const rejectedNotifications = rejectedQuotes.map(rejectedQuote => ({
+          user_id: rejectedQuote.businesses?.owner_id,
+          type: 'budget_quote_rejected',
+          title: 'Presupuesto no seleccionado',
+          message: `El cliente ha elegido otro profesional. ¡Gracias por participar!`,
+          is_read: false,
+          metadata: {
+            budget_request_id: requestId,
+            business_id: rejectedQuote.business_id,
+            price: rejectedQuote.price,
+          },
+        })).filter(n => n.user_id); // Solo notificar si tiene owner_id
+
+        if (rejectedNotifications.length > 0) {
+          const { error: rejectedNotifError } = await supabase
+            .from('notifications')
+            .insert(rejectedNotifications);
+
+          if (rejectedNotifError) {
+            console.error('[ACCEPT QUOTE] Error creating rejected notifications:', rejectedNotifError);
+          } else {
+            console.log('[ACCEPT QUOTE] Notified', rejectedNotifications.length, 'rejected businesses');
+          }
+        }
+      }
+
       console.log('[ACCEPT QUOTE] Quote accepted successfully');
-      showToast(`¡Presupuesto de ${business?.name || 'negocio'} aceptado!`, 'success');
+      const rejectedCount = rejectedQuotes.length;
+      const message = rejectedCount > 0
+        ? `¡Presupuesto de ${business?.name || 'negocio'} aceptado! ${rejectedCount} negocio${rejectedCount > 1 ? 's' : ''} notificado${rejectedCount > 1 ? 's' : ''}.`
+        : `¡Presupuesto de ${business?.name || 'negocio'} aceptado!`;
+      showToast(message, 'success');
     } catch (error) {
       console.error('[ACCEPT QUOTE] Error accepting quote:', error);
       showToast('Error al aceptar el presupuesto', 'error');

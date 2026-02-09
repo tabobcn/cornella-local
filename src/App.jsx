@@ -14113,6 +14113,60 @@ export default function App() {
     loadUserFavorites();
   }, [user]);
 
+  // Helper: Mapear tipo de notificación a ruta y parámetros
+  const getNotificationRoute = (notif) => {
+    const metadata = notif.metadata || notif.data || {};
+
+    switch (notif.type) {
+      // Presupuestos
+      case 'budget_quote_received':
+        return {
+          route: 'my-budget-requests',
+          params: { selectedRequestId: metadata.budget_request_id }
+        };
+      case 'budget_quote_accepted':
+        return {
+          route: 'incoming-budget-requests',
+          params: {}
+        };
+
+      // Ofertas y empleos de negocios favoritos
+      case 'new_offer':
+        return {
+          route: 'business',
+          params: { id: metadata.business_id }
+        };
+      case 'new_job':
+        return {
+          route: 'job-detail',
+          params: { id: metadata.job_id }
+        };
+
+      // Candidaturas (propietario)
+      case 'new_application':
+        return {
+          route: 'business-candidates',
+          params: {}
+        };
+
+      // Candidaturas (usuario)
+      case 'application_reviewed':
+      case 'interview_scheduled':
+      case 'application_rejected':
+      case 'application_hired':
+        return {
+          route: 'user-jobs',
+          params: {}
+        };
+
+      default:
+        return {
+          route: 'home',
+          params: {}
+        };
+    }
+  };
+
   // Helper: Formatear tiempo de notificación
   // Cargar notificaciones del usuario desde Supabase
   useEffect(() => {
@@ -14133,24 +14187,20 @@ export default function App() {
         if (error) throw error;
 
         // Transformar a formato de UI
-        const transformed = (data || []).map(notif => ({
-          id: notif.id,
-          type: notif.type,
-          title: notif.title,
-          message: notif.message,
-          icon: notif.icon,
-          time: formatRelativeTime(notif.created_at),
-          isRead: notif.is_read,
-          actionRoute: notif.type === 'new_offer' ? 'coupon' :
-                       notif.type === 'new_job' ? 'job-detail' :
-                       notif.type === 'new_application' ? 'business-candidates' :
-                       notif.type === 'interview_response' ? 'business-candidates' :
-                       notif.type === 'application_reviewed' ? 'user-jobs' :
-                       notif.type === 'interview_scheduled' ? 'user-jobs' :
-                       notif.type === 'application_rejected' ? 'user-jobs' :
-                       notif.type === 'application_hired' ? 'user-jobs' : 'home',
-          actionParams: notif.data,
-        }));
+        const transformed = (data || []).map(notif => {
+          const { route, params } = getNotificationRoute(notif);
+          return {
+            id: notif.id,
+            type: notif.type,
+            title: notif.title,
+            message: notif.message,
+            icon: notif.icon,
+            time: formatRelativeTime(notif.created_at),
+            isRead: notif.is_read,
+            actionRoute: route,
+            actionParams: params,
+          };
+        });
 
         setDynamicNotifications(transformed);
         console.log('[NOTIFICATIONS] Loaded:', transformed.length, 'notifications');
@@ -14181,6 +14231,7 @@ export default function App() {
         (payload) => {
           console.log('[REALTIME] Nueva notificación recibida:', payload.new);
 
+          const { route, params } = getNotificationRoute(payload.new);
           const newNotif = {
             id: payload.new.id,
             type: payload.new.type,
@@ -14189,15 +14240,8 @@ export default function App() {
             icon: payload.new.icon,
             time: 'Ahora',
             isRead: false,
-            actionRoute: payload.new.type === 'new_offer' ? 'coupon' :
-                         payload.new.type === 'new_job' ? 'job-detail' :
-                         payload.new.type === 'new_application' ? 'business-candidates' :
-                         payload.new.type === 'interview_response' ? 'business-candidates' :
-                         payload.new.type === 'application_reviewed' ? 'user-jobs' :
-                         payload.new.type === 'interview_scheduled' ? 'user-jobs' :
-                         payload.new.type === 'application_rejected' ? 'user-jobs' :
-                         payload.new.type === 'application_hired' ? 'user-jobs' : 'home',
-            actionParams: payload.new.data,
+            actionRoute: route,
+            actionParams: params,
           };
 
           // Añadir al principio de la lista

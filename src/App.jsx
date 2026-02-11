@@ -6643,7 +6643,7 @@ const UserJobsScreen = ({ onNavigate, user }) => {
 };
 
 // Pantalla de Mis Presupuestos (para usuarios)
-const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQuote, onRateService, onAddNotification, initialSelectedRequestId }) => {
+const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQuote, onRateService, onAddNotification, showToast, initialSelectedRequestId }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [initialSelectionDone, setInitialSelectionDone] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -6830,7 +6830,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
     status: acceptedRequests[r.id] ? 'accepted' : (r.responses && r.responses.length > 0) ? 'with-quotes' : 'pending',
     quotes: (r.responses || []).map(resp => ({
       id: resp.id,
-      businessId: resp.id,
+      businessId: resp.businessId,
       businessName: resp.businessName,
       price: resp.price,
       message: resp.message,
@@ -7283,16 +7283,59 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
             </h3>
           )}
 
-          {selectedRequest.quotes?.filter((quote) => {
-            // Si hay presupuesto aceptado, excluirlo de esta lista
+          {(() => {
+            // Filtrar quotes (excluir aceptado si existe)
             const acceptedQuoteId = acceptedRequests[selectedRequest.id] ||
                                     (selectedRequest.acceptedQuote && selectedRequest.acceptedQuote.id);
-            // Solo mostrar el presupuesto aceptado si NO hay presupuesto aceptado aún
-            if (acceptedQuoteId) {
-              return quote.id !== acceptedQuoteId;
-            }
-            return true; // Mostrar todos si no hay aceptado
-          }).map((quote, index) => {
+            const filteredQuotes = (selectedRequest.quotes || []).filter((quote) => {
+              if (acceptedQuoteId) {
+                return quote.id !== acceptedQuoteId;
+              }
+              return true;
+            });
+
+            // Calcular mejor precio (más barato)
+            const cheapestQuote = filteredQuotes.length > 0
+              ? filteredQuotes.reduce((min, q) => q.price < min.price ? q : min)
+              : null;
+
+            // Calcular mejor valorado con Bayesian Average
+            // Formula: (C × 4.0 + rating × reviews) / (C + reviews)
+            // C = 10 (confianza mínima)
+            const calculateWeightedRating = (quote) => {
+              const C = 10;
+              const m = 4.0; // rating promedio global
+              const R = quote.rating || 4.0;
+              const v = quote.reviews || 0;
+              return (C * m + R * v) / (C + v);
+            };
+
+            const bestRatedQuote = filteredQuotes.length > 0
+              ? filteredQuotes.reduce((best, q) =>
+                  calculateWeightedRating(q) > calculateWeightedRating(best) ? q : best
+                )
+              : null;
+
+            // Ordenar: Top 2 primero, luego el resto por llegada
+            const sortedQuotes = [...filteredQuotes].sort((a, b) => {
+              const isACheapest = cheapestQuote && a.id === cheapestQuote.id;
+              const isBCheapest = cheapestQuote && b.id === cheapestQuote.id;
+              const isABestRated = bestRatedQuote && a.id === bestRatedQuote.id;
+              const isBBestRated = bestRatedQuote && b.id === bestRatedQuote.id;
+
+              // Más barato siempre primero
+              if (isACheapest) return -1;
+              if (isBCheapest) return 1;
+
+              // Mejor valorado segundo
+              if (isABestRated) return -1;
+              if (isBBestRated) return 1;
+
+              // Resto por índice original (orden de llegada)
+              return 0;
+            });
+
+            return sortedQuotes.map((quote, index) => {
             const isAccepted = acceptedRequests[selectedRequest.id] === quote.id;
             const hasAcceptedAnother = acceptedRequests[selectedRequest.id] && acceptedRequests[selectedRequest.id] !== quote.id;
 
@@ -7328,10 +7371,19 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">{formatCurrency(quote.price, false)}</p>
-                    {index === 0 && !acceptedRequests[selectedRequest.id] && (
-                      <span className="text-[10px] text-green-600 font-medium">Mejor precio</span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      <p className="text-2xl font-bold text-primary">{formatCurrency(quote.price, false)}</p>
+                      {!acceptedRequests[selectedRequest.id] && cheapestQuote && quote.id === cheapestQuote.id && (
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">
+                          💰 Mejor precio
+                        </span>
+                      )}
+                      {!acceptedRequests[selectedRequest.id] && bestRatedQuote && quote.id === bestRatedQuote.id && quote.id !== cheapestQuote?.id && (
+                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-bold rounded-full">
+                          ⭐ Mejor valorado
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -7402,7 +7454,8 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                 </div>
               </div>
             );
-          })}
+          });
+          })()}
 
           {selectedRequest.quotes?.length === 0 && (
             <div className="text-center py-8 text-gray-500">
@@ -8710,7 +8763,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
             type: 'application_rejected',
             title: 'Candidatura no seleccionada',
             message: `Gracias por tu interés en ${hiredCandidate.jobTitle}. Lamentablemente, hemos seleccionado a otro candidato. ¡Te deseamos mucho éxito en tu búsqueda!`,
-            metadata: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
+            data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
             read: false,
             created_at: new Date().toISOString()
           }));
@@ -8724,7 +8777,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
           type: 'application_accepted',
           title: '¡Felicidades! Has sido seleccionado',
           message: `¡Enhorabuena! Has sido seleccionado para el puesto de ${hiredCandidate.jobTitle}. La empresa se pondrá en contacto contigo pronto.`,
-          metadata: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
+          data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
           read: false,
           created_at: new Date().toISOString()
         });
@@ -8751,7 +8804,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
           type: 'application_rejected',
           title: 'Candidatura no seleccionada',
           message: `Gracias por tu interés en ${hiredCandidate.jobTitle}. Lamentablemente, hemos decidido no continuar con tu candidatura. ¡Te deseamos mucho éxito!`,
-          metadata: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
+          data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
           read: false,
           created_at: new Date().toISOString()
         });
@@ -8802,7 +8855,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         type: 'interview_scheduled',
         title: '¡Entrevista programada!',
         message: `Has sido preseleccionado para ${selectedCandidate.jobTitle}. Fecha: ${interviewDateTime.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. ¡Mucha suerte!`,
-        metadata: { job_id: selectedCandidate.jobId, job_title: selectedCandidate.jobTitle, interview_date: interviewDateTime.toISOString() },
+        data: { job_id: selectedCandidate.jobId, job_title: selectedCandidate.jobTitle, interview_date: interviewDateTime.toISOString() },
         read: false,
         created_at: new Date().toISOString()
       });
@@ -14002,7 +14055,7 @@ export default function App() {
             const path = url.replace(/^.*#\//, '');
             if (path) {
               // Usar tu función de navegación
-              navigate(path, event.data.metadata || {});
+              navigate(path, event.data.data || {});
             }
           }
         }
@@ -14064,31 +14117,46 @@ export default function App() {
         const { data, error } = await supabase
           .from('businesses')
           .select('*')
-          .eq('owner_id', user.id)
-          .single();
+          .eq('owner_id', user.id);
 
-        if (error && error.code !== 'PGRST116') {
-          // PGRST116 = no rows returned (normal si no tiene negocio)
-          throw error;
-        }
-
-        if (data) {
-          console.log('[BUSINESS] Negocio cargado:', data);
-          setBusinessData(data);
-          // Mapear verification_status de Supabase a businessStatus del UI
-          if (data.verification_status === 'approved') {
-            setBusinessStatus('validated');
-          } else if (data.verification_status === 'pending') {
-            setBusinessStatus('pending');
-          } else if (data.verification_status === 'rejected') {
-            setBusinessStatus('rejected');
-          }
-        } else {
+        if (error) {
+          console.error('[BUSINESS] Error loading businesses:', error);
           setBusinessData(null);
           setBusinessStatus(null);
+          return;
+        }
+
+        // Si no hay negocios
+        if (!data || data.length === 0) {
+          console.log('[BUSINESS] No businesses found');
+          setBusinessData(null);
+          setBusinessStatus(null);
+          return;
+        }
+
+        // Si hay múltiples negocios, tomar el primero
+        const business = Array.isArray(data) ? data[0] : data;
+
+        if (data.length > 1) {
+          console.log(`[BUSINESS] Usuario tiene ${data.length} negocios. Usando el primero:`, business.name);
+        } else {
+          console.log('[BUSINESS] Negocio cargado:', business.name);
+        }
+
+        setBusinessData(business);
+
+        // Mapear verification_status de Supabase a businessStatus del UI
+        if (business.verification_status === 'approved') {
+          setBusinessStatus('validated');
+        } else if (business.verification_status === 'pending') {
+          setBusinessStatus('pending');
+        } else if (business.verification_status === 'rejected') {
+          setBusinessStatus('rejected');
         }
       } catch (error) {
         console.error('[BUSINESS] Error loading user business:', error);
+        setBusinessData(null);
+        setBusinessStatus(null);
       }
     };
 
@@ -14124,14 +14192,14 @@ export default function App() {
 
   // Helper: Mapear tipo de notificación a ruta y parámetros
   const getNotificationRoute = (notif) => {
-    const metadata = notif.metadata || notif.data || {};
+    const data = notif.data || notif.data || {};
 
     switch (notif.type) {
       // Presupuestos
       case 'budget_quote_received':
         return {
           route: 'my-budget-requests',
-          params: { selectedRequestId: metadata.budget_request_id }
+          params: { selectedRequestId: data.budget_request_id }
         };
       case 'budget_quote_accepted':
         return {
@@ -14143,12 +14211,12 @@ export default function App() {
       case 'new_offer':
         return {
           route: 'business',
-          params: { id: metadata.business_id }
+          params: { id: data.business_id }
         };
       case 'new_job':
         return {
           route: 'job-detail',
-          params: { id: metadata.job_id }
+          params: { id: data.job_id }
         };
 
       // Candidaturas (propietario)
@@ -14685,22 +14753,44 @@ export default function App() {
     };
   }, [businessData]);
 
-  // Cargar solicitudes de presupuesto para la categoría del negocio
+  // Cargar solicitudes de presupuesto para TODAS las categorías de TODOS los negocios del usuario
   useEffect(() => {
     const loadBudgetRequests = async () => {
-      if (!businessData?.subcategory) {
+      if (!user?.id) {
         setIncomingBudgetRequests([]);
         return;
       }
 
       try {
+        // 1. Primero cargar TODOS los negocios del usuario
+        const { data: userBusinesses, error: businessesError } = await supabase
+          .from('businesses')
+          .select('id, subcategory')
+          .eq('owner_id', user.id)
+          .eq('is_verified', true);
+
+        if (businessesError) throw businessesError;
+
+        if (!userBusinesses || userBusinesses.length === 0) {
+          console.log('[BUDGET REQUESTS] No businesses found for user');
+          setIncomingBudgetRequests([]);
+          return;
+        }
+
+        // 2. Obtener todas las subcategorías de los negocios del usuario
+        const categories = [...new Set(userBusinesses.map(b => b.subcategory))];
+        const businessIds = userBusinesses.map(b => b.id);
+
+        console.log('[BUDGET REQUESTS] Cargando presupuestos para categorías:', categories);
+
+        // 3. Cargar presupuestos de TODAS esas categorías
         const { data, error } = await supabase
           .from('budget_requests')
           .select(`
             *,
             budget_quotes(id, price, description, business_id)
           `)
-          .eq('category', businessData.subcategory)
+          .in('category', categories)
           .in('status', ['pending', 'quoted'])
           .order('created_at', { ascending: false });
 
@@ -14708,15 +14798,16 @@ export default function App() {
 
         console.log('[BUDGET REQUESTS] Solicitudes cargadas:', data?.length || 0);
 
-        // Transformar al formato esperado
+        // 4. Transformar al formato esperado
         const transformedRequests = (data || []).map(request => {
+          // Buscar si ALGUNO de mis negocios ya respondió
           const myQuote = request.budget_quotes?.find(
-            q => q.business_id === businessData.id
+            q => businessIds.includes(q.business_id)
           );
 
           return {
             id: request.id,
-            customerName: 'Usuario', // No tenemos acceso a full_name desde budget_requests
+            customerName: 'Usuario',
             customerAvatar: 'U',
             category: request.category,
             categoryName: request.category,
@@ -14740,7 +14831,7 @@ export default function App() {
     };
 
     loadBudgetRequests();
-  }, [businessData]);
+  }, [user]);
 
   // Cargar candidaturas del usuario (como candidato)
   useEffect(() => {
@@ -14995,7 +15086,7 @@ export default function App() {
             type: 'new_job',
             title: `Nueva oferta de empleo en ${businessData.name}`,
             message: `${businessData.name} ha publicado una nueva oferta: ${jobData.title}. ¡Aplica ahora!`,
-            metadata: { business_id: businessData.id, job_id: data.id, job_title: jobData.title },
+            data: { business_id: businessData.id, job_id: data.id, job_title: jobData.title },
             read: false,
             created_at: new Date().toISOString()
           }));
@@ -15323,7 +15414,7 @@ export default function App() {
           title: 'Nuevo presupuesto recibido',
           message: `${businessData.name} te ha enviado un presupuesto de ${quoteData.price}€`,
           is_read: false,
-          metadata: {
+          data: {
             budget_request_id: requestId,
             business_id: businessData.id,
             business_name: businessData.name,
@@ -15413,7 +15504,7 @@ export default function App() {
             title: '¡Presupuesto aceptado!',
             message: `Un cliente ha aceptado tu presupuesto de ${quote.price}€`,
             is_read: false,
-            metadata: {
+            data: {
               budget_request_id: requestId,
               business_id: quote.businessId,
               price: quote.price,
@@ -15431,7 +15522,7 @@ export default function App() {
           title: 'Presupuesto no seleccionado',
           message: `El cliente ha elegido otro profesional. ¡Gracias por participar!`,
           is_read: false,
-          metadata: {
+          data: {
             budget_request_id: requestId,
             business_id: rejectedQuote.business_id,
             price: rejectedQuote.price,
@@ -15667,7 +15758,7 @@ export default function App() {
           user={user}
         />;
       case 'my-budget-requests':
-        return <MyBudgetRequestsScreen onNavigate={navigate} userBudgetRequests={userBudgetRequests} onAddNotification={addNotification} onAcceptQuote={acceptBudgetQuote} initialSelectedRequestId={pageParams.selectedRequestId} />;
+        return <MyBudgetRequestsScreen onNavigate={navigate} userBudgetRequests={userBudgetRequests} onAddNotification={addNotification} onAcceptQuote={acceptBudgetQuote} showToast={showToast} initialSelectedRequestId={pageParams.selectedRequestId} />;
       case 'incoming-budget-requests':
         return <IncomingBudgetRequestsScreen onNavigate={navigate} businessData={businessData} showToast={showToast} onAddNotification={addNotification} requests={incomingBudgetRequests} onSendQuote={respondToBudgetRequest} />;
       case 'business-budget':

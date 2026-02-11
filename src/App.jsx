@@ -10763,6 +10763,20 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
   const [newClosureName, setNewClosureName] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
+  // Barrios de Cornellà de Llobregat
+  const neighborhoods = [
+    'Almeda',
+    'Can Boixeres',
+    'Centre',
+    'Cornellà Centre',
+    'Gavarra',
+    'Les Planes',
+    'Parc de Can Mercader',
+    'Riera',
+    'Sant Ildefons',
+    'Soteras'
+  ];
+
   // Estado del formulario
   const [formData, setFormData] = useState({
     name: businessData?.name || '',
@@ -10770,6 +10784,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
     phone: businessData?.phone || '',
     website: businessData?.website || '',
     address: businessData?.address || '',
+    neighborhood: businessData?.neighborhood || '',
     category: businessData?.category || '',
     subcategory: businessData?.subcategory || '',
     tags: businessData?.tags || [],
@@ -10943,6 +10958,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           phone: formData.phone,
           website: formData.website,
           address: formData.address,
+          neighborhood: formData.neighborhood,
           category_id: parseInt(formData.category),
           subcategory: formData.subcategory,
           tags: formData.tags,
@@ -10973,8 +10989,8 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
     if (!businessData?.id) return;
 
     // Validar que todos los campos requeridos estén completos
-    if (!formData.name || !formData.description || !formData.phone || !formData.address || !formData.category) {
-      setError('Por favor completa todos los campos requeridos antes de publicar');
+    if (!formData.name || !formData.category || !formData.subcategory || !formData.neighborhood || !formData.description || !formData.phone || !formData.address) {
+      setError('Por favor completa todos los campos obligatorios (*) antes de publicar');
       return;
     }
 
@@ -10990,6 +11006,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           phone: formData.phone,
           website: formData.website,
           address: formData.address,
+          neighborhood: formData.neighborhood,
           category_id: parseInt(formData.category),
           subcategory: formData.subcategory,
           tags: formData.tags,
@@ -11110,23 +11127,29 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
               <div className="space-y-4">
                 {/* Nombre */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Nombre del comercio</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Nombre del comercio <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
                     placeholder="Nombre de tu negocio"
                     className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                    required
                   />
                 </div>
 
                 {/* Categoría */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Categoría</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Categoría <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={formData.category}
                     onChange={(e) => handleChange('category', e.target.value)}
                     className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none cursor-pointer"
+                    required
                   >
                     <option value="">Selecciona una categoría</option>
                     {availableCategories.map(cat => (
@@ -11138,11 +11161,14 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
                 {/* Subcategoría */}
                 {formData.category && availableSubcategories.length > 0 && (
                   <div className="animate-slide-up">
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Subcategoría</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                      Subcategoría <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={formData.subcategory}
                       onChange={(e) => handleChange('subcategory', e.target.value)}
                       className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none cursor-pointer"
+                      required
                     >
                       <option value="">Selecciona una subcategoría</option>
                       {availableSubcategories.map(sub => (
@@ -11206,7 +11232,9 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
               </h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Dirección completa</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Dirección completa <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
@@ -11214,10 +11242,30 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
                       onChange={(e) => handleChange('address', e.target.value)}
                       placeholder="Carrer de Mossèn Jacint Verdaguer, 12"
                       className="w-full h-12 px-4 pl-11 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      required
                     />
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                   </div>
                 </div>
+
+                {/* Barrio */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Barrio <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.neighborhood}
+                    onChange={(e) => handleChange('neighborhood', e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="">Selecciona un barrio</option>
+                    {neighborhoods.map(barrio => (
+                      <option key={barrio} value={barrio}>{barrio}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Mini Map Preview */}
                 <div className="relative w-full h-32 bg-blue-50 rounded-xl overflow-hidden border border-gray-200">
                   <div className="w-full h-full bg-[url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/2.0764,41.3545,14,0/400x200?access_token=placeholder')] bg-cover bg-center opacity-60" />

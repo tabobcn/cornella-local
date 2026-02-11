@@ -1,3 +1,4 @@
+// CornellaLocal - Plataforma de comercio local
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { getTagsForCategory } from './data/businessTags';

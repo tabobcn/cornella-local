@@ -10763,18 +10763,14 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
   const [newClosureName, setNewClosureName] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
-  // Barrios de Cornellà de Llobregat
+  // Barrios de Cornellà de Llobregat (mismos que el filtro)
   const neighborhoods = [
+    'Centre-Riera',
     'Almeda',
-    'Can Boixeres',
-    'Centre',
-    'Cornellà Centre',
-    'Gavarra',
-    'Les Planes',
-    'Parc de Can Mercader',
-    'Riera',
+    'El Pedró',
+    'La Gavarra',
     'Sant Ildefons',
-    'Soteras'
+    'Fontsanta-Fatjó'
   ];
 
   // Estado del formulario

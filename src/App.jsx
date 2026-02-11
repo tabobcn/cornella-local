@@ -11176,16 +11176,22 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
 
                 {/* Descripción */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Descripción</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Descripción <span className="text-red-500">*</span>
+                  </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleChange('description', e.target.value)}
-                    placeholder="Describe brevemente lo que ofreces..."
-                    rows={3}
+                    placeholder="Ejemplo: Cafetería acogedora con café artesanal, repostería casera y desayunos completos. WiFi gratis y terraza. Especialidad en capuchinos y tartas caseras."
+                    rows={4}
                     maxLength={500}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none text-sm"
+                    required
                   />
                   <p className="text-xs text-gray-400 mt-1 text-right">{formData.description.length}/500 caracteres</p>
+                  <p className="text-xs text-gray-500 mt-1.5 italic">
+                    💡 Incluye: qué ofreces, especialidades, servicios destacados (delivery, terraza, WiFi, etc.)
+                  </p>
                 </div>
 
                 {/* Teléfono */}

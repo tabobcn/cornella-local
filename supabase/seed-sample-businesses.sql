@@ -3,7 +3,7 @@
 -- ====================================================
 -- Este archivo contiene datos de ejemplo para desarrollo.
 -- IMPORTANTE: Eliminar antes del lanzamiento con:
--- DELETE FROM businesses WHERE owner_id = 'd1cc1a18-c216-4831-b17c-921254edbfcb';
+-- DELETE FROM businesses WHERE owner_id = '2146040a-47f8-4101-af75-7cbbb39d09f2';
 -- ====================================================
 
 -- Restaurantes y Cafeterías (category_id: 3)
@@ -17,7 +17,7 @@ INSERT INTO public.businesses (
 ) VALUES
 -- 1. Cafetería moderna
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Café del Barrio',
   'Cafetería acogedora con especialidades de café artesanal, repostería casera y desayunos completos. WiFi gratis y terraza.',
   'Carrer de Sant Ildefons, 45, Cornellà de Llobregat',
@@ -41,7 +41,7 @@ INSERT INTO public.businesses (
 
 -- 2. Pizzería
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Pizzeria Bella Napoli',
   'Auténtica pizza napolitana con horno de leña. Masa madre artesanal e ingredientes italianos importados. Delivery disponible.',
   'Avinguda de Can Boixeres, 12, Cornellà de Llobregat',
@@ -67,7 +67,7 @@ INSERT INTO public.businesses (
 
 -- 3. Bar de tapas
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'El Rincón de Pepe',
   'Bar tradicional de tapas y raciones. Especialidad en jamón ibérico, tortilla española y croquetas caseras.',
   'Carrer de Rubió i Ors, 23, Cornellà de Llobregat',
@@ -92,7 +92,7 @@ INSERT INTO public.businesses (
 -- Comercios y Tiendas (category_id: 2)
 -- 4. Panadería
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Panadería Artesana Cal Miquel',
   'Panadería artesanal con más de 30 años de tradición. Pan de masa madre, bollería casera y pastelería por encargo.',
   'Carrer de Laureà Miró, 78, Cornellà de Llobregat',
@@ -116,7 +116,7 @@ INSERT INTO public.businesses (
 
 -- 5. Librería
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Librería Pages',
   'Librería independiente con amplio catálogo, zona infantil y club de lectura mensual. También papelería y regalos.',
   'Plaça de l''Església, 5, Cornellà de Llobregat',
@@ -140,7 +140,7 @@ INSERT INTO public.businesses (
 
 -- 6. Floristería
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Floristería Rosa & Lila',
   'Floristería con flores frescas diarias, arreglos florales personalizados y plantas de interior. Servicio a domicilio.',
   'Carrer de Mossèn Jacint Verdaguer, 34, Cornellà de Llobregat',
@@ -167,7 +167,7 @@ INSERT INTO public.businesses (
 -- Servicios (category_id: 4)
 -- 7. Peluquería
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Salón Style & Cut',
   'Salón de peluquería unisex. Cortes modernos, coloración, mechas y tratamientos capilares. Pide cita previa.',
   'Avinguda de Sant Ildefons, 156, Cornellà de Llobregat',
@@ -191,7 +191,7 @@ INSERT INTO public.businesses (
 
 -- 8. Taller mecánico
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Taller AutoCornellà',
   'Taller mecánico multimarca. Revisiones, ITV, neumáticos y reparaciones en general. Presupuesto sin compromiso.',
   'Carrer de la Fontsanta, 89, Cornellà de Llobregat',
@@ -215,7 +215,7 @@ INSERT INTO public.businesses (
 
 -- 9. Gimnasio
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'FitZone Cornellà',
   'Centro deportivo con sala de musculación, clases dirigidas, spinning y entrenadores personales. Primera clase gratis.',
   'Carrer del Progrés, 45, Cornellà de Llobregat',
@@ -241,7 +241,7 @@ INSERT INTO public.businesses (
 
 -- 10. Farmacia
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Farmàcia Vila',
   'Farmacia de guardia con servicio de análisis, medición de tensión y asesoramiento farmacéutico. Ortopedia disponible.',
   'Plaça dels Països Catalans, 2, Cornellà de Llobregat',
@@ -266,7 +266,7 @@ INSERT INTO public.businesses (
 -- Moda y complementos (category_id: 1)
 -- 11. Tienda de ropa
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Moda & Tendencias',
   'Boutique de moda femenina con las últimas tendencias. Ropa, complementos y accesorios de marcas europeas.',
   'Carrer de Sant Ferran, 67, Cornellà de Llobregat',
@@ -293,7 +293,7 @@ INSERT INTO public.businesses (
 
 -- 12. Zapatería
 (
-  'd1cc1a18-c216-4831-b17c-921254edbfcb',
+  '2146040a-47f8-4101-af75-7cbbb39d09f2',
   'Calzados Martínez',
   'Zapatería familiar con calzado de calidad para toda la familia. Marcas reconocidas y asesoramiento personalizado.',
   'Avinguda de Salvador Allende, 34, Cornellà de Llobregat',
@@ -324,4 +324,4 @@ INSERT INTO public.businesses (
 -- ====================================================
 -- PARA ELIMINAR TODOS LOS NEGOCIOS DE EJEMPLO ANTES DEL LANZAMIENTO:
 -- ====================================================
--- DELETE FROM businesses WHERE owner_id = 'd1cc1a18-c216-4831-b17c-921254edbfcb';
+-- DELETE FROM businesses WHERE owner_id = '2146040a-47f8-4101-af75-7cbbb39d09f2';

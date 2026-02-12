@@ -1238,6 +1238,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedBarrio, setSelectedBarrio] = useState(null);
   const [showBarrioFilter, setShowBarrioFilter] = useState(false);
+  const [selectedTag, setSelectedTag] = useState(null);
 
   // Auto-seleccionar barrio si viene por parámetro
   useEffect(() => {
@@ -1246,6 +1247,15 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       setShowSearchResults(true);
     }
   }, [params.filterNeighborhood]);
+
+  // Auto-seleccionar tag si viene por parámetro
+  useEffect(() => {
+    if (params.filterTag) {
+      setSelectedTag(params.filterTag);
+      setSearchQuery(params.filterTag);
+      setShowSearchResults(true);
+    }
+  }, [params.filterTag]);
   const [recentSearches, setRecentSearches] = useState(() => {
     const saved = localStorage.getItem('recentSearches');
     return saved ? JSON.parse(saved) : [];
@@ -3594,6 +3604,11 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           .single();
 
         if (error) throw error;
+
+        console.log('[BUSINESS DETAIL] Negocio cargado:', data);
+        console.log('[BUSINESS DETAIL] Tags:', data?.tags);
+        console.log('[BUSINESS DETAIL] Neighborhood:', data?.neighborhood);
+
         setBusiness(data);
       } catch (error) {
         console.error('Error loading business:', error);
@@ -4026,7 +4041,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   {business.tags.map((tag, i) => (
                     <button
                       key={i}
-                      onClick={() => onNavigate('category', { id: business.categoryId, filterTag: tag })}
+                      onClick={() => onNavigate('home', { filterTag: tag })}
                       className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
                     >
                       {tag}
@@ -10980,7 +10995,12 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
     setError('');
 
     try {
-      const { error: updateError } = await supabase
+      // Debug: ver qué tags se están guardando
+      console.log('[SAVE DEBUG] Tags a guardar:', formData.tags);
+      console.log('[SAVE DEBUG] Tipo de tags:', Array.isArray(formData.tags) ? 'Array' : typeof formData.tags);
+      console.log('[SAVE DEBUG] Cantidad de tags:', formData.tags?.length);
+
+      const { data: updatedData, error: updateError } = await supabase
         .from('businesses')
         .update({
           name: formData.name,
@@ -10997,7 +11017,12 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           updated_at: new Date().toISOString(),
         })
         .eq('id', businessData.id)
-        .eq('owner_id', user?.id);
+        .eq('owner_id', user?.id)
+        .select()
+        .single();
+
+      console.log('[SAVE DEBUG] Datos actualizados:', updatedData);
+      console.log('[SAVE DEBUG] Error de Supabase:', updateError);
 
       if (updateError) throw updateError;
 
@@ -11046,7 +11071,9 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           updated_at: new Date().toISOString(),
         })
         .eq('id', businessData.id)
-        .eq('owner_id', user?.id);
+        .eq('owner_id', user?.id)
+        .select()
+        .single();
 
       if (updateError) throw updateError;
 

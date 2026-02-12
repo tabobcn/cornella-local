@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { getTagsForCategory } from './data/businessTags';
+import { getTagsBySubcategory, hasTagsForSubcategory } from './data/businessTagsByCategory';
 import {
   Home, Map, Tag, Heart, User, Search, Bell, ChevronDown, SlidersHorizontal,
   Clock, Plus, Star, MapPin, UtensilsCrossed, ShoppingBasket, Shirt, Wrench,
@@ -10807,7 +10808,11 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
 
   const selectedCategory = categories.find(cat => cat.id === parseInt(formData.category));
   const availableSubcategories = selectedCategory?.subcategories || [];
-  const availableTags = formData.category ? getTagsForCategory(selectedCategory?.slug) : [];
+
+  // Cargar tags específicos según subcategoría seleccionada
+  const availableTags = formData.subcategory && hasTagsForSubcategory(formData.subcategory)
+    ? getTagsBySubcategory(formData.subcategory)
+    : (formData.category ? getTagsForCategory(selectedCategory?.slug) : []);
 
   const dayNames = {
     monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles',
@@ -10819,6 +10824,10 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
       const newData = { ...prev, [field]: value };
       if (field === 'category') {
         newData.subcategory = '';
+        newData.tags = [];
+      }
+      // Limpiar tags al cambiar subcategoría
+      if (field === 'subcategory') {
         newData.tags = [];
       }
       return newData;

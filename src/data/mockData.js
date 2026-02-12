@@ -60,6 +60,7 @@ export const categories = [
       { id: 205, name: "Pastelería", icon: "Cake", count: 12 },
       { id: 206, name: "Pescadería", icon: "Fish", count: 9 },
       { id: 207, name: "Supermercado", icon: "ShoppingCart", count: 18 },
+      { id: 208, name: "Productor Local", icon: "TreePine", count: 0 },
     ]
   },
   {

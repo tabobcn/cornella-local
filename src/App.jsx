@@ -10391,7 +10391,7 @@ const BusinessDataScreen = ({ onNavigate, onSaveBusinessData }) => {
                 >
                   <option value="">Selecciona una subcategoría</option>
                   {availableSubcategories.map(sub => (
-                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                    <option key={sub.id} value={sub.name}>{sub.name}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
@@ -10834,6 +10834,11 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
     ? getTagsBySubcategory(formData.subcategory)
     : (formData.category ? getTagsForCategory(selectedCategory?.slug) : []);
 
+  // Debug: mostrar qué subcategoría y cuántos tags se cargan
+  if (formData.subcategory) {
+    console.log('[TAGS DEBUG] Subcategoría:', formData.subcategory, '| Tags disponibles:', availableTags.length, '| Tiene tags específicos:', hasTagsForSubcategory(formData.subcategory));
+  }
+
   const dayNames = {
     monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles',
     thursday: 'Jueves', friday: 'Viernes', saturday: 'Sábado', sunday: 'Domingo'
@@ -11197,7 +11202,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
                     >
                       <option value="">Selecciona una subcategoría</option>
                       {availableSubcategories.map(sub => (
-                        <option key={sub.id} value={sub.id}>{sub.name}</option>
+                        <option key={sub.id} value={sub.name}>{sub.name}</option>
                       ))}
                     </select>
                   </div>

@@ -1,25 +1,25 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Debug: verificar variables de entorno durante build
-console.log('[VITE BUILD] Environment variables check:')
-console.log('VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL ? '✅ SET' : '❌ MISSING')
-console.log('VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? '✅ SET' : '❌ MISSING')
+export default defineConfig(({ mode }) => {
+  // Cargar variables de entorno correctamente
+  const env = loadEnv(mode, process.cwd(), '')
 
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 3000,
-    open: true
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: false,
-    minify: 'terser'
-  },
-  define: {
-    // Exponer variables explícitamente
-    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL),
-    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
+  // Debug: verificar que las variables se cargaron
+  console.log('[VITE] Environment variables loaded:')
+  console.log('VITE_SUPABASE_URL:', env.VITE_SUPABASE_URL ? '✅ SET' : '❌ MISSING')
+  console.log('VITE_SUPABASE_ANON_KEY:', env.VITE_SUPABASE_ANON_KEY ? '✅ SET (length: ' + (env.VITE_SUPABASE_ANON_KEY?.length || 0) + ')' : '❌ MISSING')
+
+  return {
+    plugins: [react()],
+    server: {
+      port: 3000,
+      open: true
+    },
+    build: {
+      outDir: 'dist',
+      sourcemap: false,
+      minify: 'terser'
+    }
   }
 })

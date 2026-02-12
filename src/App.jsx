@@ -11296,16 +11296,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
                     ))}
                   </select>
                 </div>
-
-                {/* Mini Map Preview */}
-                <div className="relative w-full h-32 bg-blue-50 rounded-xl overflow-hidden border border-gray-200">
-                  <div className="w-full h-full bg-[url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/2.0764,41.3545,14,0/400x200?access_token=placeholder')] bg-cover bg-center opacity-60" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-primary text-white p-2 rounded-full shadow-lg">
-                      <MapPin size={20} />
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -11314,21 +11304,36 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
               <div className="animate-slide-up pb-32">
                 <h3 className="text-sm font-bold text-slate-900 mb-2">Etiquetas de tu negocio</h3>
                 <p className="text-xs text-gray-500 mb-4">Selecciona las características que mejor describen tu negocio</p>
-                <div className="flex flex-wrap gap-2">
-                  {availableTags.map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className={`px-3 py-2 rounded-full text-xs font-medium transition-all ${
-                        formData.tags.includes(tag)
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
+
+                {!formData.subcategory ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                    <p className="text-sm text-blue-700 font-medium">
+                      ⬆️ Primero selecciona una <strong>subcategoría</strong> arriba para ver los tags disponibles
+                    </p>
+                  </div>
+                ) : availableTags.length === 0 ? (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
+                    <p className="text-sm text-gray-600">
+                      No hay tags específicos para esta subcategoría
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {availableTags.map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => toggleTag(tag)}
+                        className={`px-3 py-2 rounded-full text-xs font-medium transition-all ${
+                          formData.tags.includes(tag)
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

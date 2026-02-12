@@ -63,6 +63,27 @@ export const tagsBySubcategory = {
     'Pet friendly'
   ],
 
+  // Bar y cafetería (híbrido)
+  'Bar y cafetería': [
+    'Menú diario',
+    'Desayunos',
+    'Brunch fin de semana',
+    'Tapas incluidas con bebida',
+    'Café artesanal',
+    'Repostería casera',
+    'Terraza',
+    'WiFi gratis',
+    'Comida para llevar',
+    'Eventos deportivos (TV)',
+    'Música en vivo',
+    'Opciones vegetarianas',
+    'Opciones veganas',
+    'Opciones sin gluten',
+    'Parking cercano',
+    'Zona infantil',
+    'Pet friendly'
+  ],
+
   // Pizzería
   'Pizzería': [
     'Comida para llevar',

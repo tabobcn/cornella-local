@@ -10258,7 +10258,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user }) =>
 // ==============================================
 
 // Pantalla de Datos del Comercio (Paso 1)
-const BusinessDataScreen = ({ onNavigate, onSaveBusinessData }) => {
+const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, businessData, showToast }) => {
   const [formData, setFormData] = useState({
     businessName: '',
     cif: '',
@@ -10267,6 +10267,16 @@ const BusinessDataScreen = ({ onNavigate, onSaveBusinessData }) => {
     address: '',
     barrio: '',
   });
+
+  // Detectar si el usuario ya tiene un negocio registrado
+  useEffect(() => {
+    if (businessData?.id) {
+      showToast('Ya tienes un negocio registrado. Te redirigimos para editarlo.', 'info');
+      setTimeout(() => {
+        onNavigate('edit-business');
+      }, 2000);
+    }
+  }, [businessData, onNavigate, showToast]);
 
   // Todas las categorías, renombrando "Más" a "Otros"
   const availableCategories = categories.map(cat =>
@@ -15895,7 +15905,7 @@ export default function App() {
       case 'notifications':
         return <NotificationsScreen onNavigate={navigate} dynamicNotifications={dynamicNotifications} user={user} />;
       case 'business-data':
-        return <BusinessDataScreen onNavigate={navigate} onSaveBusinessData={setTempBusinessData} />;
+        return <BusinessDataScreen onNavigate={navigate} onSaveBusinessData={setTempBusinessData} user={user} businessData={businessData} showToast={showToast} />;
       case 'business-verification':
         return <BusinessVerificationScreen onNavigate={navigate} onRegisterBusiness={registerBusiness} />;
       case 'registration-success':

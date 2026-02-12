@@ -14244,7 +14244,8 @@ export default function App() {
         const { data, error } = await supabase
           .from('businesses')
           .select('*')
-          .eq('owner_id', user.id);
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false });
 
         if (error) {
           console.error('[BUSINESS] Error loading businesses:', error);
@@ -14261,11 +14262,11 @@ export default function App() {
           return;
         }
 
-        // Si hay múltiples negocios, tomar el primero
+        // Si hay múltiples negocios, tomar el más reciente
         const business = Array.isArray(data) ? data[0] : data;
 
         if (data.length > 1) {
-          console.log(`[BUSINESS] Usuario tiene ${data.length} negocios. Usando el primero:`, business.name);
+          console.log(`[BUSINESS] Usuario tiene ${data.length} negocios. Usando el más reciente (ID ${business.id}):`, business.name);
         } else {
           console.log('[BUSINESS] Negocio cargado:', business.name);
         }

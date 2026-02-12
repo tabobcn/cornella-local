@@ -1233,11 +1233,19 @@ const barrios = [
   { id: 'fontsanta-fatjo', name: 'Fontsanta-Fatjó' },
 ];
 
-const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, userOffers = [], notifications = [] }) => {
+const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, userOffers = [], notifications = [], params = {} }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedBarrio, setSelectedBarrio] = useState(null);
   const [showBarrioFilter, setShowBarrioFilter] = useState(false);
+
+  // Auto-seleccionar barrio si viene por parámetro
+  useEffect(() => {
+    if (params.filterNeighborhood) {
+      setSelectedBarrio(params.filterNeighborhood);
+      setShowSearchResults(true);
+    }
+  }, [params.filterNeighborhood]);
   const [recentSearches, setRecentSearches] = useState(() => {
     const saved = localStorage.getItem('recentSearches');
     return saved ? JSON.parse(saved) : [];
@@ -1366,7 +1374,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const filteredBusinesses = searchQuery.trim() === '' && !selectedBarrio && !selectedCategory && minRating === 0 ? [] : businesses
     .filter(business => {
       // Filtro por barrio
-      if (selectedBarrio && business.barrio !== selectedBarrio) {
+      if (selectedBarrio && business.neighborhood !== selectedBarrio) {
         return false;
       }
       // Filtro por categoría
@@ -3979,6 +3987,18 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                 {business.isVerified && <BadgeCheck className="text-primary fill-primary" size={24} />}
               </div>
               <p className="text-sm text-gray-500 font-medium">{business.address} • {business.category}</p>
+
+              {/* Barrio clickeable */}
+              {business.neighborhood && (
+                <button
+                  onClick={() => onNavigate('home', { filterNeighborhood: business.neighborhood })}
+                  className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-dark transition-colors w-fit"
+                >
+                  <MapPin size={16} />
+                  <span>{business.neighborhood}</span>
+                  <ChevronRight size={14} />
+                </button>
+              )}
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3 text-sm">
@@ -11291,7 +11311,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
 
             {/* Etiquetas */}
             {formData.category && (
-              <div className="animate-slide-up">
+              <div className="animate-slide-up pb-32">
                 <h3 className="text-sm font-bold text-slate-900 mb-2">Etiquetas de tu negocio</h3>
                 <p className="text-xs text-gray-500 mb-4">Selecciona las características que mejor describen tu negocio</p>
                 <div className="flex flex-wrap gap-2">
@@ -15770,7 +15790,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <HomePage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} userOffers={userOffers} notifications={dynamicNotifications} />;
+        return <HomePage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} userOffers={userOffers} notifications={dynamicNotifications} params={pageParams} />;
       case 'budget-request':
         return <BudgetRequestScreen onNavigate={navigate} onSubmitRequest={submitBudgetRequest} showToast={showToast} onAddNotification={addNotification} />;
       case 'direct-budget':
@@ -15883,7 +15903,7 @@ export default function App() {
       case 'contact-support':
         return <ContactSupportScreen onNavigate={navigate} showToast={showToast} />;
       default:
-        return <HomePage onNavigate={navigate} notifications={dynamicNotifications} />;
+        return <HomePage onNavigate={navigate} notifications={dynamicNotifications} params={pageParams} />;
     }
   };
 

@@ -16094,6 +16094,14 @@ const LoginScreen = ({ onNavigate, setUser }) => {
     if (error) setError('Error al iniciar sesión con Google. Inténtalo de nuevo.');
   };
 
+  const handleAppleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) setError('Error al iniciar sesión con Apple. Inténtalo de nuevo.');
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -16255,7 +16263,7 @@ const LoginScreen = ({ onNavigate, setUser }) => {
               <span className="text-slate-900 font-medium text-sm">Google</span>
             </button>
             {/* Apple */}
-            <button className="flex items-center justify-center gap-2 h-12 rounded-lg border border-gray-100 bg-white hover:bg-gray-50 transition-all shadow-sm">
+            <button onClick={handleAppleLogin} className="flex items-center justify-center gap-2 h-12 rounded-lg border border-gray-100 bg-white hover:bg-gray-50 transition-all shadow-sm">
               <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.78 1.18-.19 2.31-.89 3.51-.84 1.54.06 2.7.79 3.44 1.92-3.04 1.8-2.5 5.27.64 6.64-.67 1.72-1.6 3.41-2.67 4.47zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
               </svg>

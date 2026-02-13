@@ -2807,19 +2807,43 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
     phone: '',
   });
 
-  const categorias = [
-    { id: 'albanil', name: 'Albañil y reformas', icon: 'Hammer', businessCount: 18 },
-    { id: 'carpintero', name: 'Carpintero', icon: 'TreePine', businessCount: 12 },
-    { id: 'cerrajero', name: 'Cerrajero', icon: 'Key', businessCount: 8 },
-    { id: 'climatizacion', name: 'Climatización', icon: 'Snowflake', businessCount: 10 },
-    { id: 'electricista', name: 'Electricista', icon: 'Zap', businessCount: 15 },
-    { id: 'fontanero', name: 'Fontanero', icon: 'Droplet', businessCount: 14 },
-    { id: 'jardineria', name: 'Jardinería', icon: 'Flower2', businessCount: 9 },
-    { id: 'limpieza', name: 'Limpieza', icon: 'Sparkles', businessCount: 20 },
-    { id: 'mudanzas', name: 'Mudanzas', icon: 'Truck', businessCount: 6 },
-    { id: 'pintor', name: 'Pintor', icon: 'Paintbrush', businessCount: 11 },
-    { id: 'reparacion', name: 'Reparación móviles/PC', icon: 'Smartphone', businessCount: 16 },
-  ];
+  const [categorias, setCategorias] = useState([
+    { id: 'albanil', name: 'Albañil y reformas', icon: 'Hammer', businessCount: 0 },
+    { id: 'carpintero', name: 'Carpintero', icon: 'TreePine', businessCount: 0 },
+    { id: 'cerrajero', name: 'Cerrajero', icon: 'Key', businessCount: 0 },
+    { id: 'climatizacion', name: 'Climatización', icon: 'Snowflake', businessCount: 0 },
+    { id: 'electricista', name: 'Electricista', icon: 'Zap', businessCount: 0 },
+    { id: 'fontanero', name: 'Fontanero', icon: 'Droplet', businessCount: 0 },
+    { id: 'jardineria', name: 'Jardinería', icon: 'Flower2', businessCount: 0 },
+    { id: 'limpieza', name: 'Limpieza', icon: 'Sparkles', businessCount: 0 },
+    { id: 'mudanzas', name: 'Mudanzas', icon: 'Truck', businessCount: 0 },
+    { id: 'pintor', name: 'Pintor', icon: 'Paintbrush', businessCount: 0 },
+    { id: 'reparacion', name: 'Reparación móviles/PC', icon: 'Smartphone', businessCount: 0 },
+  ]);
+
+  // Cargar conteos reales desde Supabase
+  useEffect(() => {
+    const loadCounts = async () => {
+      const { data } = await supabase
+        .from('businesses')
+        .select('subcategory')
+        .eq('is_published', true)
+        .eq('verification_status', 'approved');
+
+      if (!data) return;
+
+      const counts = {};
+      data.forEach(b => {
+        if (b.subcategory) counts[b.subcategory] = (counts[b.subcategory] || 0) + 1;
+      });
+
+      setCategorias(prev => prev.map(cat => ({
+        ...cat,
+        businessCount: counts[cat.name] || 0,
+      })));
+    };
+    loadCounts();
+  }, []);
 
   const urgencias = [
     { id: 'urgent', label: 'Urgente', desc: 'Lo antes posible', icon: 'Zap', color: 'red' },
@@ -16062,6 +16086,14 @@ const LoginScreen = ({ onNavigate, setUser }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) setError('Error al iniciar sesión con Google. Inténtalo de nuevo.');
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -16213,7 +16245,7 @@ const LoginScreen = ({ onNavigate, setUser }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             {/* Google */}
-            <button className="flex items-center justify-center gap-2 h-12 rounded-lg border border-gray-100 bg-white hover:bg-gray-50 transition-all shadow-sm">
+            <button onClick={handleGoogleLogin} className="flex items-center justify-center gap-2 h-12 rounded-lg border border-gray-100 bg-white hover:bg-gray-50 transition-all shadow-sm">
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>

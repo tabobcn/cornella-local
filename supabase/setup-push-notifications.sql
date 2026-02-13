@@ -15,11 +15,14 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
   user_agent TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_used_at TIMESTAMPTZ DEFAULT NOW(),
-  is_active BOOLEAN DEFAULT true,
-  CONSTRAINT unique_user_subscription UNIQUE(user_id, (subscription->>'endpoint'))
+  is_active BOOLEAN DEFAULT true
 );
 
--- Índices
+-- Índice único por user_id + endpoint (expresión JSONB, requiere índice separado)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_push_subscriptions_unique
+  ON public.push_subscriptions(user_id, (subscription->>'endpoint'));
+
+-- Índices adicionales
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON public.push_subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_active ON public.push_subscriptions(user_id) WHERE is_active = true;
 

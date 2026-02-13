@@ -1,5 +1,5 @@
 // CornellaLocal - Plataforma de comercio local
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { getTagsForCategory } from './data/businessTags';
 import { getTagsBySubcategory, hasTagsForSubcategory } from './data/businessTagsByCategory';
@@ -18,10 +18,11 @@ import {
   Flower, Camera, PawPrint, Gamepad2, ShoppingCart, Smartphone, Copyright,
   RefreshCw, Send, Pause, Timer, Edit2, Trash2, Users, FileText, Briefcase,
   Archive, X, ArrowRight, UserSearch, ClipboardList, Upload, CheckCircle2, UserCheck,
-  PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
+  ExternalLink, PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
-  Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick
+  Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick, Flag,
+  ShieldAlert, UserCog, BarChart3, XCircle
 } from 'lucide-react';
 
 import {
@@ -50,6 +51,169 @@ import {
 import { DeleteConfirmModal, DeactivateConfirmModal } from './components/ConfirmModal';
 
 // ==============================================
+// FUNCIONES HELPER
+// ==============================================
+
+/**
+ * Calcula la distancia entre dos puntos geográficos usando la fórmula de Haversine
+ * @param {number} lat1 - Latitud del punto 1
+ * @param {number} lon1 - Longitud del punto 1
+ * @param {number} lat2 - Latitud del punto 2
+ * @param {number} lon2 - Longitud del punto 2
+ * @returns {number} - Distancia en kilómetros
+ */
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Radio de la Tierra en km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+  return distance;
+};
+
+/**
+ * Sistema de Moderación: Detecta contenido inapropiado en texto
+ * @param {string} text - Texto a analizar
+ * @returns {Object} - { isClean: boolean, reason: string|null, severity: 'low'|'medium'|'high' }
+ */
+const moderateContent = (text) => {
+  if (!text || typeof text !== 'string') {
+    return { isClean: true, reason: null, severity: null };
+  }
+
+  const lowerText = text.toLowerCase().trim();
+
+  // Lista de palabras prohibidas (spam, insultos, contenido inapropiado)
+  const bannedWords = [
+    // Spam y publicidad
+    'compra aqui', 'click aqui', 'gana dinero', 'oferta limitada', 'llama ya',
+    'whatsapp', 'telefono', 'email', 'web:', 'www.', 'http', '.com', '.es',
+    // Insultos y lenguaje ofensivo (versión suave para producción)
+    'mierda', 'puto', 'puta', 'idiota', 'estafa', 'robo', 'ladron', 'timador'
+  ];
+
+  // Detectar palabras prohibidas
+  for (const word of bannedWords) {
+    if (lowerText.includes(word)) {
+      return {
+        isClean: false,
+        reason: `Contenido prohibido detectado: "${word}"`,
+        severity: word.includes('.com') || word.includes('http') ? 'high' : 'medium'
+      };
+    }
+  }
+
+  // Detectar spam (caracteres repetidos)
+  const repeatedChars = /(.)\1{4,}/g; // Más de 4 caracteres iguales seguidos
+  if (repeatedChars.test(text)) {
+    return {
+      isClean: false,
+      reason: 'Spam detectado: caracteres repetidos excesivamente',
+      severity: 'low'
+    };
+  }
+
+  // Detectar mayúsculas excesivas (más del 60% en mayúsculas)
+  const uppercaseRatio = (text.match(/[A-Z]/g) || []).length / text.length;
+  if (text.length > 20 && uppercaseRatio > 0.6) {
+    return {
+      isClean: false,
+      reason: 'Spam detectado: uso excesivo de mayúsculas',
+      severity: 'low'
+    };
+  }
+
+  // Detectar números de teléfono (España)
+  const phonePattern = /(\+34|0034|34)?[\s\-]?[6-9]\d{2}[\s\-]?\d{2}[\s\-]?\d{2}[\s\-]?\d{2}/g;
+  if (phonePattern.test(text)) {
+    return {
+      isClean: false,
+      reason: 'No se permite incluir números de teléfono',
+      severity: 'high'
+    };
+  }
+
+  // Detectar emails
+  const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  if (emailPattern.test(text)) {
+    return {
+      isClean: false,
+      reason: 'No se permite incluir direcciones de email',
+      severity: 'high'
+    };
+  }
+
+  // Todo OK
+  return { isClean: true, reason: null, severity: null };
+};
+
+/**
+ * Calcula si un negocio está abierto basándose en su horario y la hora actual
+ * @param {Object} openingHours - Objeto con horarios del negocio
+ * @returns {Object} - { isOpen: boolean, status: 'open'|'closed'|'closing_soon', message: string }
+ */
+const getBusinessStatus = (openingHours) => {
+  if (!openingHours) {
+    return { isOpen: false, status: 'unknown', message: 'Sin horario' };
+  }
+
+  const now = new Date();
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const currentDay = dayNames[now.getDay()];
+  const currentTime = now.getHours() * 60 + now.getMinutes(); // minutos desde medianoche
+
+  const daySchedule = openingHours[currentDay];
+
+  // Si no hay horario para hoy o está deshabilitado
+  if (!daySchedule || !daySchedule.enabled) {
+    return { isOpen: false, status: 'closed', message: 'Cerrado' };
+  }
+
+  // Función para convertir "HH:MM" a minutos desde medianoche
+  const timeToMinutes = (timeStr) => {
+    if (!timeStr) return null;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Verificar horario de mañana
+  const morningStart = timeToMinutes(daySchedule.morning?.start);
+  const morningEnd = timeToMinutes(daySchedule.morning?.end);
+
+  // Verificar horario de tarde
+  const afternoonStart = timeToMinutes(daySchedule.afternoon?.start);
+  const afternoonEnd = timeToMinutes(daySchedule.afternoon?.end);
+
+  // Comprobar si está abierto en horario de mañana
+  if (morningStart !== null && morningEnd !== null) {
+    if (currentTime >= morningStart && currentTime < morningEnd) {
+      // Verificar si cierra pronto (menos de 30 minutos)
+      if (morningEnd - currentTime <= 30) {
+        return { isOpen: true, status: 'closing_soon', message: 'Cierra pronto' };
+      }
+      return { isOpen: true, status: 'open', message: 'Abierto' };
+    }
+  }
+
+  // Comprobar si está abierto en horario de tarde
+  if (afternoonStart !== null && afternoonEnd !== null) {
+    if (currentTime >= afternoonStart && currentTime < afternoonEnd) {
+      // Verificar si cierra pronto (menos de 30 minutos)
+      if (afternoonEnd - currentTime <= 30) {
+        return { isOpen: true, status: 'closing_soon', message: 'Cierra pronto' };
+      }
+      return { isOpen: true, status: 'open', message: 'Abierto' };
+    }
+  }
+
+  return { isOpen: false, status: 'closed', message: 'Cerrado' };
+};
+
+// ==============================================
 // COMPONENTES REUTILIZABLES
 // ==============================================
 
@@ -69,7 +233,7 @@ const iconMap = {
   Flower, Camera, PawPrint, Gamepad2, ShoppingCart, Smartphone, Copyright,
   RefreshCw, Send, Pause, Timer, Edit2, Trash2, Users, FileText, Briefcase,
   Archive, X, ArrowRight, UserSearch, ClipboardList, Upload, CheckCircle2, UserCheck,
-  PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
+  ExternalLink, PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
   Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick
@@ -791,6 +955,240 @@ const RateBusinessModal = ({ isOpen, onClose, business, onSubmitRating }) => {
   );
 };
 
+// =====================================================
+// MODAL DE REPORTAR NEGOCIO
+// =====================================================
+const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport }) => {
+  const [reportType, setReportType] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const reportTypes = [
+    { id: 'false_tags', label: 'Tags falsos o engañosos', icon: Tag, description: 'El negocio tiene etiquetas que no corresponden con la realidad' },
+    { id: 'wrong_price', label: 'Precio incorrecto en oferta', icon: AlertCircle, description: 'La oferta publicada no se respeta en el local' },
+    { id: 'bad_hours', label: 'Horarios incorrectos', icon: Clock, description: 'Los horarios mostrados no coinciden con los reales' },
+    { id: 'fake_info', label: 'Información falsa', icon: ShieldAlert, description: 'Datos del negocio son incorrectos o engañosos' },
+    { id: 'inappropriate', label: 'Contenido inapropiado', icon: AlertCircle, description: 'Fotos, descripciones u otro contenido inadecuado' },
+    { id: 'other', label: 'Otro problema', icon: MoreHorizontal, description: 'Otro tipo de problema no listado' }
+  ];
+
+  const handleSubmit = async () => {
+    if (!user) {
+      setError('Debes iniciar sesión para reportar');
+      return;
+    }
+
+    if (!reportType) {
+      setError('Selecciona el tipo de problema');
+      return;
+    }
+
+    if (!message.trim()) {
+      setError('Describe el problema que encontraste');
+      return;
+    }
+
+    if (message.trim().length < 10) {
+      setError('Por favor escribe al menos 10 caracteres');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const { error: insertError } = await supabase
+        .from('reports')
+        .insert({
+          user_id: user.id,
+          business_id: business.id,
+          report_type: reportType,
+          message: message.trim(),
+          status: 'pending'
+        });
+
+      if (insertError) throw insertError;
+
+      console.log('[REPORT] Reporte enviado exitosamente');
+
+      // Llamar callback si existe
+      if (onSubmitReport) {
+        onSubmitReport();
+      }
+
+      // Resetear form
+      setReportType('');
+      setMessage('');
+      onClose();
+
+      // Mostrar confirmación
+      alert('✅ Reporte enviado correctamente. Gracias por ayudarnos a mejorar Cornellà Local.');
+    } catch (err) {
+      console.error('[REPORT] Error al enviar reporte:', err);
+      setError('Error al enviar el reporte. Intenta de nuevo.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting) {
+      setReportType('');
+      setMessage('');
+      setError('');
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 animate-fadeIn">
+      <div
+        className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden animate-slideUp"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <Flag className="text-red-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Reportar problema</h3>
+              <p className="text-xs text-gray-500">{business?.name}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          {/* Info */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+            <Info className="text-blue-600 shrink-0 mt-0.5" size={18} />
+            <div>
+              <p className="text-sm text-blue-800 font-medium">Tu reporte es anónimo para el negocio</p>
+              <p className="text-xs text-blue-700 mt-1">
+                Solo el equipo de moderación verá tu información. Revisaremos tu reporte en máximo 24 horas.
+              </p>
+            </div>
+          </div>
+
+          {/* Tipo de problema */}
+          <div className="mb-6">
+            <label className="block text-sm font-bold text-slate-900 mb-3">
+              ¿Qué problema encontraste? <span className="text-red-500">*</span>
+            </label>
+            <div className="space-y-2">
+              {reportTypes.map(type => (
+                <button
+                  key={type.id}
+                  onClick={() => setReportType(type.id)}
+                  disabled={isSubmitting}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    reportType === type.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  } disabled:opacity-50`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                      reportType === type.id ? 'bg-primary/10' : 'bg-gray-100'
+                    }`}>
+                      <type.icon
+                        size={20}
+                        className={reportType === type.id ? 'text-primary' : 'text-gray-600'}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-900 text-sm mb-1">
+                        {type.label}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {type.description}
+                      </div>
+                    </div>
+                    {reportType === type.id && (
+                      <CheckCircle2 className="text-primary shrink-0" size={20} />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mensaje */}
+          <div className="mb-6">
+            <label className="block text-sm font-bold text-slate-900 mb-2">
+              Describe el problema <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              disabled={isSubmitting}
+              placeholder="Ejemplo: El negocio dice que tiene terraza pero no tiene. Es engañoso para los clientes..."
+              className="w-full h-32 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm resize-none disabled:opacity-50 disabled:bg-gray-50"
+              maxLength={500}
+            />
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-gray-500">
+                💡 Sé específico para que podamos actuar rápidamente
+              </p>
+              <span className="text-xs text-gray-400">
+                {message.length}/500
+              </span>
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+              <AlertCircle size={18} className="text-red-600 shrink-0" />
+              <span className="text-sm text-red-700">{error}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex gap-3">
+          <button
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="flex-1 h-12 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !reportType || !message.trim()}
+            className="flex-1 h-12 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <RefreshCw size={18} className="animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                Enviar reporte
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Modal de filtros avanzados
 const AdvancedFiltersModal = ({
   isOpen,
@@ -801,7 +1199,15 @@ const AdvancedFiltersModal = ({
   setMinRating,
   priceRange,
   setPriceRange,
-  onReset
+  onReset,
+  showOnlyOpen,
+  setShowOnlyOpen,
+  sortByDistance,
+  userLocation,
+  getUserLocation,
+  loadingLocation,
+  setSortByDistance,
+  setUserLocation,
 }) => {
   if (!isOpen) return null;
 
@@ -810,7 +1216,6 @@ const AdvancedFiltersModal = ({
     { id: 'rating', label: 'Mejor valorados', icon: 'Star' },
     { id: 'newest', label: 'Más recientes', icon: 'Clock' },
     { id: 'name', label: 'Alfabético', icon: 'SlidersHorizontal' },
-    { id: 'distance', label: 'Más cercanos', icon: 'MapPin' },
   ];
 
   return (
@@ -926,6 +1331,91 @@ const AdvancedFiltersModal = ({
               </div>
             </div>
           </div>
+
+          {/* Disponibilidad */}
+          <div>
+            <h4 className="text-sm font-bold text-slate-700 mb-3">Disponibilidad</h4>
+            <button
+              onClick={() => setShowOnlyOpen(!showOnlyOpen)}
+              className={`w-full p-4 rounded-xl border-2 flex items-center justify-between transition-all ${
+                showOnlyOpen
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  showOnlyOpen ? 'bg-green-500' : 'bg-gray-100'
+                }`}>
+                  <Circle
+                    size={12}
+                    className={showOnlyOpen ? 'fill-white text-white animate-pulse' : 'fill-green-500 text-green-500'}
+                  />
+                </div>
+                <div className="text-left">
+                  <span className={`font-semibold block ${showOnlyOpen ? 'text-green-700' : 'text-slate-700'}`}>
+                    Solo negocios abiertos
+                  </span>
+                  <span className="text-xs text-gray-500">Muestra solo los que están abiertos ahora</span>
+                </div>
+              </div>
+              <div className={`w-12 h-6 rounded-full transition-all relative ${
+                showOnlyOpen ? 'bg-green-500' : 'bg-gray-200'
+              }`}>
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                  showOnlyOpen ? 'left-7' : 'left-1'
+                }`} />
+              </div>
+            </button>
+          </div>
+
+          {/* Ordenar por distancia */}
+          <div>
+            <h4 className="text-sm font-bold text-slate-700 mb-3">Ubicación</h4>
+            <button
+              onClick={() => {
+                if (sortByDistance && userLocation) {
+                  setSortByDistance(false);
+                  setUserLocation(null);
+                } else {
+                  getUserLocation();
+                }
+              }}
+              disabled={loadingLocation}
+              className={`w-full p-4 rounded-xl border-2 flex items-center justify-between transition-all ${
+                sortByDistance && userLocation
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              } ${loadingLocation ? 'opacity-70' : ''}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  sortByDistance && userLocation ? 'bg-blue-500' : 'bg-gray-100'
+                }`}>
+                  {loadingLocation ? (
+                    <RefreshCw size={18} className="animate-spin text-blue-500" />
+                  ) : (
+                    <MapPin size={18} className={sortByDistance && userLocation ? 'text-white' : 'text-gray-500'} />
+                  )}
+                </div>
+                <div className="text-left">
+                  <span className={`font-semibold block ${sortByDistance && userLocation ? 'text-blue-700' : 'text-slate-700'}`}>
+                    {loadingLocation ? 'Obteniendo ubicación...' : sortByDistance && userLocation ? 'Ordenado por distancia' : 'Más cerca de ti'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {sortByDistance && userLocation ? 'Toca para desactivar' : 'Ordena negocios por proximidad'}
+                  </span>
+                </div>
+              </div>
+              <div className={`w-12 h-6 rounded-full transition-all relative ${
+                sortByDistance && userLocation ? 'bg-blue-500' : 'bg-gray-200'
+              }`}>
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                  sortByDistance && userLocation ? 'left-7' : 'left-1'
+                }`} />
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Footer con botones */}
@@ -936,6 +1426,9 @@ const AdvancedFiltersModal = ({
               setSortBy('relevance');
               setMinRating(0);
               setPriceRange([0, 100]);
+              setShowOnlyOpen(false);
+              setSortByDistance(false);
+              setUserLocation(null);
             }}
             className="flex-1 h-12 bg-gray-100 text-slate-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
           >
@@ -1008,7 +1501,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
       >
         <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl">
           <img
-            src={business.image}
+            src={business.cover_photo || (business.images && business.images[0]) || ''}
             alt={business.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
@@ -1056,7 +1549,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
     >
       <div className="relative aspect-video">
         <img
-          src={business.image}
+          src={business.cover_photo || (business.images && business.images[0]) || ''}
           alt={business.name}
           className="w-full h-full object-cover"
         />
@@ -1239,6 +1732,11 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [selectedBarrio, setSelectedBarrio] = useState(null);
   const [showBarrioFilter, setShowBarrioFilter] = useState(false);
   const [selectedTag, setSelectedTag] = useState(null);
+  const [showOnlyOpen, setShowOnlyOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [sortByDistance, setSortByDistance] = useState(false);
 
   // Auto-seleccionar barrio si viene por parámetro
   useEffect(() => {
@@ -1265,6 +1763,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
   const [flashOffers, setFlashOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
+  const [newBusinesses, setNewBusinesses] = useState([]);
+  const [loadingNewBusinesses, setLoadingNewBusinesses] = useState(true);
 
   // 🔍 Advanced filters state
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -1281,6 +1781,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           .from('businesses')
           .select('*')
           .eq('is_verified', true)
+          .eq('is_published', true)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -1325,6 +1826,61 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     fetchFlashOffers();
   }, []);
 
+  // Cargar negocios nuevos (últimos 6 aprobados) con contadores de favoritos
+  useEffect(() => {
+    const fetchNewBusinesses = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('verification_status', 'approved')
+          .eq('is_published', true)
+          .order('created_at', { ascending: false })
+          .limit(6);
+
+        if (error) throw error;
+
+        // Cargar contadores de favoritos para estos negocios
+        if (data && data.length > 0) {
+          const businessIds = data.map(b => b.id);
+          const { data: favoritesData, error: favError } = await supabase
+            .from('favorites')
+            .select('business_id')
+            .in('business_id', businessIds);
+
+          if (favError) {
+            console.error('[NEW BUSINESSES] Error loading favorites:', favError);
+          } else {
+            // Contar favoritos por negocio
+            const favoriteCounts = {};
+            favoritesData?.forEach(fav => {
+              favoriteCounts[fav.business_id] = (favoriteCounts[fav.business_id] || 0) + 1;
+            });
+
+            // Agregar contador a cada negocio
+            const businessesWithCounts = data.map(business => ({
+              ...business,
+              favoriteCount: favoriteCounts[business.id] || 0
+            }));
+
+            console.log('[NEW BUSINESSES] Loaded:', businessesWithCounts.length);
+            setNewBusinesses(businessesWithCounts);
+            setLoadingNewBusinesses(false);
+            return;
+          }
+        }
+
+        setNewBusinesses(data || []);
+      } catch (error) {
+        console.error('[NEW BUSINESSES] Error:', error);
+      } finally {
+        setLoadingNewBusinesses(false);
+      }
+    };
+
+    fetchNewBusinesses();
+  }, []);
+
   const popularSearches = [
     { text: 'Restaurantes', icon: 'UtensilsCrossed' },
     { text: 'Peluquería', icon: 'Scissors' },
@@ -1339,6 +1895,56 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     await new Promise(resolve => setTimeout(resolve, TIMING.autoSaveDelay)); // Simular carga
   };
   const { pullDistance, isRefreshing, handlers } = usePullToRefresh(handleRefresh);
+
+  // Obtener ubicación del usuario
+  const getUserLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Tu navegador no soporta geolocalización');
+      showToast('Geolocalización no disponible', 'error');
+      return;
+    }
+
+    setLoadingLocation(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        };
+        setUserLocation(location);
+        setSortByDistance(true);
+        setLoadingLocation(false);
+        console.log('[LOCATION] User location obtained:', location);
+        showToast('Ubicación obtenida correctamente', 'success');
+      },
+      (error) => {
+        let errorMessage = 'No se pudo obtener tu ubicación';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Permiso de ubicación denegado';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Ubicación no disponible';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Tiempo de espera agotado';
+            break;
+        }
+        setLocationError(errorMessage);
+        setLoadingLocation(false);
+        showToast(errorMessage, 'error');
+        console.error('[LOCATION] Error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // Cache de 5 minutos
+      }
+    );
+  };
 
   // Calcular tiempo restante desde expires_at
   const calculateTimeLeft = (expiresAt) => {
@@ -1395,6 +2001,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       if (minRating > 0 && (business.rating || 0) < minRating) {
         return false;
       }
+      // Filtro "Abiertos Ahora"
+      if (showOnlyOpen) {
+        const status = getBusinessStatus(business.opening_hours);
+        if (!status.isOpen) {
+          return false;
+        }
+      }
       // Filtro por búsqueda
       if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
@@ -1410,7 +2023,19 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       return true;
     })
     .sort((a, b) => {
-      // Ordenamiento
+      // Ordenamiento por distancia (si está activo y hay ubicación)
+      if (sortByDistance && userLocation) {
+        // Calcular distancia real para cada negocio
+        const distA = (a.latitude && a.longitude)
+          ? calculateDistance(userLocation.lat, userLocation.lng, a.latitude, a.longitude)
+          : 999; // Si no tiene coordenadas, ponerlo al final
+        const distB = (b.latitude && b.longitude)
+          ? calculateDistance(userLocation.lat, userLocation.lng, b.latitude, b.longitude)
+          : 999;
+        return distA - distB;
+      }
+
+      // Otros ordenamientos
       switch (sortBy) {
         case 'rating':
           return (b.rating || 0) - (a.rating || 0);
@@ -1419,7 +2044,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
         case 'newest':
           return new Date(b.created_at) - new Date(a.created_at);
         case 'distance':
-          // Simular distancia basada en coordenadas (si existen)
           return (a.distance || 999) - (b.distance || 999);
         default: // relevance
           return 0;
@@ -1810,7 +2434,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                       className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left"
                     >
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                        <img src={business.image} alt={business.name} className="w-full h-full object-cover" />
+                        <img src={business.cover_photo || (business.images && business.images[0]) || ''} alt={business.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{business.name}</p>
@@ -1840,6 +2464,30 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     )}
 
     <main className="flex flex-col gap-6 pt-4">
+      {/* Indicadores de filtros activos */}
+      {(showOnlyOpen || (sortByDistance && userLocation)) && (
+        <div className="px-4 flex gap-2 flex-wrap">
+          {showOnlyOpen && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+              <Circle size={8} className="fill-green-500 animate-pulse" />
+              Abiertos ahora
+              <button onClick={() => setShowOnlyOpen(false)} className="ml-1 hover:text-green-900">
+                <X size={12} />
+              </button>
+            </div>
+          )}
+          {sortByDistance && userLocation && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+              <Navigation size={12} className="fill-blue-500" />
+              Por distancia
+              <button onClick={() => { setSortByDistance(false); setUserLocation(null); }} className="ml-1 hover:text-blue-900">
+                <X size={12} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Ofertas Flash */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between px-4">
@@ -1934,26 +2582,105 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       </section>
 
       {/* Nuevos en el barrio */}
-      <section className="px-4 pb-4">
-        <h2 className="text-xl font-bold tracking-tight mb-4">Nuevos en el barrio</h2>
-        <div className="flex flex-col gap-4">
-          {businesses.filter(b => {
-            if (!b.verified_at) return false;
-            const verifiedDate = new Date(b.verified_at);
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            return verifiedDate > thirtyDaysAgo;
-          }).map(business => (
-            <BusinessCard
-              key={business.id}
-              business={{...business, isNew: true}}
-              onClick={() => onNavigate('business', { id: business.id })}
-              isFavorite={isFavorite ? isFavorite(business.id) : false}
-              onToggleFavorite={toggleFavorite}
-            />
-          ))}
-        </div>
-      </section>
+      {!loadingNewBusinesses && newBusinesses.length > 0 && (
+        <section className="px-4 pb-4">
+          <h2 className="text-xl font-bold tracking-tight mb-4">Nuevos en el barrio</h2>
+          <div className="flex flex-col gap-4">
+            {newBusinesses.map(business => (
+              <button
+                key={business.id}
+                onClick={() => onNavigate('business', { id: business.id })}
+                className="w-full bg-white rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden group text-left"
+              >
+                {/* Image */}
+                <div className="relative h-44 bg-gradient-to-br from-blue-400 to-blue-600 overflow-hidden">
+                  {(business.cover_photo || (business.images && business.images[0])) && (
+                    <img
+                      src={business.cover_photo || business.images[0]}
+                      alt={business.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  )}
+                  {/* Badge "NUEVO" */}
+                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-lg">
+                    <Sparkles size={14} />
+                    NUEVO
+                  </div>
+
+                  {/* Badge Estado (Abierto/Cerrado) */}
+                  {(() => {
+                    const status = getBusinessStatus(business.opening_hours);
+                    const statusStyles = {
+                      open: 'bg-green-500 text-white',
+                      closed: 'bg-gray-600 text-white',
+                      closing_soon: 'bg-orange-500 text-white',
+                      unknown: 'bg-gray-400 text-white'
+                    };
+                    return (
+                      <div className={`absolute bottom-3 left-3 px-3 py-1.5 ${statusStyles[status.status]} text-xs font-bold rounded-full shadow-lg backdrop-blur-sm`}>
+                        {status.message}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Favorite button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite && toggleFavorite(business.id);
+                    }}
+                    className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-lg"
+                  >
+                    <Heart
+                      size={20}
+                      className={isFavorite && isFavorite(business.id) ? 'text-red-500 fill-red-500' : 'text-gray-600'}
+                    />
+                  </button>
+                </div>
+                {/* Content */}
+                <div className="p-4 flex flex-col items-center text-center gap-2">
+                  {/* Nombre + Badge Verificado */}
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-900 text-lg">{business.name}</h3>
+                    {business.is_verified && (
+                      <BadgeCheck className="text-white fill-primary shrink-0" size={22} />
+                    )}
+                  </div>
+
+                  {/* Subcategoría */}
+                  <p className="text-sm text-gray-600">{business.subcategory || business.category}</p>
+
+                  {/* Rating y Seguidores en la misma línea */}
+                  <div className="flex items-center gap-3 text-sm">
+                    {/* Rating */}
+                    <div className="flex items-center gap-1.5">
+                      <Star className="text-yellow-500 fill-yellow-500" size={16} />
+                      <span className="font-semibold text-slate-900">{business.rating || '5.0'}</span>
+                      <span className="text-gray-400">·</span>
+                      <span className="text-gray-500 text-xs">{business.reviews || 0}</span>
+                    </div>
+
+                    {/* Separador */}
+                    <span className="text-gray-300">|</span>
+
+                    {/* Seguidores */}
+                    <div className="flex items-center gap-1.5">
+                      <Heart className="text-red-500 fill-red-500" size={16} />
+                      <span className="font-semibold text-slate-900">{business.favoriteCount || 0}</span>
+                    </div>
+                  </div>
+
+                  {/* Barrio */}
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <MapPin size={14} className="text-primary" />
+                    <span>{business.neighborhood || business.address}</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
 
     {/* Navbar */}
@@ -2053,6 +2780,14 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       priceRange={priceRange}
       setPriceRange={setPriceRange}
       onReset={resetFilters}
+      showOnlyOpen={showOnlyOpen}
+      setShowOnlyOpen={setShowOnlyOpen}
+      sortByDistance={sortByDistance}
+      userLocation={userLocation}
+      getUserLocation={getUserLocation}
+      loadingLocation={loadingLocation}
+      setSortByDistance={setSortByDistance}
+      setUserLocation={setUserLocation}
     />
   </div>
   );
@@ -3174,8 +3909,1318 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
   );
 };
 
+// =====================================================
+// PANEL DE ADMINISTRACIÓN
+// =====================================================
+
+// AdminDashboard - Panel principal de administración
+const AdminDashboard = ({ onNavigate, user }) => {
+  const [stats, setStats] = useState({
+    pendingBusinesses: 0,
+    pendingReports: 0,
+    totalUsers: 0,
+    totalBusinesses: 0,
+    activeOffers: 0,
+    activeJobs: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        // Negocios pendientes
+        const { count: pendingBiz } = await supabase
+          .from('businesses')
+          .select('*', { count: 'exact', head: true })
+          .eq('verification_status', 'pending');
+
+        // Reportes pendientes
+        const { count: pendingRep } = await supabase
+          .from('reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
+        // Total usuarios
+        const { count: totalUsr } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        // Total negocios
+        const { count: totalBiz } = await supabase
+          .from('businesses')
+          .select('*', { count: 'exact', head: true });
+
+        // Ofertas activas
+        const { count: activeOff } = await supabase
+          .from('offers')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active');
+
+        // Empleos activos
+        const { count: activeJb } = await supabase
+          .from('jobs')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active');
+
+        setStats({
+          pendingBusinesses: pendingBiz || 0,
+          pendingReports: pendingRep || 0,
+          totalUsers: totalUsr || 0,
+          totalBusinesses: totalBiz || 0,
+          activeOffers: activeOff || 0,
+          activeJobs: activeJb || 0,
+        });
+      } catch (error) {
+        console.error('[ADMIN] Error loading stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, []);
+
+  const quickActions = [
+    {
+      id: 'approve-businesses',
+      title: 'Aprobar Negocios',
+      description: `${stats.pendingBusinesses} pendientes`,
+      icon: Store,
+      color: 'blue',
+      badge: stats.pendingBusinesses,
+      route: 'admin-approve-businesses'
+    },
+    {
+      id: 'reports',
+      title: 'Ver Reportes',
+      description: `${stats.pendingReports} sin revisar`,
+      icon: Flag,
+      color: 'red',
+      badge: stats.pendingReports,
+      route: 'admin-reports'
+    },
+    {
+      id: 'users',
+      title: 'Usuarios',
+      description: `${stats.totalUsers} registrados`,
+      icon: Users,
+      color: 'green',
+      route: 'profile' // TODO: crear pantalla de usuarios
+    },
+    {
+      id: 'stats',
+      title: 'Estadísticas',
+      description: 'Ver métricas completas',
+      icon: BarChart3,
+      color: 'purple',
+      route: 'profile' // TODO: crear pantalla de stats
+    },
+  ];
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-gradient-to-r from-primary to-blue-700 px-4 py-6 pb-8">
+        <button
+          onClick={() => onNavigate('profile')}
+          className="mb-4 flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm">Volver al perfil</span>
+        </button>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
+            <ShieldAlert className="text-white" size={28} />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-white">Panel de Admin</h1>
+            <p className="text-white/80 text-sm">{user?.email}</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Stats Cards */}
+      <div className="px-4 -mt-4 mb-6">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="text-2xl font-bold text-slate-900">{stats.totalBusinesses}</div>
+            <div className="text-xs text-gray-500 mt-1">Negocios</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="text-2xl font-bold text-slate-900">{stats.totalUsers}</div>
+            <div className="text-xs text-gray-500 mt-1">Usuarios</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="text-2xl font-bold text-slate-900">{stats.activeOffers}</div>
+            <div className="text-xs text-gray-500 mt-1">Ofertas activas</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="text-2xl font-bold text-slate-900">{stats.activeJobs}</div>
+            <div className="text-xs text-gray-500 mt-1">Empleos activos</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="px-4 pb-24">
+        <h2 className="text-lg font-bold text-slate-900 mb-4">Acciones Rápidas</h2>
+        <div className="space-y-3">
+          {quickActions.map(action => {
+            const colorClasses = {
+              blue: 'bg-blue-100 text-blue-600',
+              red: 'bg-red-100 text-red-600',
+              green: 'bg-green-100 text-green-600',
+              purple: 'bg-purple-100 text-purple-600'
+            };
+
+            return (
+              <button
+                key={action.id}
+                onClick={() => onNavigate(action.route)}
+                className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center gap-4"
+              >
+                <div className={`w-12 h-12 rounded-xl ${colorClasses[action.color]} flex items-center justify-center shrink-0 relative`}>
+                  <action.icon size={24} />
+                  {action.badge > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {action.badge > 99 ? '99+' : action.badge}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="font-semibold text-slate-900">{action.title}</div>
+                  <div className="text-sm text-gray-500">{action.description}</div>
+                </div>
+                <ChevronRight className="text-gray-400" size={20} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Navbar */}
+      <Navbar currentPage="profile" onNavigate={onNavigate} />
+    </div>
+  );
+};
+
+// BusinessApprovalScreen - Aprobar/rechazar negocios
+const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
+  const [businesses, setBusinesses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('pending');
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    loadBusinesses();
+  }, [filter]);
+
+  const loadBusinesses = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (filter === 'pending') {
+        query = query.eq('verification_status', 'pending').is('appeal_message', null);
+      } else if (filter === 'appeals') {
+        query = query.eq('verification_status', 'pending').not('appeal_message', 'is', null);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      console.log('[ADMIN] Businesses loaded:', data?.length);
+      setBusinesses(data || []);
+    } catch (error) {
+      console.error('[ADMIN] Error loading businesses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openApproveModal = (business) => {
+    setSelectedBusiness(business);
+    setShowApproveModal(true);
+  };
+
+  const handleApprove = async () => {
+    if (!selectedBusiness) return;
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .update({
+          verification_status: 'approved',
+          is_verified: true,
+          verified_at: new Date().toISOString(),
+          verified_by: user.id
+        })
+        .eq('id', selectedBusiness.id)
+        .select('id');
+
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Sin permisos. Ejecuta el script SQL de políticas RLS para admin.');
+
+      await supabase.from('notifications').insert({
+        user_id: selectedBusiness.owner_id,
+        type: 'business_approved',
+        title: '¡Tu negocio ha sido aprobado! 🎉',
+        message: `"${selectedBusiness.name}" ha sido verificado. Ya puedes completar tu perfil y publicarlo en Cornellà Local.`,
+        data: { business_id: selectedBusiness.id },
+        is_read: false,
+      });
+
+      showToast(`✅ ${selectedBusiness.name} aprobado`, 'success');
+      setShowApproveModal(false);
+      setSelectedBusiness(null);
+      loadBusinesses();
+    } catch (error) {
+      console.error('[ADMIN] Error approving business:', error);
+      showToast(`Error: ${error.message}`, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedBusiness) return;
+
+    setActionLoading(true);
+    try {
+      const newRejectionCount = (selectedBusiness.rejection_count || 0) + 1;
+
+      // Update core fields
+      const { data, error } = await supabase
+        .from('businesses')
+        .update({
+          verification_status: 'rejected',
+          verification_notes: rejectReason || 'Rechazado por el administrador',
+        })
+        .eq('id', selectedBusiness.id)
+        .select('id');
+
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Sin permisos. Ejecuta el script SQL de políticas RLS para admin.');
+
+      // Update new fields (may fail if schema cache not updated yet)
+      await supabase.from('businesses').update({
+        rejection_reason: rejectReason || 'No cumple los requisitos.',
+        rejection_count: newRejectionCount,
+      }).eq('id', selectedBusiness.id).then(() => {}).catch(() => {});
+
+      // Notificar al propietario del rechazo
+      await supabase.from('notifications').insert({
+        user_id: selectedBusiness.owner_id,
+        type: 'business_rejected',
+        title: `Solicitud de negocio rechazada${newRejectionCount > 1 ? ` (vez ${newRejectionCount})` : ''}`,
+        message: `"${selectedBusiness.name}": ${rejectReason || 'No cumple los requisitos.'}. Puedes apelar con más información.`,
+        data: { business_id: selectedBusiness.id, rejection_reason: rejectReason, rejection_count: newRejectionCount },
+        is_read: false,
+        created_at: new Date().toISOString(),
+      });
+
+      showToast(`${selectedBusiness.name} rechazado. El propietario ha sido notificado`, 'info');
+      setShowRejectModal(false);
+      setRejectReason('');
+      setSelectedBusiness(null);
+      loadBusinesses();
+    } catch (error) {
+      console.error('[ADMIN] Error rejecting business:', error);
+      showToast('Error al rechazar el negocio', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openDocumentsModal = (business) => {
+    setSelectedBusiness(business);
+    setShowDocumentsModal(true);
+  };
+
+  const openRejectModal = (business) => {
+    setSelectedBusiness(business);
+    setShowRejectModal(true);
+  };
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-4">
+        <button
+          onClick={() => onNavigate('admin-dashboard')}
+          className="mb-3 flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm">Panel Admin</span>
+        </button>
+        <h1 className="text-xl font-bold text-slate-900">Aprobar Negocios</h1>
+      </header>
+
+      {/* Filters */}
+      <div className="px-4 py-3 bg-white border-b border-gray-100 flex gap-2">
+        <button
+          onClick={() => setFilter('pending')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            filter === 'pending'
+              ? 'bg-primary text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          Pendientes
+        </button>
+        <button
+          onClick={() => setFilter('appeals')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+            filter === 'appeals'
+              ? 'bg-amber-500 text-white'
+              : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+          }`}
+        >
+          <RefreshCw size={13} />
+          Apelaciones
+        </button>
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            filter === 'all'
+              ? 'bg-primary text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          Todos
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 py-6 pb-24">
+        {loading ? (
+          <div className="text-center py-12">
+            <RefreshCw className="animate-spin mx-auto mb-3 text-primary" size={32} />
+            <p className="text-gray-500">Cargando negocios...</p>
+          </div>
+        ) : businesses.length === 0 ? (
+          <div className="text-center py-12">
+            <Store className="mx-auto mb-3 text-gray-300" size={48} />
+            <p className="text-gray-500">No hay negocios {filter === 'pending' ? 'pendientes' : ''}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {businesses.map(business => {
+              const hasDocuments = business.verification_documents && business.verification_documents.length > 0;
+              const isAppeal = business.rejection_count > 0 && business.appeal_message;
+              const wasRejected = business.rejection_count > 0;
+
+              return (
+                <div key={business.id} className={`bg-white rounded-xl p-4 shadow-sm border-2 transition-all ${
+                  isAppeal ? 'border-amber-300 bg-amber-50/30' :
+                  wasRejected && business.verification_status === 'rejected' ? 'border-red-200 bg-red-50/20' :
+                  'border-transparent hover:border-primary/20'
+                }`}>
+                  <div className="flex gap-3 mb-3">
+                    <div className="w-16 h-16 rounded-lg bg-gray-200 shrink-0 overflow-hidden">
+                      {business.cover_photo && (
+                        <img src={business.cover_photo} alt={business.name} className="w-full h-full object-cover" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-slate-900 truncate">{business.name}</h3>
+                        {hasDocuments && (
+                          <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                            <FileText size={12} />
+                            <span className="text-[10px] font-bold">{business.verification_documents.length}</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 truncate">{business.address}</p>
+                      <p className="text-xs text-gray-500">{business.subcategory}</p>
+                    </div>
+                  </div>
+
+                  {business.tags && business.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {business.tags.slice(0, 3).map((tag, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded">
+                          {tag}
+                        </span>
+                      ))}
+                      {business.tags.length > 3 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                          +{business.tags.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Status Badge */}
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                      isAppeal ? 'bg-amber-100 text-amber-800' :
+                      business.verification_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      business.verification_status === 'approved' ? 'bg-green-100 text-green-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {isAppeal ? '🔄 Apelación enviada' :
+                       business.verification_status === 'pending' ? '⏳ Pendiente' :
+                       business.verification_status === 'approved' ? '✅ Aprobado' :
+                       '❌ Rechazado'}
+                    </div>
+
+                    {wasRejected && (
+                      <div className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        ↩ Rechazado {business.rejection_count}x
+                      </div>
+                    )}
+
+                    {hasDocuments && (
+                      <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                        🏅 Verificación Oficial
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Documents Button */}
+                  {hasDocuments && (
+                    <button
+                      onClick={() => openDocumentsModal(business)}
+                      className="w-full mb-3 py-2 px-3 bg-blue-50 text-blue-700 rounded-lg font-medium text-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FileText size={16} />
+                      Ver {business.verification_documents.length} documento(s) de verificación
+                    </button>
+                  )}
+
+                  {/* Action Buttons */}
+                  {business.verification_status === 'pending' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openApproveModal(business)}
+                        disabled={actionLoading}
+                        className="flex-1 h-10 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {actionLoading ? (
+                          <RefreshCw size={16} className="animate-spin" />
+                        ) : (
+                          <>
+                            <Check size={16} />
+                            Aprobar
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => openRejectModal(business)}
+                        disabled={actionLoading}
+                        className="flex-1 h-10 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        <X size={16} />
+                        Rechazar
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Historial de rechazos y apelación */}
+                  {(business.rejection_count > 0 || business.appeal_message) && (
+                    <div className="mt-3 space-y-2">
+                      {business.rejection_reason && (
+                        <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <XCircle size={13} className="text-red-600" />
+                            <p className="text-xs font-semibold text-red-900">
+                              Último rechazo {business.rejection_count > 1 ? `(${business.rejection_count}ª vez)` : ''}:
+                            </p>
+                          </div>
+                          <p className="text-xs text-red-700">{business.rejection_reason}</p>
+                        </div>
+                      )}
+                      {business.appeal_message && (
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <MessageSquare size={13} className="text-amber-700" />
+                            <p className="text-xs font-semibold text-amber-900">Apelación del propietario:</p>
+                          </div>
+                          <p className="text-xs text-amber-800">{business.appeal_message}</p>
+                          {business.appeal_images?.length > 0 && (
+                            <div className="flex gap-2 mt-2">
+                              {business.appeal_images.map((url, i) => (
+                                <a key={i} href={url} target="_blank" rel="noreferrer">
+                                  <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border border-amber-200" />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Confirmar Aprobación */}
+      {showApproveModal && selectedBusiness && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/60">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-green-100 p-2.5 rounded-full">
+                <Check size={22} className="text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 text-lg">Aprobar negocio</h3>
+                <p className="text-xs text-slate-500">{selectedBusiness.name}</p>
+              </div>
+            </div>
+            <div className={`rounded-xl p-3 mb-5 ${selectedBusiness.verification_documents?.length > 0 ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+              <p className={`text-sm ${selectedBusiness.verification_documents?.length > 0 ? 'text-green-700' : 'text-amber-700'}`}>
+                {selectedBusiness.verification_documents?.length > 0
+                  ? '✅ Este negocio recibirá el badge de Verificación Oficial'
+                  : '⚠️ Se aprobará sin verificación oficial (sin documentos)'}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowApproveModal(false); setSelectedBusiness(null); }}
+                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApprove}
+                disabled={actionLoading}
+                className="flex-1 py-3 rounded-xl bg-green-500 text-white font-semibold text-sm hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {actionLoading ? <RefreshCw size={16} className="animate-spin" /> : <Check size={16} />}
+                {actionLoading ? 'Aprobando...' : 'Aprobar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Ver Documentos */}
+      {showDocumentsModal && selectedBusiness && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl animate-slide-up">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <FileText className="text-white" size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{selectedBusiness.name}</h3>
+                  <p className="text-xs text-white/80">Documentos de verificación</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDocumentsModal(false);
+                  setSelectedBusiness(null);
+                }}
+                className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+              >
+                <X className="text-white" size={18} />
+              </button>
+            </div>
+
+            {/* Documents List */}
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-80px)]">
+              {selectedBusiness.verification_documents && selectedBusiness.verification_documents.length > 0 ? (
+                <div className="space-y-4">
+                  {selectedBusiness.verification_documents.map((docUrl, index) => {
+                    const fileName = docUrl.split('/').pop() || `Documento ${index + 1}`;
+                    const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+                    const isPDF = fileExt === 'pdf';
+
+                    return (
+                      <div key={index} className="bg-gray-50 rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all">
+                        {/* Preview */}
+                        {!isPDF ? (
+                          <div className="w-full h-48 bg-gray-100">
+                            <img
+                              src={docUrl}
+                              alt={`Documento ${index + 1}`}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full h-48 bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+                            <FileText className="text-red-500" size={64} />
+                          </div>
+                        )}
+
+                        {/* Info and Actions */}
+                        <div className="p-4 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-slate-900">
+                              {isPDF ? 'Documento PDF' : 'Imagen'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Documento #{index + 1} • {fileExt.toUpperCase()}
+                            </p>
+                          </div>
+                          <a
+                            href={docUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-10 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center gap-2"
+                          >
+                            <ExternalLink size={16} />
+                            Abrir
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="mx-auto mb-3 text-gray-300" size={48} />
+                  <p className="text-gray-500">No hay documentos subidos</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Rechazar Negocio */}
+      {showRejectModal && selectedBusiness && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-slide-up">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-2xl">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <AlertCircle size={22} />
+                Rechazar Negocio
+              </h3>
+              <p className="text-sm text-white/80 mt-1">{selectedBusiness.name}</p>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                ¿Por qué motivo rechazas este negocio? El propietario recibirá esta nota.
+              </p>
+
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Ejemplo: Los documentos no son legibles, falta CIF, información incompleta..."
+                className="w-full h-32 px-4 py-3 rounded-xl border border-gray-200 resize-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all text-sm"
+              />
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setRejectReason('');
+                    setSelectedBusiness(null);
+                  }}
+                  disabled={actionLoading}
+                  className="flex-1 h-11 px-4 rounded-xl border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleReject}
+                  disabled={actionLoading || !rejectReason.trim()}
+                  className="flex-1 h-11 px-4 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {actionLoading ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin" />
+                      Rechazando...
+                    </>
+                  ) : (
+                    <>
+                      <X size={16} />
+                      Rechazar
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navbar */}
+      <Navbar currentPage="profile" onNavigate={onNavigate} />
+    </div>
+  );
+};
+
+// BusinessAnalyticsScreen - Estadísticas avanzadas para propietarios
+const BusinessAnalyticsScreen = ({ onNavigate, user, businessData }) => {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
+  const [dailyStats, setDailyStats] = useState([]);
+  const [hourlyStats, setHourlyStats] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState(7); // 7, 30 días
+
+  useEffect(() => {
+    if (businessData?.id) {
+      loadAnalytics();
+    }
+  }, [businessData, selectedPeriod]);
+
+  const loadAnalytics = async () => {
+    setLoading(true);
+    try {
+      // 1. Stats generales
+      const { data: statsData, error: statsError } = await supabase
+        .rpc('get_business_stats', {
+          p_business_id: businessData.id,
+          p_days: selectedPeriod
+        });
+
+      if (statsError) throw statsError;
+      setStats(statsData?.[0] || {});
+
+      // 2. Stats diarias
+      const { data: dailyData, error: dailyError } = await supabase
+        .rpc('get_daily_stats', {
+          p_business_id: businessData.id,
+          p_days: selectedPeriod
+        });
+
+      if (dailyError) throw dailyError;
+      setDailyStats(dailyData || []);
+
+      // 3. Distribución por hora
+      const { data: hourlyData, error: hourlyError } = await supabase
+        .rpc('get_hourly_distribution', {
+          p_business_id: businessData.id,
+          p_days: selectedPeriod
+        });
+
+      if (hourlyError) throw hourlyError;
+      setHourlyStats(hourlyData || []);
+
+      console.log('[ANALYTICS] Data loaded:', { stats: statsData?.[0], dailyCount: dailyData?.length, hourlyCount: hourlyData?.length });
+    } catch (error) {
+      console.error('[ANALYTICS] Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calcular max para normalizar gráficos
+  const maxDailyViews = Math.max(...dailyStats.map(d => parseInt(d.views || 0)), 1);
+  const maxHourlyViews = Math.max(...hourlyStats.map(h => parseInt(h.view_count || 0)), 1);
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gradient-to-b from-gray-50 to-white">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 shadow-lg">
+        <button
+          onClick={() => onNavigate('owner-dashboard')}
+          className="mb-3 flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Panel</span>
+        </button>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+            <BarChart3 className="text-white" size={24} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">Estadísticas</h1>
+            <p className="text-sm text-white/80">{businessData?.name}</p>
+          </div>
+        </div>
+
+        {/* Period Selector */}
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => setSelectedPeriod(7)}
+            className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all ${
+              selectedPeriod === 7
+                ? 'bg-white text-indigo-600 shadow-lg'
+                : 'bg-white/20 text-white hover:bg-white/30'
+            }`}
+          >
+            7 días
+          </button>
+          <button
+            onClick={() => setSelectedPeriod(30)}
+            className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all ${
+              selectedPeriod === 30
+                ? 'bg-white text-indigo-600 shadow-lg'
+                : 'bg-white/20 text-white hover:bg-white/30'
+            }`}
+          >
+            30 días
+          </button>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="px-4 py-6 pb-24 space-y-6">
+        {loading ? (
+          <div className="text-center py-12">
+            <RefreshCw className="animate-spin mx-auto mb-3 text-indigo-600" size={32} />
+            <p className="text-gray-500">Cargando estadísticas...</p>
+          </div>
+        ) : (
+          <>
+            {/* Métricas Principales */}
+            <section>
+              <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <TrendingUp className="text-indigo-600" size={20} />
+                Resumen General
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Vistas */}
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <Eye className="text-white/80" size={20} />
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <TrendingUp className="text-white" size={14} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-white mb-1">
+                    {parseInt(stats?.total_views || 0).toLocaleString('es-ES')}
+                  </p>
+                  <p className="text-xs text-white/80">Vistas totales</p>
+                  <p className="text-[10px] text-white/60 mt-1">
+                    ~{parseFloat(stats?.avg_daily_views || 0).toFixed(1)}/día
+                  </p>
+                </div>
+
+                {/* Clics */}
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-4 shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <MousePointerClick className="text-white/80" size={20} />
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <ArrowRight className="text-white" size={14} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-white mb-1">
+                    {parseInt(stats?.total_clicks || 0).toLocaleString('es-ES')}
+                  </p>
+                  <p className="text-xs text-white/80">Clics en contacto</p>
+                  <p className="text-[10px] text-white/60 mt-1">
+                    {stats?.total_views > 0
+                      ? `${((stats.total_clicks / stats.total_views) * 100).toFixed(1)}% tasa de clic`
+                      : 'Sin datos'}
+                  </p>
+                </div>
+
+                {/* Favoritos */}
+                <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl p-4 shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <Heart className="text-white/80 fill-white/80" size={20} />
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <Star className="text-white fill-white" size={14} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-white mb-1">
+                    {parseInt(stats?.total_favorites || 0).toLocaleString('es-ES')}
+                  </p>
+                  <p className="text-xs text-white/80">Nuevos favoritos</p>
+                  <p className="text-[10px] text-white/60 mt-1">
+                    {stats?.total_views > 0
+                      ? `${((stats.total_favorites / stats.total_views) * 100).toFixed(1)}% conversión`
+                      : 'Sin datos'}
+                  </p>
+                </div>
+
+                {/* Visitantes únicos */}
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-4 shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <Users className="text-white/80" size={20} />
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <UserCheck className="text-white" size={14} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-white mb-1">
+                    {parseInt(stats?.unique_visitors || 0).toLocaleString('es-ES')}
+                  </p>
+                  <p className="text-xs text-white/80">Visitantes únicos</p>
+                  <p className="text-[10px] text-white/60 mt-1">
+                    {stats?.unique_visitors > 0 && stats?.total_views > 0
+                      ? `${(stats.total_views / stats.unique_visitors).toFixed(1)} vistas/usuario`
+                      : 'Sin datos'}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Gráfico de Vistas Diarias */}
+            {dailyStats.length > 0 && (
+              <section>
+                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <Calendar className="text-indigo-600" size={20} />
+                  Tendencia Diaria
+                </h2>
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <div className="space-y-3">
+                    {dailyStats.slice(0, 7).reverse().map((day, index) => {
+                      const views = parseInt(day.views || 0);
+                      const percentage = (views / maxDailyViews) * 100;
+                      const date = new Date(day.date);
+                      const dayName = date.toLocaleDateString('es-ES', { weekday: 'short' });
+                      const dayNum = date.getDate();
+
+                      return (
+                        <div key={index} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-gray-700 w-12">
+                              {dayName.charAt(0).toUpperCase() + dayName.slice(1)} {dayNum}
+                            </span>
+                            <span className="font-bold text-indigo-600">{views}</span>
+                          </div>
+                          <div className="w-full h-6 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                              style={{ width: `${Math.max(percentage, 2)}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Horarios Pico */}
+            {hourlyStats.length > 0 && (
+              <section>
+                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <Clock className="text-indigo-600" size={20} />
+                  Horarios Más Visitados
+                </h2>
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <div className="flex items-end justify-between gap-1 h-40">
+                    {Array.from({ length: 24 }, (_, i) => {
+                      const hourData = hourlyStats.find(h => h.hour === i);
+                      const count = parseInt(hourData?.view_count || 0);
+                      const percentage = maxHourlyViews > 0 ? (count / maxHourlyViews) * 100 : 0;
+                      const isPeak = count > 0 && percentage > 60;
+
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <div className="relative w-full h-full flex items-end">
+                            <div
+                              className={`w-full rounded-t transition-all duration-300 ${
+                                isPeak
+                                  ? 'bg-gradient-to-t from-amber-500 to-orange-500'
+                                  : 'bg-gradient-to-t from-indigo-400 to-indigo-500'
+                              }`}
+                              style={{ height: `${Math.max(percentage, count > 0 ? 10 : 0)}%` }}
+                            >
+                              {count > 0 && (
+                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-700">
+                                  {count}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`text-[9px] font-medium ${
+                            isPeak ? 'text-amber-600' : 'text-gray-400'
+                          }`}>
+                            {i}h
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 flex items-center justify-center gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded bg-gradient-to-t from-amber-500 to-orange-500" />
+                      <span className="text-gray-600">Horarios pico</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded bg-gradient-to-t from-indigo-400 to-indigo-500" />
+                      <span className="text-gray-600">Normal</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Tips */}
+            <section className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
+              <h3 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                <Lightbulb className="text-amber-500" size={18} />
+                Consejos para mejorar
+              </h3>
+              <ul className="space-y-2 text-xs text-indigo-800">
+                <li className="flex items-start gap-2">
+                  <Check className="text-green-500 mt-0.5 flex-shrink-0" size={14} />
+                  <span>Publica ofertas en horarios pico para mayor visibilidad</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="text-green-500 mt-0.5 flex-shrink-0" size={14} />
+                  <span>Actualiza tus fotos regularmente para atraer más clientes</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="text-green-500 mt-0.5 flex-shrink-0" size={14} />
+                  <span>Responde rápido a presupuestos para aumentar conversión</span>
+                </li>
+              </ul>
+            </section>
+
+            {/* Empty State */}
+            {!stats?.total_views && (
+              <div className="text-center py-12">
+                <BarChart3 className="mx-auto mb-3 text-gray-300" size={64} />
+                <p className="text-gray-500 mb-2 font-medium">Aún no hay datos suficientes</p>
+                <p className="text-sm text-gray-400">
+                  Las estadísticas aparecerán cuando los usuarios visiten tu negocio
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Navbar */}
+      <Navbar currentPage="profile" onNavigate={onNavigate} />
+    </div>
+  );
+};
+
+// ReportsScreen - Gestionar reportes/quejas
+const ReportsScreen = ({ onNavigate, user }) => {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('pending');
+
+  useEffect(() => {
+    loadReports();
+  }, [filter]);
+
+  const loadReports = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('reports')
+        .select(`
+          *,
+          profiles!reports_user_id_fkey(full_name, email),
+          businesses(name, address)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (filter === 'pending') {
+        query = query.eq('status', 'pending');
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      console.log('[ADMIN] Reports loaded:', data?.length);
+      setReports(data || []);
+    } catch (error) {
+      console.error('[ADMIN] Error loading reports:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResolve = async (reportId) => {
+    try {
+      const { error } = await supabase
+        .from('reports')
+        .update({
+          status: 'resolved',
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      alert('✅ Reporte marcado como resuelto');
+      loadReports();
+    } catch (error) {
+      console.error('[ADMIN] Error resolving report:', error);
+      alert('❌ Error al resolver el reporte');
+    }
+  };
+
+  const handleDismiss = async (reportId) => {
+    try {
+      const { error } = await supabase
+        .from('reports')
+        .update({
+          status: 'dismissed',
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      alert('Reporte desestimado');
+      loadReports();
+    } catch (error) {
+      console.error('[ADMIN] Error dismissing report:', error);
+      alert('❌ Error al desestimar el reporte');
+    }
+  };
+
+  const reportTypeLabels = {
+    false_tags: 'Tags falsos',
+    wrong_price: 'Precio incorrecto',
+    bad_hours: 'Horarios incorrectos',
+    fake_info: 'Información falsa',
+    inappropriate: 'Contenido inapropiado',
+    other: 'Otro'
+  };
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-4">
+        <button
+          onClick={() => onNavigate('admin-dashboard')}
+          className="mb-3 flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm">Panel Admin</span>
+        </button>
+        <h1 className="text-xl font-bold text-slate-900">Reportes de Usuarios</h1>
+      </header>
+
+      {/* Filters */}
+      <div className="px-4 py-3 bg-white border-b border-gray-100 flex gap-2">
+        <button
+          onClick={() => setFilter('pending')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            filter === 'pending' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          Pendientes
+        </button>
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            filter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          Todos
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 py-6 pb-24">
+        {loading ? (
+          <div className="text-center py-12">
+            <RefreshCw className="animate-spin mx-auto mb-3 text-primary" size={32} />
+            <p className="text-gray-500">Cargando reportes...</p>
+          </div>
+        ) : reports.length === 0 ? (
+          <div className="text-center py-12">
+            <Flag className="mx-auto mb-3 text-gray-300" size={48} />
+            <p className="text-gray-500">No hay reportes {filter === 'pending' ? 'pendientes' : ''}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {reports.map(report => (
+              <div key={report.id} className="bg-white rounded-xl p-4 shadow-sm">
+                {/* Header */}
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                    <Flag className="text-red-600" size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <button
+                      onClick={() => onNavigate('business', { id: report.business_id })}
+                      className="font-bold text-primary text-sm hover:underline text-left"
+                    >
+                      {report.businesses?.name} →
+                    </button>
+                    <p className="text-xs text-gray-500">{report.businesses?.address}</p>
+                  </div>
+                  <div className={`px-2 py-1 rounded text-xs font-medium ${
+                    report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    report.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {report.status === 'pending' ? 'Pendiente' :
+                     report.status === 'resolved' ? 'Resuelto' :
+                     'Desestimado'}
+                  </div>
+                </div>
+
+                {/* Type */}
+                <div className="mb-2">
+                  <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded">
+                    {reportTypeLabels[report.report_type] || report.report_type}
+                  </span>
+                </div>
+
+                {/* Message */}
+                <p className="text-sm text-gray-700 mb-3 bg-gray-50 p-3 rounded-lg">
+                  "{report.message}"
+                </p>
+
+                {/* Reporter */}
+                <p className="text-xs text-gray-500 mb-3">
+                  Reportado por: {report.profiles?.full_name || report.profiles?.email || 'Usuario'}
+                </p>
+
+                {/* Actions */}
+                {report.status === 'pending' && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleResolve(report.id)}
+                      className="flex-1 h-9 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600"
+                    >
+                      ✅ Resolver
+                    </button>
+                    <button
+                      onClick={() => handleDismiss(report.id)}
+                      className="flex-1 h-9 bg-gray-500 text-white rounded-lg text-sm font-medium hover:bg-gray-600"
+                    >
+                      Desestimar
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Navbar */}
+      <Navbar currentPage="profile" onNavigate={onNavigate} />
+    </div>
+  );
+};
+
 // Página de Perfil
-const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusiness, savedCoupons = [], user, userOffers = [], userJobOffers = [], incomingBudgetRequests = [], userJobApplications = [] }) => {
+const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusiness, savedCoupons = [], user, userOffers = [], userJobOffers = [], incomingBudgetRequests = [], userJobApplications = [], onDeleteBusiness, showToast }) => {
+  const [showDeleteBusinessModal, setShowDeleteBusinessModal] = useState(false);
+  const [deleteBusinessText, setDeleteBusinessText] = useState('');
+  const [deletingBusiness, setDeletingBusiness] = useState(false);
+
+  const handleDeleteBusinessConfirm = async () => {
+    if (deleteBusinessText !== 'ELIMINAR') {
+      showToast('Escribe ELIMINAR para confirmar', 'warning');
+      return;
+    }
+    setDeletingBusiness(true);
+    await onDeleteBusiness();
+    setDeletingBusiness(false);
+    setShowDeleteBusinessModal(false);
+    setDeleteBusinessText('');
+  };
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || 'https://via.placeholder.com/100');
   const fileInputRef = useState(null);
 
@@ -3412,30 +5457,70 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
 
         {/* Negocio rechazado */}
         {businessStatus === 'rejected' && (
-          <div className="bg-red-50 rounded-2xl p-5 border border-red-200">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 shrink-0">
-                <X size={24} />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-lg font-bold text-red-800 mb-1">Solicitud rechazada</h4>
-                <p className="text-sm text-red-700 mb-3">
-                  No pudimos verificar tu negocio. Por favor, revisa la documentación y vuelve a intentarlo.
-                </p>
-                <button
-                  onClick={() => onNavigate('business-data')}
-                  className="w-full h-10 bg-red-200 text-red-800 font-medium rounded-lg hover:bg-red-300 transition-colors text-sm"
-                >
-                  Volver a intentar
-                </button>
-              </div>
+          <div className="bg-red-50 rounded-2xl border border-red-200 overflow-hidden">
+            <div className="bg-red-100 px-4 py-3 flex items-center gap-2">
+              <XCircle size={18} className="text-red-600" />
+              <span className="font-bold text-red-800 text-sm">
+                Solicitud rechazada
+                {(businessData?.rejection_count || 0) > 1 && (
+                  <span className="ml-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
+                    {businessData.rejection_count}ª vez
+                  </span>
+                )}
+              </span>
+            </div>
+            <div className="p-4">
+              {businessData?.rejection_reason && (
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-red-700 mb-1">Motivo del rechazo:</p>
+                  <p className="text-sm text-red-700 bg-red-100 rounded-lg px-3 py-2">
+                    {businessData.rejection_reason}
+                  </p>
+                </div>
+              )}
+              <p className="text-sm text-red-600 mb-4">
+                Puedes apelar adjuntando imágenes y una justificación. El administrador revisará tu apelación.
+              </p>
+              <button
+                onClick={() => onNavigate('business-appeal')}
+                className="w-full h-11 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors text-sm flex items-center justify-center gap-2"
+              >
+                <ArrowRight size={16} />
+                Apelar rechazo
+              </button>
             </div>
           </div>
         )}
       </section>
 
+      {/* Panel de Administración - Solo visible para admins */}
+      {user?.is_admin && (
+        <section className="px-5 w-full max-w-md mx-auto mb-6">
+          <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
+                <ShieldAlert className="text-white" size={24} />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg">Panel de Administración</h3>
+                <p className="text-white/80 text-sm">Gestiona la plataforma</p>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigate('admin-dashboard')}
+              className="w-full h-12 bg-white text-red-600 font-bold rounded-xl hover:bg-gray-50 transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              <UserCog size={20} />
+              Acceder al Panel Admin
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* Panel de Propietario - Solo visible si está validado */}
       {businessStatus === 'validated' && (
+        <>
         <section className="px-5 w-full max-w-md mx-auto">
           <h3 className="text-lg font-bold text-slate-900 mb-4 px-1">Panel de Propietario</h3>
 
@@ -3525,7 +5610,80 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
               <ChevronRight className="text-slate-400" size={20} />
             </button>
           </div>
+
+          {/* Zona de peligro */}
+          <div className="mt-4 border border-red-200 rounded-2xl overflow-hidden">
+            <div className="bg-red-50 px-4 py-3 border-b border-red-200">
+              <span className="text-sm font-semibold text-red-700">Zona de peligro</span>
+            </div>
+            <div className="p-4 bg-white">
+              <button
+                onClick={() => setShowDeleteBusinessModal(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border border-red-200 hover:bg-red-50 transition-colors text-left"
+              >
+                <div className="bg-red-100 p-2 rounded-lg">
+                  <Trash2 size={18} className="text-red-600" />
+                </div>
+                <div>
+                  <span className="font-medium text-red-700 block text-sm">Eliminar negocio</span>
+                  <span className="text-xs text-red-500">Acción permanente e irreversible</span>
+                </div>
+              </button>
+            </div>
+          </div>
         </section>
+
+        {showDeleteBusinessModal && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-red-100 p-2.5 rounded-full">
+                  <Trash2 size={22} className="text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-lg">Eliminar negocio</h3>
+                  <p className="text-xs text-slate-500">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                <p className="text-sm text-red-700">
+                  Se eliminarán permanentemente <strong>todas las ofertas, empleos y datos</strong> de <strong>"{businessData?.name}"</strong>.
+                </p>
+              </div>
+              <p className="text-sm text-slate-600 mb-3">
+                Para confirmar, escribe <span className="font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">ELIMINAR</span>:
+              </p>
+              <input
+                type="text"
+                value={deleteBusinessText}
+                onChange={(e) => setDeleteBusinessText(e.target.value)}
+                placeholder="Escribe ELIMINAR"
+                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-400 mb-4"
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowDeleteBusinessModal(false); setDeleteBusinessText(''); }}
+                  className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteBusinessConfirm}
+                  disabled={deleteBusinessText !== 'ELIMINAR' || deletingBusiness}
+                  className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-colors ${
+                    deleteBusinessText === 'ELIMINAR' && !deletingBusiness
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
+                >
+                  {deletingBusiness ? 'Eliminando...' : 'Eliminar definitivamente'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       {/* Opciones */}
@@ -3580,18 +5738,23 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
 };
 
 // Página de Detalle de Negocio
-const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite, user }) => {
+const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite, user, trackAnalyticsEvent }) => {
   const [business, setBusiness] = useState(null);
   const [loadingBusiness, setLoadingBusiness] = useState(true);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [newReviewText, setNewReviewText] = useState('');
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [canReview, setCanReview] = useState({ can_review: false, reason: null });
+  const [favoriteCount, setFavoriteCount] = useState(0);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryActivePhoto, setGalleryActivePhoto] = useState(0);
 
   // Cargar negocio desde Supabase
   useEffect(() => {
@@ -3620,20 +5783,14 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     fetchBusiness();
   }, [businessId]);
 
-  // Incrementar contador de vistas
+  // Track vista del negocio
   useEffect(() => {
-    const incrementViews = async () => {
-      if (!businessId) return;
-
-      try {
-        await supabase.rpc('increment_business_views', { business_id: businessId });
-        console.log('[ANALYTICS] Vista de negocio registrada:', businessId);
-      } catch (error) {
-        console.error('[ANALYTICS] Error incrementando vistas:', error);
-      }
-    };
-
-    incrementViews();
+    if (!businessId) return;
+    if (trackAnalyticsEvent) trackAnalyticsEvent(businessId, 'view');
+    // Incrementar view_count en businesses
+    supabase.rpc('increment_business_views', { business_id: businessId }).then(({ error }) => {
+      if (error) console.warn('[VIEWS] Error incrementando vista:', error.message);
+    });
   }, [businessId]);
 
   // Cargar reseñas desde Supabase
@@ -3645,10 +5802,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
       try {
         const { data, error } = await supabase
           .from('reviews')
-          .select(`
-            *,
-            profiles:user_id(full_name, email)
-          `)
+          .select('*')
           .eq('business_id', businessId)
           .order('created_at', { ascending: false });
 
@@ -3691,6 +5845,33 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
     checkCanReview();
   }, [user, businessId]);
+
+  // Cargar contador de favoritos desde Supabase
+  useEffect(() => {
+    const fetchFavoriteCount = async () => {
+      if (!businessId) return;
+
+      setLoadingFavorites(true);
+      try {
+        const { count, error } = await supabase
+          .from('favorites')
+          .select('*', { count: 'exact', head: true })
+          .eq('business_id', businessId);
+
+        if (error) throw error;
+
+        console.log('[FAVORITES] Count for business:', businessId, '=', count);
+        setFavoriteCount(count || 0);
+      } catch (error) {
+        console.error('[FAVORITES] Error loading count:', error);
+        setFavoriteCount(0);
+      } finally {
+        setLoadingFavorites(false);
+      }
+    };
+
+    fetchFavoriteCount();
+  }, [businessId, userFavorites]); // Se recarga cuando cambian los favoritos del usuario
 
   // Handler para incrementar clics
   const handleClick = async (type) => {
@@ -3818,6 +5999,10 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   };
 
   const upcomingClosures = getUpcomingClosures(business?.special_closures);
+  const galleryPhotos = business ? [
+    ...(business.cover_photo ? [business.cover_photo] : []),
+    ...(business.images || [])
+  ].filter(Boolean) : [];
 
   // Función para enviar nueva reseña
   const handleSubmitReview = async () => {
@@ -3860,6 +6045,14 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
       return;
     }
 
+    // Validación 7: Moderación automática de contenido
+    const moderation = moderateContent(newReviewText.trim());
+    if (!moderation.isClean) {
+      showToast(`⚠️ ${moderation.reason}`, 'error');
+      console.warn('[MODERATION] Review blocked:', moderation);
+      return;
+    }
+
     try {
       // Sanitizar texto para prevenir XSS
       const sanitizedComment = sanitizeText(newReviewText.trim());
@@ -3872,10 +6065,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           rating: newReviewRating,
           comment: sanitizedComment
         })
-        .select(`
-          *,
-          profiles:user_id(full_name, email)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -3956,6 +6146,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   };
 
   return (
+    <>
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       <div className="relative w-full flex flex-col min-h-screen overflow-x-hidden">
         {/* Hero Image */}
@@ -3968,6 +6159,13 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
               <ArrowLeft size={20} />
             </button>
             <div className="flex gap-3">
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="flex items-center justify-center size-10 rounded-full bg-orange-500 text-white shadow-sm hover:bg-orange-600 transition-all"
+                title="Reportar problema"
+              >
+                <Flag size={18} />
+              </button>
               <button
                 onClick={handleShareWhatsApp}
                 className="flex items-center justify-center size-10 rounded-full bg-green-500 text-white shadow-sm hover:bg-green-600 transition-all"
@@ -3988,8 +6186,14 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           </div>
           <div
             className="w-full h-full bg-gray-200 bg-cover bg-center"
-            style={{ backgroundImage: `url("${business.image}")` }}
-          />
+            style={{ backgroundImage: business.cover_photo || (business.images && business.images[0]) ? `url("${business.cover_photo || business.images[0]}")` : undefined }}
+          >
+            {!business.cover_photo && !(business.images && business.images[0]) && (
+              <div className="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
+                <Store className="text-white/40" size={80} />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -4016,7 +6220,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
               )}
             </div>
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-3 text-sm flex-wrap">
                 <button
                   onClick={() => setShowReviews(true)}
                   className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -4024,8 +6228,15 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   <span className="text-gray-900 font-bold">{business.rating}</span>
                   <Star className="text-yellow-500 fill-yellow-500" size={16} />
                   <span className="text-gray-400 text-xs">({business.reviews})</span>
-                  <ChevronRight className="text-gray-400 ml-1" size={14} />
                 </button>
+                {/* Contador de favoritos/seguidores */}
+                <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                  <Heart className="text-red-500 fill-red-500" size={16} />
+                  <span className="text-gray-900 font-bold">{loadingFavorites ? '...' : favoriteCount}</span>
+                  <span className="text-gray-400 text-xs">
+                    {favoriteCount === 1 ? 'seguidor' : 'seguidores'}
+                  </span>
+                </div>
                 <button
                   onClick={() => setShowRatingModal(true)}
                   className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors cursor-pointer"
@@ -4104,52 +6315,106 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
             <p className="text-gray-600 text-sm leading-relaxed">{business.description}</p>
           </div>
 
-          {/* Próximos Cierres Especiales */}
-          {upcomingClosures && upcomingClosures.length > 0 && (
-            <div className="space-y-2">
-              {upcomingClosures.map((closure, index) => {
+          {/* Galería de fotos */}
+          {(() => {
+            const allPhotos = [
+              ...(business.cover_photo ? [business.cover_photo] : []),
+              ...(business.images || [])
+            ].filter(Boolean);
+            if (allPhotos.length === 0) return null;
+            return (
+              <div className="flex flex-col gap-3">
+                <h2 className="text-lg font-bold text-gray-900">Fotos</h2>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {allPhotos.slice(0, 5).map((photo, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setGalleryActivePhoto(i); setShowGallery(true); }}
+                      className={`relative overflow-hidden rounded-xl bg-gray-100 ${i === 0 ? 'col-span-2 row-span-2 h-40' : 'h-[74px]'}`}
+                    >
+                      <img src={photo} alt="" className="w-full h-full object-cover" />
+                      {i === 4 && allPhotos.length > 5 && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">+{allPhotos.length - 5}</span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {showGallery && (
+                  <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center" onClick={() => setShowGallery(false)}>
+                    <button
+                      className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+                      onClick={() => setShowGallery(false)}
+                    >
+                      <X className="text-white" size={20} />
+                    </button>
+                    <div className="flex items-center justify-center w-full h-full px-4" onClick={e => e.stopPropagation()}>
+                      <button
+                        className="absolute left-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+                        onClick={() => setGalleryActivePhoto(p => (p - 1 + allPhotos.length) % allPhotos.length)}
+                      >
+                        <ChevronLeft className="text-white" size={20} />
+                      </button>
+                      <img src={allPhotos[galleryActivePhoto]} alt="" className="max-w-full max-h-[80vh] object-contain rounded-xl" />
+                      <button
+                        className="absolute right-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+                        onClick={() => setGalleryActivePhoto(p => (p + 1) % allPhotos.length)}
+                      >
+                        <ChevronRight className="text-white" size={20} />
+                      </button>
+                    </div>
+                    <div className="absolute bottom-6 flex gap-2">
+                      {allPhotos.map((_, i) => (
+                        <button key={i} onClick={e => { e.stopPropagation(); setGalleryActivePhoto(i); }}
+                          className={`w-2 h-2 rounded-full transition-all ${i === galleryActivePhoto ? 'bg-white w-4' : 'bg-white/40'}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Schedule + Cierres Especiales */}
+          {formattedSchedule && formattedSchedule.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h2 className="text-lg font-bold text-gray-900">Horario</h2>
+
+              {/* Banner de cierre extraordinario — MUY VISIBLE */}
+              {upcomingClosures && upcomingClosures.length > 0 && upcomingClosures.map((closure, index) => {
                 const closureDate = new Date(closure.date);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-
                 const daysUntil = Math.ceil((closureDate - today) / (1000 * 60 * 60 * 24));
-                const formattedDate = closureDate.toLocaleDateString('es-ES', {
-                  day: 'numeric',
-                  month: 'long'
-                });
-
+                const formattedDate = closureDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+                const isToday = daysUntil === 0;
+                const isTomorrow = daysUntil === 1;
                 return (
-                  <div
-                    key={index}
-                    className="bg-orange-50 border border-orange-300 rounded-xl p-3.5 flex items-start gap-3"
-                  >
-                    <div className="size-9 bg-orange-500 rounded-full flex items-center justify-center shrink-0">
-                      <AlertCircle className="text-white" size={18} />
+                  <div key={index} className={`rounded-2xl overflow-hidden border-2 ${isToday ? 'border-red-400' : 'border-orange-400'}`}>
+                    <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? 'bg-red-500' : 'bg-orange-500'}`}>
+                      <AlertCircle className="text-white shrink-0" size={16} />
+                      <span className="text-white text-xs font-bold uppercase tracking-wide">
+                        {isToday ? '⚠️ CERRADO HOY' : isTomorrow ? '⚠️ CERRADO MAÑANA' : `⚠️ CIERRE ESPECIAL en ${daysUntil} días`}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-orange-900 text-sm">Cerrado por {closure.name}</h3>
-                        {daysUntil === 0 && (
-                          <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">HOY</span>
-                        )}
-                        {daysUntil === 1 && (
-                          <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">MAÑANA</span>
-                        )}
+                    <div className={`px-4 py-3 flex items-center gap-3 ${isToday ? 'bg-red-50' : 'bg-orange-50'}`}>
+                      <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${isToday ? 'bg-red-100' : 'bg-orange-100'}`}>
+                        <span className="text-xl">🎉</span>
                       </div>
-                      <p className="text-orange-700 text-xs">
-                        📅 {formattedDate} {daysUntil > 1 && `(en ${daysUntil} días)`}
-                      </p>
+                      <div>
+                        <p className={`font-bold text-sm ${isToday ? 'text-red-900' : 'text-orange-900'}`}>{closure.name}</p>
+                        <p className={`text-xs capitalize ${isToday ? 'text-red-700' : 'text-orange-700'}`}>
+                          {formattedDate}
+                          {!closure.allDay && closure.until && ` · Hasta las ${closure.until}`}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 );
               })}
-            </div>
-          )}
 
-          {/* Schedule */}
-          {formattedSchedule && formattedSchedule.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <h2 className="text-lg font-bold text-gray-900">Horario</h2>
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <button
                   onClick={() => setScheduleOpen(!scheduleOpen)}
@@ -4356,9 +6621,67 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         onSubmitRating={handleQuickRating}
       />
 
+      {/* Modal de Reportar Negocio */}
+      <ReportBusinessModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        business={business}
+        user={user}
+        onSubmitReport={() => {
+          console.log('[REPORT] Modal cerrado después de enviar');
+        }}
+      />
+
       {/* Navbar */}
       <Navbar currentPage="home" onNavigate={onNavigate} />
     </div>
+
+    {/* Lightbox de galería — fuera del overflow-x-hidden */}
+    {showGallery && galleryPhotos.length > 0 && (
+      <div
+        className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center"
+        onClick={() => setShowGallery(false)}
+      >
+        <button
+          className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
+          onClick={() => setShowGallery(false)}
+        >
+          <X className="text-white" size={20} />
+        </button>
+        <span className="absolute top-5 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium">
+          {galleryActivePhoto + 1} / {galleryPhotos.length}
+        </span>
+        <div className="flex items-center justify-center w-full h-full px-16" onClick={e => e.stopPropagation()}>
+          <button
+            className="absolute left-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
+            onClick={() => setGalleryActivePhoto(p => (p - 1 + galleryPhotos.length) % galleryPhotos.length)}
+          >
+            <ChevronLeft className="text-white" size={22} />
+          </button>
+          <img
+            src={galleryPhotos[galleryActivePhoto]}
+            alt=""
+            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+          />
+          <button
+            className="absolute right-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
+            onClick={() => setGalleryActivePhoto(p => (p + 1) % galleryPhotos.length)}
+          >
+            <ChevronRight className="text-white" size={22} />
+          </button>
+        </div>
+        <div className="absolute bottom-6 flex gap-2">
+          {galleryPhotos.map((_, i) => (
+            <button
+              key={i}
+              onClick={e => { e.stopPropagation(); setGalleryActivePhoto(i); }}
+              className={`h-1.5 rounded-full transition-all ${i === galleryActivePhoto ? 'bg-white w-6' : 'bg-white/40 w-1.5'}`}
+            />
+          ))}
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
@@ -5448,7 +7771,8 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
           .from('businesses')
           .select('*')
           .eq('category_id', categoryId)
-          .eq('is_verified', true);
+          .eq('is_verified', true)
+          .eq('is_published', true);
 
         if (error) throw error;
 
@@ -5639,7 +7963,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
               <div className="relative h-40">
                 <div
                   className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url("${business.image}")` }}
+                  style={{ backgroundImage: `url("${business.cover_photo || (business.images && business.images[0]) || ''}")` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
@@ -6968,7 +9292,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
         businessId: quote.businessId,
         businessName: quote.businessName,
         time: 'Ahora',
-        read: false,
+        is_read: false,
         icon: 'CheckCircle2',
         color: 'green',
       });
@@ -6983,7 +9307,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
           businessId: rejectedQuote.businessId,
           businessName: rejectedQuote.businessName,
           time: 'Ahora',
-          read: false,
+          is_read: false,
           icon: 'X',
           color: 'gray',
         });
@@ -8801,7 +11125,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
             title: 'Candidatura no seleccionada',
             message: `Gracias por tu interés en ${hiredCandidate.jobTitle}. Lamentablemente, hemos seleccionado a otro candidato. ¡Te deseamos mucho éxito en tu búsqueda!`,
             data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
-            read: false,
+            is_read: false,
             created_at: new Date().toISOString()
           }));
 
@@ -8815,7 +11139,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
           title: '¡Felicidades! Has sido seleccionado',
           message: `¡Enhorabuena! Has sido seleccionado para el puesto de ${hiredCandidate.jobTitle}. La empresa se pondrá en contacto contigo pronto.`,
           data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
-          read: false,
+          is_read: false,
           created_at: new Date().toISOString()
         });
 
@@ -8842,7 +11166,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
           title: 'Candidatura no seleccionada',
           message: `Gracias por tu interés en ${hiredCandidate.jobTitle}. Lamentablemente, hemos decidido no continuar con tu candidatura. ¡Te deseamos mucho éxito!`,
           data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
-          read: false,
+          is_read: false,
           created_at: new Date().toISOString()
         });
         console.log('[CANDIDATES] Rejection notification sent');
@@ -8893,7 +11217,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         title: '¡Entrevista programada!',
         message: `Has sido preseleccionado para ${selectedCandidate.jobTitle}. Fecha: ${interviewDateTime.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. ¡Mucha suerte!`,
         data: { job_id: selectedCandidate.jobId, job_title: selectedCandidate.jobTitle, interview_date: interviewDateTime.toISOString() },
-        read: false,
+        is_read: false,
         created_at: new Date().toISOString()
       });
 
@@ -10057,7 +12381,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
 };
 
 // Pantalla de Notificaciones
-const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user }) => {
+const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUpdateNotifications }) => {
   // Solo usamos notificaciones dinámicas de Supabase (no mockData)
   const [notificationsState, setNotificationsState] = useState(dynamicNotifications);
 
@@ -10069,10 +12393,10 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user }) =>
   const unreadCount = notificationsState.filter(n => !n.isRead).length;
 
   const markAsRead = async (id) => {
-    // Optimistic update
-    setNotificationsState(prev => prev.map(n =>
-      n.id === id ? { ...n, isRead: true } : n
-    ));
+    // Optimistic update local + parent (para actualizar badge)
+    const updater = prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n);
+    setNotificationsState(updater);
+    if (onUpdateNotifications) onUpdateNotifications(updater);
 
     // Persistir en Supabase
     if (user?.id) {
@@ -10081,37 +12405,38 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user }) =>
           .from('notifications')
           .update({ is_read: true })
           .eq('id', id)
-          .eq('user_id', user.id); // Security check
+          .eq('user_id', user.id);
 
         if (error) throw error;
-        console.log('[NOTIFICATIONS] Marked as read:', id);
       } catch (error) {
         console.error('[NOTIFICATIONS] Error marking as read:', error);
         // Revert on error
-        setNotificationsState(prev => prev.map(n =>
-          n.id === id ? { ...n, isRead: false } : n
-        ));
+        const revert = prev => prev.map(n => n.id === id ? { ...n, isRead: false } : n);
+        setNotificationsState(revert);
+        if (onUpdateNotifications) onUpdateNotifications(revert);
       }
     }
   };
 
-  const markAllAsRead = async () => {
-    // Optimistic update
-    setNotificationsState(prev => prev.map(n => ({ ...n, isRead: true })));
+  const deleteReadNotifications = async () => {
+    // Eliminar leídas de state local y padre
+    const withoutRead = prev => prev.filter(n => !n.isRead);
+    setNotificationsState(withoutRead);
+    if (onUpdateNotifications) onUpdateNotifications(withoutRead);
 
-    // Persistir en Supabase
+    // Eliminar de Supabase
     if (user?.id) {
       try {
         const { error } = await supabase
           .from('notifications')
-          .update({ is_read: true })
+          .delete()
           .eq('user_id', user.id)
-          .eq('is_read', false); // Solo actualizar no leídas
+          .eq('is_read', true);
 
         if (error) throw error;
-        console.log('[NOTIFICATIONS] Marked all as read');
+        console.log('[NOTIFICATIONS] Deleted all read notifications');
       } catch (error) {
-        console.error('[NOTIFICATIONS] Error marking all as read:', error);
+        console.error('[NOTIFICATIONS] Error deleting read notifications:', error);
       }
     }
   };
@@ -10147,11 +12472,11 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user }) =>
           )}
         </div>
         <button
-          onClick={markAllAsRead}
-          className="text-primary text-sm font-medium hover:text-blue-700 transition-colors px-2"
-          disabled={unreadCount === 0}
+          onClick={deleteReadNotifications}
+          className="text-red-500 text-sm font-medium hover:text-red-700 transition-colors px-2 disabled:opacity-0"
+          disabled={notificationsState.filter(n => n.isRead).length === 0}
         >
-          {unreadCount > 0 ? 'Leer todo' : ''}
+          Borrar leídas
         </button>
       </header>
 
@@ -10491,11 +12816,12 @@ const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, businessData
 };
 
 // Pantalla de Verificación de Negocio (Paso 2)
-const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness }) => {
+const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) => {
   const [licenseFile, setLicenseFile] = useState(null);
   const [idFile, setIdFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
 
   const validateForm = () => {
     const newErrors = {};
@@ -10509,17 +12835,70 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const uploadFile = async (file, businessId, label) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${businessId}/${label}-${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('verification-documents')
+      .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('verification-documents')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    // Simular envío
-    setTimeout(() => {
+    setUploadProgress('Creando negocio...');
+
+    try {
+      // 1. Crear el negocio en Supabase
+      let newBusiness = null;
       if (onRegisterBusiness) {
-        onRegisterBusiness();
+        newBusiness = await onRegisterBusiness();
       }
-      onNavigate('profile');
-    }, 1000);
+
+      const businessId = newBusiness?.id;
+      const documents = [];
+
+      // 2. Subir licencia
+      if (licenseFile && businessId) {
+        setUploadProgress('Subiendo licencia...');
+        const licenseUrl = await uploadFile(licenseFile, businessId, 'licencia');
+        documents.push(licenseUrl);
+      }
+
+      // 3. Subir DNI
+      if (idFile && businessId) {
+        setUploadProgress('Subiendo documento de identidad...');
+        const idUrl = await uploadFile(idFile, businessId, 'dni');
+        documents.push(idUrl);
+      }
+
+      // 4. Guardar URLs en el negocio
+      if (documents.length > 0 && businessId) {
+        setUploadProgress('Guardando documentos...');
+        await supabase
+          .from('businesses')
+          .update({ verification_documents: documents })
+          .eq('id', businessId);
+      }
+
+      console.log('[VERIFICATION] Registro y upload exitoso');
+      onNavigate('registration-success');
+    } catch (error) {
+      console.error('[VERIFICATION] Error:', error);
+      setIsSubmitting(false);
+      setUploadProgress('');
+      setErrors({ general: 'Error al registrar el negocio. Intenta de nuevo.' });
+    }
   };
 
   return (
@@ -10681,6 +13060,12 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness }) => {
 
       {/* Submit Button */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-30 bg-white/90 backdrop-blur-md border-t border-gray-100 px-4 py-4 pb-8">
+        {errors.general && (
+          <div className="mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm font-medium flex items-center gap-2">
+            <AlertCircle size={18} />
+            {errors.general}
+          </div>
+        )}
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
@@ -10691,7 +13076,7 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness }) => {
           {isSubmitting ? (
             <>
               <RefreshCw size={20} className="animate-spin" />
-              Enviando...
+              {uploadProgress || 'Enviando...'}
             </>
           ) : (
             <>
@@ -10699,6 +13084,175 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness }) => {
               <ArrowRight size={20} />
             </>
           )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Pantalla de Apelación de Negocio Rechazado
+const BusinessAppealScreen = ({ onNavigate, businessData, user, showToast }) => {
+  const [appealMessage, setAppealMessage] = useState('');
+  const [appealImages, setAppealImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const rejectionReason = businessData?.rejection_reason || 'No se especificó un motivo.';
+  const rejectionCount = businessData?.rejection_count || 1;
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (appealImages.length + files.length > 2) {
+      showToast('Máximo 2 imágenes permitidas', 'warning');
+      return;
+    }
+    const newImages = files.map(file => ({ file, preview: URL.createObjectURL(file) }));
+    setAppealImages(prev => [...prev, ...newImages].slice(0, 2));
+  };
+
+  const removeImage = (index) => {
+    setAppealImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (!appealMessage.trim()) {
+      showToast('Escribe un mensaje explicando tu apelación', 'warning');
+      return;
+    }
+    if (!businessData?.id) return;
+
+    setUploading(true);
+    try {
+      const uploadedUrls = [];
+      for (const img of appealImages) {
+        if (img.file) {
+          const fileExt = img.file.name.split('.').pop();
+          const fileName = `${businessData.id}/appeal-${Date.now()}-${Math.random().toString(36).substr(2,5)}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from('verification-documents')
+            .upload(fileName, img.file, { cacheControl: '3600', upsert: false });
+          if (uploadError) throw uploadError;
+          const { data: { publicUrl } } = supabase.storage
+            .from('verification-documents').getPublicUrl(fileName);
+          uploadedUrls.push(publicUrl);
+        }
+      }
+
+      const { error } = await supabase
+        .from('businesses')
+        .update({
+          verification_status: 'pending',
+          appeal_message: appealMessage,
+          appeal_images: uploadedUrls,
+        })
+        .eq('id', businessData.id)
+        .eq('owner_id', user?.id);
+
+      if (error) throw error;
+
+      showToast('Apelación enviada. El administrador la revisará pronto', 'success');
+      setTimeout(() => onNavigate('profile'), 1500);
+    } catch (error) {
+      console.error('[APPEAL]', error);
+      showToast('Error al enviar la apelación', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
+      <header className="sticky top-0 z-30 flex items-center gap-3 bg-white px-4 py-4 border-b border-gray-100">
+        <button onClick={() => onNavigate('profile')} className="text-slate-600 hover:text-slate-900 transition-colors">
+          <ArrowLeft size={22} />
+        </button>
+        <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight">Apelar rechazo</h2>
+      </header>
+
+      <div className="px-4 py-6 space-y-5">
+        {/* Motivo del rechazo */}
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <XCircle size={18} className="text-red-600" />
+            <span className="font-semibold text-red-700 text-sm">
+              Motivo del rechazo{rejectionCount > 1 ? ` (rechazo nº ${rejectionCount})` : ''}
+            </span>
+          </div>
+          <p className="text-red-700 text-sm leading-relaxed">{rejectionReason}</p>
+        </div>
+
+        {/* Instrucciones */}
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+          <p className="text-blue-700 text-sm leading-relaxed">
+            Explica por qué tu negocio cumple los requisitos. Puedes adjuntar hasta <strong>2 imágenes opcionales</strong> para apoyar tu solicitud.
+          </p>
+        </div>
+
+        {/* Mensaje de apelación */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Tu justificación <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={appealMessage}
+            onChange={(e) => setAppealMessage(e.target.value)}
+            placeholder="Explica tu situación y por qué debería aprobarse tu negocio..."
+            rows={5}
+            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary resize-none"
+          />
+          <p className="text-xs text-slate-400 mt-1 text-right">{appealMessage.length}/500</p>
+        </div>
+
+        {/* Imágenes opcionales */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Imágenes de apoyo <span className="text-slate-400 font-normal">(opcional, máx. 2)</span>
+          </label>
+
+          <div className="flex gap-3">
+            {appealImages.map((img, i) => (
+              <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-slate-200">
+                <img src={img.preview} alt="" className="w-full h-full object-cover" />
+                <button
+                  onClick={() => removeImage(i)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+
+            {appealImages.length < 2 && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-1 hover:border-primary hover:bg-blue-50 transition-colors"
+              >
+                <Camera size={20} className="text-slate-400" />
+                <span className="text-xs text-slate-400">Añadir</span>
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageChange}
+            className="hidden"
+          />
+        </div>
+
+        {/* Botón enviar */}
+        <button
+          onClick={handleSubmit}
+          disabled={!appealMessage.trim() || uploading}
+          className={`w-full py-4 rounded-xl font-bold text-base transition-all ${
+            appealMessage.trim() && !uploading
+              ? 'bg-primary text-white shadow-lg shadow-primary/25 hover:bg-blue-700 active:scale-[0.98]'
+              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+          }`}
+        >
+          {uploading ? 'Enviando apelación...' : 'Enviar apelación'}
         </button>
       </div>
     </div>
@@ -10740,10 +13294,10 @@ const RegistrationSuccessScreen = ({ onNavigate }) => {
 
         {/* CTA Button */}
         <button
-          onClick={() => onNavigate('business-offers')}
+          onClick={() => onNavigate('profile')}
           className="w-full h-14 rounded-xl bg-primary text-white font-bold text-base shadow-lg shadow-primary/25 hover:bg-blue-700 active:scale-[0.98] transition-all"
         >
-          Explorar el Panel de Control
+          Ir a mi perfil
         </button>
 
         {/* Secondary Link */}
@@ -10795,13 +13349,17 @@ const servicesBySubcategory = {
 };
 
 // Pantalla de Editar Datos del Negocio (Completa con pestañas)
-const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }) => {
+const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, showToast }) => {
   const [activeTab, setActiveTab] = useState('store'); // 'store', 'schedule', 'gallery'
+  const [currentStep, setCurrentStep] = useState(1); // 1=store, 2=schedule, 3=gallery, 4=documents
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [verificationDocuments, setVerificationDocuments] = useState(businessData?.verification_documents || []);
+  const fileInputRef = useRef(null);
 
   // Estado para modal de cierre especial
   const [showClosureModal, setShowClosureModal] = useState(false);
@@ -10827,12 +13385,12 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
     website: businessData?.website || '',
     address: businessData?.address || '',
     neighborhood: businessData?.neighborhood || '',
-    category: businessData?.category || '',
+    category: businessData?.category_id || businessData?.category || '',
     subcategory: businessData?.subcategory || '',
     tags: businessData?.tags || [],
-    coverPhoto: businessData?.coverPhoto || null,
-    photos: businessData?.photos || [],
-    schedule: businessData?.schedule || {
+    coverPhoto: businessData?.cover_photo || null,
+    photos: businessData?.images || businessData?.photos || [],
+    schedule: businessData?.opening_hours || businessData?.schedule || {
       monday: { enabled: true, morning: { start: '09:00', end: '13:30' }, afternoon: { start: '16:30', end: '20:00' } },
       tuesday: { enabled: true, morning: { start: '09:00', end: '13:30' }, afternoon: { start: '16:30', end: '20:00' } },
       wednesday: { enabled: true, morning: { start: '09:00', end: '13:30' }, afternoon: { start: '16:30', end: '20:00' } },
@@ -10841,11 +13399,38 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
       saturday: { enabled: true, morning: { start: '10:00', end: '14:00' }, afternoon: { start: '', end: '' } },
       sunday: { enabled: false, morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
     },
-    specialClosures: businessData?.specialClosures || [
-      { id: 1, date: '2024-12-25', name: 'Navidad', allDay: true },
-      { id: 2, date: '2025-01-01', name: 'Año Nuevo', allDay: false, until: '12:00' },
-    ],
+    specialClosures: businessData?.special_closures || businessData?.specialClosures || [],
   });
+
+  // Sincronizar formData cuando businessData cambia
+  useEffect(() => {
+    if (businessData) {
+      console.log('[EDIT] Cargando datos del negocio:', businessData);
+      setFormData({
+        name: businessData.name || '',
+        description: businessData.description || '',
+        phone: businessData.phone || '',
+        website: businessData.website || '',
+        address: businessData.address || '',
+        neighborhood: businessData.neighborhood || '',
+        category: businessData.category_id || '',
+        subcategory: businessData.subcategory || '',
+        tags: businessData.tags || [],
+        coverPhoto: businessData.cover_photo || null,
+        photos: businessData.images || businessData.photos || [],
+        schedule: businessData.opening_hours || {
+          monday: { enabled: true, morning: { start: '09:00', end: '13:30' }, afternoon: { start: '16:30', end: '20:00' } },
+          tuesday: { enabled: true, morning: { start: '09:00', end: '13:30' }, afternoon: { start: '16:30', end: '20:00' } },
+          wednesday: { enabled: true, morning: { start: '09:00', end: '13:30' }, afternoon: { start: '16:30', end: '20:00' } },
+          thursday: { enabled: true, morning: { start: '09:00', end: '13:30' }, afternoon: { start: '16:30', end: '20:00' } },
+          friday: { enabled: true, morning: { start: '09:00', end: '13:30' }, afternoon: { start: '16:30', end: '20:00' } },
+          saturday: { enabled: true, morning: { start: '10:00', end: '14:00' }, afternoon: { start: '', end: '' } },
+          sunday: { enabled: false, morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
+        },
+        specialClosures: businessData.special_closures || [],
+      });
+    }
+  }, [businessData]);
 
   const availableCategories = categories.map(cat =>
     cat.id === 8 ? { ...cat, name: 'Otros' } : cat
@@ -10998,6 +13583,93 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
     }));
   };
 
+  // Subir documento de verificación a Supabase Storage
+  const handleUploadDocument = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de archivo
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast('Solo se permiten archivos PDF, JPG o PNG', 'error');
+      return;
+    }
+
+    // Validar tamaño (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('El archivo no puede superar los 5MB', 'error');
+      return;
+    }
+
+    setUploadingDocument(true);
+
+    try {
+      // Generar nombre único para el archivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Subir a Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('verification-documents')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('verification-documents')
+        .getPublicUrl(fileName);
+
+      // Actualizar array de documentos en la BD
+      const newDocuments = [...verificationDocuments, publicUrl];
+
+      const { error: updateError } = await supabase
+        .from('businesses')
+        .update({ verification_documents: newDocuments })
+        .eq('id', businessData.id)
+        .eq('owner_id', user.id);
+
+      if (updateError) throw updateError;
+
+      setVerificationDocuments(newDocuments);
+      showToast('Documento subido correctamente', 'success');
+      console.log('[VERIFICATION] Document uploaded:', publicUrl);
+    } catch (error) {
+      console.error('[VERIFICATION] Upload error:', error);
+      showToast('Error al subir el documento', 'error');
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
+  // Eliminar documento de verificación
+  const handleRemoveDocument = async (documentUrl) => {
+    try {
+      const newDocuments = verificationDocuments.filter(doc => doc !== documentUrl);
+
+      const { error } = await supabase
+        .from('businesses')
+        .update({ verification_documents: newDocuments })
+        .eq('id', businessData.id)
+        .eq('owner_id', user.id);
+
+      if (error) throw error;
+
+      // Eliminar de Storage (opcional, puedes dejarlo para historial)
+      // const fileName = documentUrl.split('/').pop();
+      // await supabase.storage.from('verification-documents').remove([`${user.id}/${fileName}`]);
+
+      setVerificationDocuments(newDocuments);
+      showToast('Documento eliminado', 'info');
+    } catch (error) {
+      console.error('[VERIFICATION] Remove error:', error);
+      showToast('Error al eliminar documento', 'error');
+    }
+  };
+
   const handleSave = async () => {
     if (!businessData?.id) return;
 
@@ -11010,34 +13682,51 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
       console.log('[SAVE DEBUG] Tipo de tags:', Array.isArray(formData.tags) ? 'Array' : typeof formData.tags);
       console.log('[SAVE DEBUG] Cantidad de tags:', formData.tags?.length);
 
+      const dataToUpdate = {
+        name: formData.name,
+        description: formData.description,
+        phone: formData.phone,
+        website: formData.website,
+        address: formData.address,
+        neighborhood: formData.neighborhood,
+        category_id: parseInt(formData.category),
+        subcategory: formData.subcategory,
+        tags: formData.tags,
+        opening_hours: formData.schedule,
+        special_closures: formData.specialClosures,
+        cover_photo: formData.coverPhoto || null,
+        images: formData.photos || [],
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('[SAVE] Datos a actualizar:', dataToUpdate);
+      console.log('[SAVE] Business ID:', businessData.id);
+      console.log('[SAVE] Owner ID:', user?.id);
+      console.log('[SAVE] Iniciando UPDATE en Supabase...');
+
       const { data: updatedData, error: updateError } = await supabase
         .from('businesses')
-        .update({
-          name: formData.name,
-          description: formData.description,
-          phone: formData.phone,
-          website: formData.website,
-          address: formData.address,
-          neighborhood: formData.neighborhood,
-          category_id: parseInt(formData.category),
-          subcategory: formData.subcategory,
-          tags: formData.tags,
-          opening_hours: formData.schedule,
-          special_closures: formData.specialClosures,
-          updated_at: new Date().toISOString(),
-        })
+        .update(dataToUpdate)
         .eq('id', businessData.id)
         .eq('owner_id', user?.id)
         .select()
         .single();
 
-      console.log('[SAVE DEBUG] Datos actualizados:', updatedData);
-      console.log('[SAVE DEBUG] Error de Supabase:', updateError);
+      console.log('[SAVE] ✅ UPDATE completado');
+      console.log('[SAVE] Datos actualizados:', updatedData);
+      console.log('[SAVE] Error de Supabase:', updateError);
 
       if (updateError) throw updateError;
 
       if (onUpdateBusiness) {
-        onUpdateBusiness(formData);
+        onUpdateBusiness({
+          ...formData,
+          opening_hours: formData.schedule,
+          cover_photo: formData.coverPhoto || null,
+          images: formData.photos || [],
+          category_id: parseInt(formData.category),
+          special_closures: formData.specialClosures || [],
+        });
       }
 
       setSaved(true);
@@ -11050,12 +13739,108 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
     }
   };
 
+  // Validar Paso 1: Información básica + tags
+  const validateStep1 = () => {
+    if (!formData.name || !formData.category || !formData.subcategory || !formData.neighborhood || !formData.description || !formData.phone || !formData.address) {
+      setError('Por favor completa todos los campos obligatorios (*) antes de continuar');
+      return false;
+    }
+    if (formData.tags.length === 0) {
+      setError('Selecciona al menos 1 etiqueta para tu negocio');
+      return false;
+    }
+    return true;
+  };
+
+  // Validar Paso 2: Horarios (al menos 1 día habilitado)
+  const validateStep2 = () => {
+    const hasAtLeastOneDay = Object.values(formData.schedule).some(day => day.enabled);
+    if (!hasAtLeastOneDay) {
+      setError('Debes tener al menos 1 día de la semana habilitado');
+      return false;
+    }
+    return true;
+  };
+
+  // Validar Paso 3: Fotos (al menos 1 foto)
+  const validateStep3 = () => {
+    const totalPhotos = formData.photos.length + (formData.coverPhoto ? 1 : 0);
+    if (totalPhotos === 0) {
+      setError('Debes subir al menos 1 foto antes de publicar');
+      return false;
+    }
+    return true;
+  };
+
+  // Manejar botón "Siguiente"
+  const handleNext = async () => {
+    setError('');
+
+    if (currentStep === 1) {
+      if (!validateStep1()) return;
+      // Guardar cambios antes de continuar
+      await handleSave();
+      setCurrentStep(2);
+      setActiveTab('schedule');
+    } else if (currentStep === 2) {
+      if (!validateStep2()) return;
+      await handleSave();
+      setCurrentStep(3);
+      setActiveTab('gallery');
+    } else if (currentStep === 3) {
+      // Paso 3 → Paso 4 (Fotos → Documentos)
+      await handleSave();
+      setCurrentStep(4);
+      setActiveTab('documents');
+    }
+  };
+
   const handlePublish = async () => {
     if (!businessData?.id) return;
 
-    // Validar que todos los campos requeridos estén completos
-    if (!formData.name || !formData.category || !formData.subcategory || !formData.neighborhood || !formData.description || !formData.phone || !formData.address) {
-      setError('Por favor completa todos los campos obligatorios (*) antes de publicar');
+    // Si estamos en el paso 4
+    if (currentStep === 4) {
+      const isApproved = businessData?.verification_status === 'approved';
+
+      // Si NO está aprobado, no puede publicar
+      if (!isApproved) {
+        showToast('Tu negocio está pendiente de revisión por el administrador', 'warning');
+        return;
+      }
+
+      // Está aprobado → publicar negocio (is_published = true) y guardar docs opcionales
+      setIsPublishing(true);
+      try {
+        const { error } = await supabase
+          .from('businesses')
+          .update({
+            is_published: true,
+            verification_documents: verificationDocuments,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', businessData.id)
+          .eq('owner_id', user?.id);
+        if (error) throw error;
+        setPublishSuccess(true);
+        showToast('🎉 ¡Negocio publicado! Ya aparece en Cornellà Local', 'success');
+        setTimeout(() => {
+          setPublishSuccess(false);
+          onNavigate('owner-dashboard');
+        }, 2500);
+      } catch (err) {
+        setError('Error al publicar el negocio');
+      } finally {
+        setIsPublishing(false);
+      }
+      return;
+    }
+
+    // Validar paso 3 antes de publicar
+    if (!validateStep3()) return;
+
+    // Validar que todos los pasos anteriores estén completos
+    if (!validateStep1() || !validateStep2()) {
+      setError('Por favor completa todos los pasos anteriores');
       return;
     }
 
@@ -11063,6 +13848,9 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
     setError('');
 
     try {
+      // Si el negocio ya está aprobado, no cambiar el status
+      const isAlreadyApproved = businessData?.verification_status === 'approved';
+
       const { error: updateError } = await supabase
         .from('businesses')
         .update({
@@ -11077,7 +13865,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           tags: formData.tags,
           opening_hours: formData.schedule,
           special_closures: formData.specialClosures,
-          verification_status: 'pending',
+          ...(isAlreadyApproved ? {} : { verification_status: 'pending' }),
           updated_at: new Date().toISOString(),
         })
         .eq('id', businessData.id)
@@ -11116,7 +13904,14 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
           <button
-            onClick={() => onNavigate('profile')}
+            onClick={() => {
+              if (currentStep > 1) {
+                setCurrentStep(prev => prev - 1);
+                setActiveTab(currentStep === 3 ? 'schedule' : 'store');
+              } else {
+                onNavigate('profile');
+              }
+            }}
             className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
           >
             <ArrowLeft size={24} />
@@ -11124,31 +13919,76 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight flex-1 text-center">
             Editar Perfil
           </h2>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="text-primary font-semibold text-sm hover:text-blue-700 disabled:text-gray-400"
-          >
-            {isSaving ? 'Guardando...' : 'Guardar'}
-          </button>
+          <div className="w-10"></div> {/* Spacer para centrar título */}
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-t border-gray-100">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex flex-col items-center gap-1 py-3 border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <tab.icon size={20} />
-              <span className="text-xs font-medium">{tab.label}</span>
-            </button>
-          ))}
+        {/* Indicador de Pasos */}
+        <div className="border-t border-gray-100 px-4 py-4">
+          <div className="flex items-center justify-between max-w-xs mx-auto">
+            {/* Paso 1 */}
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                currentStep > 1 ? 'bg-green-500 text-white' :
+                currentStep === 1 ? 'bg-primary text-white ring-4 ring-primary/20' :
+                'bg-gray-200 text-gray-400'
+              }`}>
+                {currentStep > 1 ? <CheckCircle2 size={20} /> : '1'}
+              </div>
+              <span className={`text-xs font-medium ${currentStep === 1 ? 'text-primary' : 'text-gray-400'}`}>
+                Información
+              </span>
+            </div>
+
+            {/* Línea separadora 1-2 */}
+            <div className={`h-0.5 flex-1 mx-2 -mt-6 ${currentStep > 1 ? 'bg-green-500' : 'bg-gray-200'}`} />
+
+            {/* Paso 2 */}
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                currentStep > 2 ? 'bg-green-500 text-white' :
+                currentStep === 2 ? 'bg-primary text-white ring-4 ring-primary/20' :
+                'bg-gray-200 text-gray-400'
+              }`}>
+                {currentStep > 2 ? <CheckCircle2 size={20} /> : '2'}
+              </div>
+              <span className={`text-xs font-medium ${currentStep === 2 ? 'text-primary' : 'text-gray-400'}`}>
+                Horarios
+              </span>
+            </div>
+
+            {/* Línea separadora 2-3 */}
+            <div className={`h-0.5 flex-1 mx-2 -mt-6 ${currentStep > 2 ? 'bg-green-500' : 'bg-gray-200'}`} />
+
+            {/* Paso 3 */}
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                currentStep === 3 ? 'bg-primary text-white ring-4 ring-primary/20' :
+                currentStep > 3 ? 'bg-green-500 text-white' :
+                'bg-gray-200 text-gray-400'
+              }`}>
+                {currentStep > 3 ? <Check size={18} /> : '3'}
+              </div>
+              <span className={`text-xs font-medium ${currentStep === 3 ? 'text-primary' : currentStep > 3 ? 'text-green-600' : 'text-gray-400'}`}>
+                Fotos
+              </span>
+            </div>
+
+            {/* Línea separadora 3-4 */}
+            <div className={`h-0.5 flex-1 mx-2 -mt-6 ${currentStep > 3 ? 'bg-green-500' : 'bg-gray-200'}`} />
+
+            {/* Paso 4 */}
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                currentStep === 4 ? 'bg-primary text-white ring-4 ring-primary/20' :
+                'bg-gray-200 text-gray-400'
+              }`}>
+                4
+              </div>
+              <span className={`text-xs font-medium ${currentStep === 4 ? 'text-primary' : 'text-gray-400'}`}>
+                Verificación
+              </span>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -11162,8 +14002,8 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
 
       {/* Tab Content */}
       <div className="pb-8">
-        {/* TIENDA TAB */}
-        {activeTab === 'store' && (
+        {/* PASO 1: INFORMACIÓN BÁSICA */}
+        {currentStep === 1 && (
           <div className="px-4 py-6 space-y-6">
             {/* Cover Photo */}
             <div>
@@ -11381,8 +14221,8 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           </div>
         )}
 
-        {/* HORARIOS TAB */}
-        {activeTab === 'schedule' && (
+        {/* PASO 2: HORARIOS */}
+        {currentStep === 2 && (
           <div className="px-4 py-6 space-y-6">
             {/* Horario semanal */}
             <div>
@@ -11510,8 +14350,8 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           </div>
         )}
 
-        {/* GALERÍA TAB */}
-        {activeTab === 'gallery' && (
+        {/* PASO 3: FOTOS */}
+        {currentStep === 3 && (
           <div className="px-4 py-6 space-y-6">
             <div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">Tu Perfil Visual</h3>
@@ -11618,6 +14458,231 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
             </div>
           </div>
         )}
+
+        {/* PASO 4: PUBLICAR O DOCUMENTOS */}
+        {currentStep === 4 && (
+          <div className="px-4 py-6 space-y-6">
+            {/* Si ya está aprobado → pantalla de publicación */}
+            {businessData?.verification_status === 'approved' ? (
+              <div className="flex flex-col items-center text-center py-6">
+                {businessData?.is_published ? (
+                  <>
+                    <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-5">
+                      <CheckCircle2 className="text-blue-500" size={48} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-2">Negocio publicado</h3>
+                    <p className="text-slate-500 text-sm mb-8 max-w-xs leading-relaxed">
+                      Tu negocio ya está visible en Cornellà Local. Pulsa "Guardar cambios" para aplicar cualquier modificación.
+                    </p>
+                    <div className="w-full">
+                      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-left">
+                        <p className="text-sm font-semibold text-blue-800 mb-2">Cambios que se guardarán:</p>
+                        <ul className="text-xs text-blue-700 space-y-1.5">
+                          <li className="flex items-center gap-2"><Check size={14} className="text-blue-600 shrink-0" /> Información general (nombre, descripción, teléfono)</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-blue-600 shrink-0" /> Horarios de apertura</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-blue-600 shrink-0" /> Fotos de la galería</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-blue-600 shrink-0" /> Dirección y barrio</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-5">
+                      <CheckCircle2 className="text-green-500" size={48} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-2">¡Negocio aprobado!</h3>
+                    <p className="text-slate-500 text-sm mb-8 max-w-xs leading-relaxed">
+                      Tu negocio ha sido verificado por el administrador. Pulsa el botón para publicarlo y que aparezca en Cornellà Local.
+                    </p>
+                    <div className="w-full space-y-3">
+                      <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-left">
+                        <p className="text-sm font-semibold text-green-800 mb-2">Al publicar tu negocio:</p>
+                        <ul className="text-xs text-green-700 space-y-1.5">
+                          <li className="flex items-center gap-2"><Check size={14} className="text-green-600 shrink-0" /> Aparecerás en "Nuevos en el barrio"</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-green-600 shrink-0" /> Podrás crear ofertas y empleos</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-green-600 shrink-0" /> Los usuarios podrán encontrarte y favoritearte</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-green-600 shrink-0" /> Recibirás solicitudes de presupuesto</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Verificación Oficial</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Sube documentos que verifiquen tu negocio (CIF, licencia comercial, etc.) para obtener el badge de verificación oficial.
+              </p>
+
+              {/* Status Card */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 mb-6 border border-blue-100">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <BadgeCheck className="text-white" size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-blue-900 mb-1">
+                      ¿Por qué verificar tu negocio?
+                    </h4>
+                    <ul className="text-xs text-blue-700 space-y-1">
+                      <li>✓ Badge azul de verificación oficial</li>
+                      <li>✓ Mayor confianza de los clientes</li>
+                      <li>✓ Aparece destacado en búsquedas</li>
+                      <li>✓ Acceso a funciones premium</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress */}
+              <div className="bg-white rounded-xl p-4 border border-gray-100 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-700">
+                    {verificationDocuments.length}/3 documentos subidos
+                  </span>
+                  <span className="text-sm font-bold text-primary">
+                    {Math.round((verificationDocuments.length / 3) * 100)}%
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all"
+                    style={{ width: `${(verificationDocuments.length / 3) * 100}%` }}
+                  />
+                </div>
+                {verificationDocuments.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-2">
+                    Sube al menos 1 documento para iniciar la verificación
+                  </p>
+                )}
+                {verificationDocuments.length > 0 && verificationDocuments.length < 3 && (
+                  <p className="text-xs text-green-600 mt-2">
+                    ¡Excelente! Puedes subir {3 - verificationDocuments.length} documento(s) más
+                  </p>
+                )}
+                {verificationDocuments.length >= 3 && (
+                  <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                    <CheckCircle2 size={14} />
+                    ¡Perfecto! Documentación completa
+                  </p>
+                )}
+              </div>
+
+              {/* Upload Button */}
+              <div className="mb-6">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleUploadDocument}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingDocument || verificationDocuments.length >= 3}
+                  className="w-full h-32 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-gray-50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {uploadingDocument ? (
+                    <>
+                      <RefreshCw className="text-primary animate-spin" size={32} />
+                      <span className="text-sm font-medium text-gray-600">Subiendo documento...</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Upload className="text-blue-600" size={24} />
+                      </div>
+                      <div className="text-center">
+                        <span className="text-sm font-bold text-slate-900 block">Subir documento</span>
+                        <span className="text-xs text-gray-500">PDF, JPG o PNG (máx. 5MB)</span>
+                      </div>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Uploaded Documents List */}
+              {verificationDocuments.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-900">Documentos subidos</h4>
+                  {verificationDocuments.map((docUrl, index) => {
+                    const fileName = docUrl.split('/').pop() || `Documento ${index + 1}`;
+                    const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+                    const isPDF = fileExt === 'pdf';
+
+                    return (
+                      <div key={index} className="bg-white rounded-xl p-4 border border-gray-100 flex items-center gap-4">
+                        {/* Document Icon/Preview */}
+                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          {isPDF ? (
+                            <FileText className="text-blue-600" size={24} />
+                          ) : (
+                            <img
+                              src={docUrl}
+                              alt={`Documento ${index + 1}`}
+                              className="w-full h-full object-cover rounded-xl"
+                            />
+                          )}
+                        </div>
+
+                        {/* Document Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">
+                            {isPDF ? 'Documento PDF' : 'Imagen'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Documento {index + 1} • {fileExt.toUpperCase()}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={docUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-9 h-9 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-100 transition-colors"
+                          >
+                            <ExternalLink size={16} />
+                          </a>
+                          <button
+                            onClick={() => handleRemoveDocument(docUrl)}
+                            className="w-9 h-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Info Card */}
+              <div className="mt-6 bg-amber-50 rounded-xl p-4 border border-amber-100">
+                <h4 className="text-sm font-bold text-amber-900 mb-2 flex items-center gap-2">
+                  <Info size={16} />
+                  Documentos aceptados
+                </h4>
+                <ul className="text-xs text-amber-800 space-y-1">
+                  <li>• <strong>CIF/NIF</strong> del titular del negocio</li>
+                  <li>• <strong>Licencia de actividad</strong> o apertura</li>
+                  <li>• <strong>Alta en IAE</strong> (Impuesto de Actividades Económicas)</li>
+                  <li>• Cualquier <strong>documento oficial</strong> que demuestre la actividad</li>
+                </ul>
+                <p className="text-xs text-amber-700 mt-3 pt-3 border-t border-amber-200">
+                  <strong>Nota:</strong> Los documentos serán revisados por nuestro equipo en 24-48h.
+                  Toda la información se maneja de forma confidencial.
+                </p>
+              </div>
+              {/* Espacio extra para scroll */}
+              <div className="h-20"></div>
+            </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bottom Save Button */}
@@ -11646,45 +14711,103 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user }
           </div>
         )}
         <div className="flex gap-2">
-          <button
-            onClick={handleSave}
-            disabled={isSaving || isPublishing}
-            className={`flex-1 h-12 rounded-xl font-semibold text-sm shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-              isSaving ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {isSaving ? (
-              <>
-                <RefreshCw size={18} className="animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              <>
-                <Check size={18} />
-                Guardar
-              </>
-            )}
-          </button>
-          {!businessData?.is_verified && (
+          {/* Botón Volver (solo en pasos 2, 3 y 4) */}
+          {currentStep > 1 && (
             <button
-              onClick={handlePublish}
-              disabled={isSaving || isPublishing}
+              onClick={() => {
+                setCurrentStep(prev => prev - 1);
+                // Actualizar activeTab según el paso
+                if (currentStep === 3) setActiveTab('schedule');
+                else if (currentStep === 4) setActiveTab('gallery');
+                else setActiveTab('store');
+                setError('');
+              }}
+              disabled={isSaving}
+              className="h-12 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={18} />
+              Volver
+            </button>
+          )}
+
+          {/* Botones según el paso actual */}
+          {currentStep < 4 ? (
+            // Pasos 1, 2 y 3: Botón "Siguiente"
+            <button
+              onClick={handleNext}
+              disabled={isSaving}
               className={`flex-1 h-12 rounded-xl text-white font-bold text-sm shadow-lg shadow-primary/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-                isPublishing ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-700'
+                isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-700'
               }`}
             >
-              {isPublishing ? (
+              {isSaving ? (
                 <>
                   <RefreshCw size={18} className="animate-spin" />
-                  Publicando...
+                  Guardando...
                 </>
               ) : (
                 <>
-                  <Send size={18} />
-                  Publicar
+                  Siguiente
+                  <ChevronRight size={18} />
                 </>
               )}
             </button>
+          ) : (
+            // Paso 4: según estado del negocio
+            businessData?.verification_status === 'approved' ? (
+              businessData?.is_published ? (
+                // Ya publicado → Guardar cambios
+                <button
+                  onClick={async () => {
+                    await handleSave();
+                    showToast('¡Cambios guardados correctamente!', 'success');
+                    setTimeout(() => onNavigate('owner-dashboard'), 800);
+                  }}
+                  disabled={isSaving}
+                  className={`flex-1 h-12 rounded-xl text-white font-bold text-sm shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+                    isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-700 shadow-primary/25'
+                  }`}
+                >
+                  {isSaving ? (
+                    <>
+                      <RefreshCw size={18} className="animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={18} />
+                      Guardar cambios
+                    </>
+                  )}
+                </button>
+              ) : (
+                // Aprobado pero no publicado → Publicar
+                <button
+                  onClick={handlePublish}
+                  disabled={isSaving || isPublishing}
+                  className={`flex-1 h-12 rounded-xl text-white font-bold text-sm shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+                    isPublishing ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 shadow-green-500/25'
+                  }`}
+                >
+                  {isPublishing ? (
+                    <>
+                      <RefreshCw size={18} className="animate-spin" />
+                      Publicando...
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={18} className="fill-white" />
+                      Publicar negocio
+                    </>
+                  )}
+                </button>
+              )
+            ) : (
+              <div className="flex-1 h-12 rounded-xl bg-amber-100 text-amber-700 font-medium text-sm flex items-center justify-center gap-2">
+                <Clock size={16} />
+                Pendiente de aprobación
+              </div>
+            )
           )}
         </div>
       </div>
@@ -12334,7 +15457,23 @@ const BusinessOwnerDashboard = ({
   userOffers,
   incomingBudgetRequests,
   jobApplications = [],
+  onDeleteBusiness,
+  showToast,
 }) => {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmText !== 'ELIMINAR') {
+      showToast('Escribe ELIMINAR para confirmar', 'warning');
+      return;
+    }
+    setDeleting(true);
+    await onDeleteBusiness();
+    setDeleting(false);
+    setShowDeleteModal(false);
+  };
   // Calcular estadísticas rápidas
   const activeJobs = userJobOffers.filter(j => j.status === 'active').length;
   const totalApplications = jobApplications.filter(app => app.status === 'pending').length; // Candidaturas pendientes
@@ -12533,12 +15672,12 @@ const BusinessOwnerDashboard = ({
             </button>
 
             <button
-              onClick={() => onNavigate('business-stats')}
+              onClick={() => onNavigate('business-analytics')}
               className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
             >
               <div className="flex items-center gap-3">
-                <div className="bg-amber-100 p-2 rounded-lg text-amber-600 group-hover:text-amber-700 transition-colors">
-                  <TrendingUp size={20} />
+                <div className="bg-gradient-to-br from-indigo-100 to-purple-100 p-2 rounded-lg text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                  <BarChart3 size={20} />
                 </div>
                 <div>
                   <span className="font-medium text-slate-700 block">Estadísticas</span>
@@ -12549,7 +15688,86 @@ const BusinessOwnerDashboard = ({
             </button>
           </div>
         </div>
+
+        {/* Zona de peligro */}
+        <div className="mx-4 mb-6">
+          <div className="border border-red-200 rounded-2xl overflow-hidden">
+            <div className="bg-red-50 px-4 py-3 border-b border-red-200">
+              <span className="text-sm font-semibold text-red-700">Zona de peligro</span>
+            </div>
+            <div className="p-4">
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border border-red-200 bg-white hover:bg-red-50 transition-colors text-left"
+              >
+                <div className="bg-red-100 p-2 rounded-lg">
+                  <Trash2 size={18} className="text-red-600" />
+                </div>
+                <div>
+                  <span className="font-medium text-red-700 block text-sm">Eliminar negocio</span>
+                  <span className="text-xs text-red-500">Acción permanente e irreversible</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Modal de confirmación de eliminación */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-100 p-2.5 rounded-full">
+                <Trash2 size={22} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 text-lg">Eliminar negocio</h3>
+                <p className="text-xs text-slate-500">Esta acción no se puede deshacer</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+              <p className="text-sm text-red-700">
+                Se eliminarán permanentemente <strong>todas las ofertas, empleos y datos</strong> asociados a <strong>"{businessData?.name}"</strong>.
+              </p>
+            </div>
+
+            <p className="text-sm text-slate-600 mb-3">
+              Para confirmar, escribe <span className="font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">ELIMINAR</span> en el campo:
+            </p>
+
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Escribe ELIMINAR"
+              className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-400 mb-4"
+              autoFocus
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleteConfirmText !== 'ELIMINAR' || deleting}
+                className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-colors ${
+                  deleteConfirmText === 'ELIMINAR' && !deleting
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                {deleting ? 'Eliminando...' : 'Eliminar definitivamente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -13975,7 +17193,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 // VAPID Public Key para Web Push Notifications
 // TODO: Reemplazar con tu clave pública después de generar las VAPID keys
 // Ejecutar: node supabase/generate-vapid-keys.js
-const VAPID_PUBLIC_KEY = 'PLACEHOLDER_GENERATE_VAPID_KEYS';
+const VAPID_PUBLIC_KEY = 'BA_vRY5jNz2ro0yPN_-GXmTemr-oH4VzVodixY6ukjYigsm_8GFKFrWggD3VqGwMSAfEjxnZuhNbr04HZAL6Mw8';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
@@ -14198,37 +17416,17 @@ export default function App() {
 
   // Solicitar permisos de push después del login (solo primera vez)
   useEffect(() => {
-    const askForPushPermission = async () => {
-      // Solo preguntar si:
-      // 1. Usuario está logueado
-      // 2. Push está soportado
-      // 3. Nunca ha respondido (permission = default)
-      // 4. No preguntar inmediatamente, esperar 3 segundos
-      if (user && pushSupported && pushPermission === 'default') {
-        // Verificar si ya preguntamos antes (localStorage)
-        const askedBefore = localStorage.getItem('push-asked');
-        if (askedBefore) return;
+    if (user && pushSupported && pushPermission === 'default') {
+      const askedBefore = localStorage.getItem('push-asked');
+      if (askedBefore) return;
 
-        setTimeout(async () => {
-          const shouldAsk = confirm(
-            '🔔 ¿Quieres recibir notificaciones instantáneas?\n\n' +
-            '✅ Nuevas candidaturas a tus empleos\n' +
-            '✅ Respuestas a tus presupuestos\n' +
-            '✅ Ofertas de tus negocios favoritos\n' +
-            '✅ Actualizaciones de tus solicitudes\n\n' +
-            'Las notificaciones llegarán aunque la app esté cerrada, como WhatsApp.'
-          );
+      // Mostrar modal bonito después de 3 segundos
+      const timer = setTimeout(() => {
+        setShowNotificationModal(true);
+      }, 3000);
 
-          localStorage.setItem('push-asked', 'true');
-
-          if (shouldAsk) {
-            await requestPushPermission();
-          }
-        }, 3000);
-      }
-    };
-
-    askForPushPermission();
+      return () => clearTimeout(timer);
+    }
   }, [user, pushPermission, pushSupported]);
 
   // Cargar negocio del propietario cuando cambie el usuario
@@ -14320,7 +17518,7 @@ export default function App() {
 
   // Helper: Mapear tipo de notificación a ruta y parámetros
   const getNotificationRoute = (notif) => {
-    const data = notif.data || notif.data || {};
+    const data = notif.data || {};
 
     switch (notif.type) {
       // Presupuestos
@@ -14364,6 +17562,32 @@ export default function App() {
           params: {}
         };
 
+      // Verificación de negocio
+      case 'business_approved':
+        return {
+          route: 'edit-business',
+          params: { businessId: data.business_id }
+        };
+      case 'business_rejected':
+        return {
+          route: 'business-appeal',
+          params: { businessId: data.business_id }
+        };
+
+      // Reportes (usuario)
+      case 'report_resolved':
+        return {
+          route: 'business',
+          params: { id: data.business_id }
+        };
+
+      // Reportes (admin)
+      case 'new_report':
+        return {
+          route: 'admin-reports',
+          params: { reportId: data.report_id }
+        };
+
       default:
         return {
           route: 'home',
@@ -14394,12 +17618,32 @@ export default function App() {
         // Transformar a formato de UI
         const transformed = (data || []).map(notif => {
           const { route, params } = getNotificationRoute(notif);
+
+          // Determinar color de fondo del icono según el tipo
+          const getIconBg = (type) => {
+            const iconBgMap = {
+              'new_offer': 'bg-orange-500',
+              'new_job': 'bg-blue-500',
+              'new_application': 'bg-purple-500',
+              'budget_quote_received': 'bg-teal-500',
+              'budget_quote_accepted': 'bg-green-500',
+              'application_reviewed': 'bg-yellow-500',
+              'interview_scheduled': 'bg-indigo-500',
+              'application_rejected': 'bg-red-500',
+              'application_hired': 'bg-green-600',
+              'report_resolved': 'bg-green-500',
+              'new_report': 'bg-orange-600',
+            };
+            return iconBgMap[type] || 'bg-gray-500';
+          };
+
           return {
             id: notif.id,
             type: notif.type,
             title: notif.title,
             message: notif.message,
             icon: notif.icon,
+            iconBg: getIconBg(notif.type),
             time: formatRelativeTime(notif.created_at),
             isRead: notif.is_read,
             actionRoute: route,
@@ -14437,12 +17681,32 @@ export default function App() {
           console.log('[REALTIME] Nueva notificación recibida:', payload.new);
 
           const { route, params } = getNotificationRoute(payload.new);
+
+          // Determinar color de fondo del icono según el tipo
+          const getIconBg = (type) => {
+            const iconBgMap = {
+              'new_offer': 'bg-orange-500',
+              'new_job': 'bg-blue-500',
+              'new_application': 'bg-purple-500',
+              'budget_quote_received': 'bg-teal-500',
+              'budget_quote_accepted': 'bg-green-500',
+              'application_reviewed': 'bg-yellow-500',
+              'interview_scheduled': 'bg-indigo-500',
+              'application_rejected': 'bg-red-500',
+              'application_hired': 'bg-green-600',
+              'report_resolved': 'bg-green-500',
+              'new_report': 'bg-orange-600',
+            };
+            return iconBgMap[type] || 'bg-gray-500';
+          };
+
           const newNotif = {
             id: payload.new.id,
             type: payload.new.type,
             title: payload.new.title,
             message: payload.new.message,
             icon: payload.new.icon,
+            iconBg: getIconBg(payload.new.type),
             time: 'Ahora',
             isRead: false,
             actionRoute: route,
@@ -15145,6 +18409,10 @@ export default function App() {
       showToast('Error: No se encontró el negocio', 'error');
       return;
     }
+    if (businessData?.verification_status !== 'approved') {
+      showToast('Tu negocio debe estar aprobado para publicar empleos', 'warning');
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -15215,7 +18483,7 @@ export default function App() {
             title: `Nueva oferta de empleo en ${businessData.name}`,
             message: `${businessData.name} ha publicado una nueva oferta: ${jobData.title}. ¡Aplica ahora!`,
             data: { business_id: businessData.id, job_id: data.id, job_title: jobData.title },
-            read: false,
+            is_read: false,
             created_at: new Date().toISOString()
           }));
 
@@ -15287,6 +18555,24 @@ export default function App() {
     setDynamicNotifications(prev => [newNotification, ...prev]);
   };
 
+  // Track analytics events (no bloqueante)
+  const trackAnalyticsEvent = async (businessId, eventType, metadata = {}) => {
+    if (!businessId) return;
+
+    try {
+      await supabase.from('business_analytics').insert({
+        business_id: businessId,
+        user_id: user?.id || null,
+        event_type: eventType,
+        metadata: metadata
+      });
+      console.log(`[ANALYTICS] ${eventType} tracked for business ${businessId}`);
+    } catch (error) {
+      console.error('[ANALYTICS] Error tracking event:', error);
+      // No mostrar error al usuario, tracking es no crítico
+    }
+  };
+
   const navigate = (page, params = {}, addToHistory = true) => {
     // Activar animación de salida
     setIsPageTransitioning(true);
@@ -15327,16 +18613,58 @@ export default function App() {
   }, []);
 
   // Función para registrar un negocio (pasa a estado pendiente)
-  const registerBusiness = () => {
-    setBusinessStatus('pending');
-    setBusinessData({
-      name: tempBusinessData.name || 'Mi Negocio',
-      cif: tempBusinessData.cif || '',
-      category: tempBusinessData.category || '',
-      subcategory: tempBusinessData.subcategory || '',
-      address: tempBusinessData.address || '',
-      registeredAt: new Date().toISOString(),
-    });
+  const registerBusiness = async () => {
+    if (!user?.id) {
+      showToast('Debes iniciar sesión primero', 'error');
+      throw new Error('Usuario no autenticado');
+    }
+
+    console.log('[REGISTER] Datos a insertar:', tempBusinessData);
+
+    try {
+      // Preparar datos para insertar
+      const businessToInsert = {
+        owner_id: user.id,
+        name: tempBusinessData.name || 'Mi Negocio',
+        // cif: campo no existe en la tabla (se elimina)
+        category_id: tempBusinessData.category ? parseInt(tempBusinessData.category) : null,
+        subcategory: tempBusinessData.subcategory || '',
+        address: tempBusinessData.address || '',
+        neighborhood: tempBusinessData.barrio || '',
+        description: '',
+        phone: '',
+        verification_status: 'pending',
+        is_verified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('[REGISTER] Insertando en Supabase:', businessToInsert);
+
+      // Crear negocio en Supabase
+      const { data: newBusiness, error } = await supabase
+        .from('businesses')
+        .insert(businessToInsert)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[REGISTER] Error de Supabase:', error);
+        throw error;
+      }
+
+      console.log('[REGISTER] Negocio creado exitosamente:', newBusiness);
+
+      setBusinessStatus('pending');
+      setBusinessData(newBusiness);
+      showToast('¡Negocio registrado! Ahora completa tu perfil', 'success');
+
+      return newBusiness;
+    } catch (error) {
+      console.error('[REGISTER] Error al crear negocio:', error);
+      showToast('Error: ' + (error.message || 'No se pudo registrar el negocio'), 'error');
+      throw error; // Re-lanzar para que BusinessVerificationScreen lo maneje
+    }
   };
 
   // Función para validar el negocio (para demo/testing)
@@ -15372,10 +18700,37 @@ export default function App() {
     setBusinessData(prev => ({ ...prev, ...data }));
   };
 
+  // Función para eliminar el negocio permanentemente
+  const deleteBusiness = async () => {
+    if (!businessData?.id) return;
+    try {
+      await supabase.from('offers').delete().eq('business_id', businessData.id);
+      await supabase.from('jobs').delete().eq('business_id', businessData.id);
+      await supabase.from('favorites').delete().eq('business_id', businessData.id);
+      const { error } = await supabase
+        .from('businesses')
+        .delete()
+        .eq('id', businessData.id)
+        .eq('owner_id', user?.id);
+      if (error) throw error;
+      setBusinessData(null);
+      setBusinessStatus(null);
+      showToast('Negocio eliminado permanentemente', 'info');
+      navigate('profile');
+    } catch (error) {
+      console.error('[DELETE BUSINESS]', error);
+      showToast('Error al eliminar el negocio', 'error');
+    }
+  };
+
   // Función para crear una nueva oferta
   const createOffer = async (offerData) => {
     if (!businessData?.id) {
       showToast('Error: No se encontró el negocio', 'error');
+      return;
+    }
+    if (businessData?.verification_status !== 'approved') {
+      showToast('Tu negocio debe estar aprobado para crear ofertas', 'warning');
       return;
     }
 
@@ -15850,9 +19205,17 @@ export default function App() {
       case 'favorites':
         return <FavoritesPage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} />;
       case 'profile':
-        return <ProfilePage onNavigate={navigate} businessStatus={businessStatus} businessData={businessData} validateBusiness={validateBusiness} savedCoupons={savedCoupons} user={user} userOffers={userOffers} userJobOffers={userJobOffers} incomingBudgetRequests={incomingBudgetRequests} userJobApplications={userJobApplications} />;
+        return <ProfilePage onNavigate={navigate} businessStatus={businessStatus} businessData={businessData} validateBusiness={validateBusiness} savedCoupons={savedCoupons} user={user} userOffers={userOffers} userJobOffers={userJobOffers} incomingBudgetRequests={incomingBudgetRequests} userJobApplications={userJobApplications} onDeleteBusiness={deleteBusiness} showToast={showToast} />;
+      case 'admin-dashboard':
+        return <AdminDashboard onNavigate={navigate} user={user} />;
+      case 'admin-approve-businesses':
+        return <BusinessApprovalScreen onNavigate={navigate} user={user} showToast={showToast} />;
+      case 'business-analytics':
+        return <BusinessAnalyticsScreen onNavigate={navigate} user={user} businessData={businessData} />;
+      case 'admin-reports':
+        return <ReportsScreen onNavigate={navigate} user={user} />;
       case 'business':
-        return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} />;
+        return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} />;
       case 'coupon':
         return <CouponDetailPage couponId={pageParams.id} onNavigate={navigate} savedCoupons={savedCoupons} toggleSaveCoupon={toggleSaveCoupon} isCouponSaved={isCouponSaved} />;
       case 'category':
@@ -15904,15 +19267,17 @@ export default function App() {
       case 'terms-register':
         return <TermsScreen onNavigate={navigate} fromRegister={true} />;
       case 'notifications':
-        return <NotificationsScreen onNavigate={navigate} dynamicNotifications={dynamicNotifications} user={user} />;
+        return <NotificationsScreen onNavigate={navigate} dynamicNotifications={dynamicNotifications} user={user} onUpdateNotifications={setDynamicNotifications} />;
       case 'business-data':
         return <BusinessDataScreen onNavigate={navigate} onSaveBusinessData={setTempBusinessData} user={user} businessData={businessData} showToast={showToast} />;
       case 'business-verification':
-        return <BusinessVerificationScreen onNavigate={navigate} onRegisterBusiness={registerBusiness} />;
+        return <BusinessVerificationScreen onNavigate={navigate} onRegisterBusiness={registerBusiness} user={user} />;
       case 'registration-success':
         return <RegistrationSuccessScreen onNavigate={navigate} />;
+      case 'business-appeal':
+        return <BusinessAppealScreen onNavigate={navigate} businessData={businessData} user={user} showToast={showToast} />;
       case 'edit-business':
-        return <EditBusinessScreen onNavigate={navigate} businessData={businessData} onUpdateBusiness={updateBusiness} user={user} />;
+        return <EditBusinessScreen onNavigate={navigate} businessData={businessData} onUpdateBusiness={updateBusiness} user={user} showToast={showToast} />;
       case 'owner-dashboard':
         return (
           <BusinessOwnerDashboard
@@ -15922,6 +19287,8 @@ export default function App() {
             userOffers={userOffers}
             incomingBudgetRequests={incomingBudgetRequests}
             jobApplications={jobApplications}
+            onDeleteBusiness={deleteBusiness}
+            showToast={showToast}
           />
         );
       case 'business-stats':
@@ -15984,25 +19351,22 @@ export default function App() {
   };
 
   // Activar notificaciones desde el modal
-  const handleEnableNotifications = () => {
+  const handleEnableNotifications = async () => {
     setShowNotificationModal(false);
-    setUserSettings(prev => ({
-      ...prev,
-      pushEnabled: true,
-      offerNotifications: true,
-      messageNotifications: true,
-      reminderNotifications: true,
-    }));
+    localStorage.setItem('push-asked', 'true');
 
-    addNotification({
-      type: 'settings',
-      title: 'Notificaciones activadas',
-      message: 'Recibirás alertas de ofertas flash, respuestas a presupuestos y más.',
-      icon: 'BellRing',
-      iconBg: 'bg-green-500',
-    });
+    // Solicitar permiso real de push notifications (Web Push API)
+    const success = await requestPushPermission();
 
-    showToast('¡Notificaciones activadas!', 'success');
+    if (success) {
+      setUserSettings(prev => ({
+        ...prev,
+        pushEnabled: true,
+        offerNotifications: true,
+        messageNotifications: true,
+        reminderNotifications: true,
+      }));
+    }
   };
 
   // Mostrar loading mientras se verifica la autenticación
@@ -16043,9 +19407,9 @@ export default function App() {
       {/* Modal de permisos de notificación */}
       <NotificationPermissionModal
         isOpen={showNotificationModal}
-        onClose={() => setShowNotificationModal(false)}
+        onClose={() => { setShowNotificationModal(false); localStorage.setItem('push-asked', 'true'); }}
         onEnable={handleEnableNotifications}
-        onSkip={() => setShowNotificationModal(false)}
+        onSkip={() => { setShowNotificationModal(false); localStorage.setItem('push-asked', 'true'); }}
       />
 
       {/* Banner de instalación PWA */}

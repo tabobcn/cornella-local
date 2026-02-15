@@ -17242,124 +17242,81 @@ export default function App() {
   useEffect(() => {
     console.log('[AUTH] Iniciando verificación de sesión...');
 
-    // Timeout de seguridad para conexiones lentas (60s)
+    // Timeout de seguridad (15s) — si onAuthStateChange no dispara, mostrar login
     const authTimeout = setTimeout(() => {
       console.warn('[AUTH] Timeout alcanzado, continuando sin sesión');
       setLoadingAuth(false);
       setCurrentPage('login');
-    }, 60000);
+    }, 15000);
 
-    // Detectar si venimos de un redirect OAuth
-    const urlHasOAuthCode = window.location.search.includes('code=') || window.location.hash.includes('access_token=');
+    // Helper: cargar o crear perfil a partir de una sesión
+    const loadOrCreateProfile = async (session) => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
 
-    // Verificar sesión actual
-    supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
-        clearTimeout(authTimeout);
-        console.log('[AUTH] Sesión obtenida:', session ? 'Existe sesión' : 'No hay sesión');
+      if (data) {
+        setUser(data);
+      } else {
+        // Usuario nuevo (primer login con Google u OAuth)
+        const displayName = session.user.user_metadata?.full_name
+          || session.user.user_metadata?.name
+          || session.user.email?.split('@')[0]
+          || 'Usuario';
+        const avatar = session.user.user_metadata?.avatar_url || null;
 
-        if (session) {
-          console.log('[AUTH] Cargando perfil del usuario...');
-          // Cargar datos del usuario
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+        await supabase.from('profiles').upsert({
+          id: session.user.id,
+          email: session.user.email,
+          full_name: displayName,
+          avatar_url: avatar,
+        }, { onConflict: 'id' });
 
-          if (data && !error) {
-            console.log('[AUTH] Perfil cargado correctamente');
-            setUser(data);
-            setCurrentPage('home');
-          } else {
-            console.error('[AUTH] Error loading profile:', error);
-            // Si no se puede cargar el perfil, crear uno básico
-            const basicUser = {
-              id: session.user.id,
-              email: session.user.email,
-              full_name: session.user.email?.split('@')[0] || 'Usuario',
-            };
-            setUser(basicUser);
-            setCurrentPage('home');
-          }
-        } else if (urlHasOAuthCode) {
-          // Venimos de OAuth — intentar intercambiar el código manualmente
-          console.log('[AUTH] Procesando código OAuth...');
-          try {
-            const code = new URLSearchParams(window.location.search).get('code');
-            if (code) {
-              const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-              if (exchangeData?.session) {
-                console.log('[AUTH] Código OAuth canjeado correctamente');
-                // onAuthStateChange se disparará con SIGNED_IN
-                return;
-              }
-              console.error('[AUTH] Error canjeando código:', exchangeError);
-            }
-          } catch (e) {
-            console.error('[AUTH] Exception en exchange:', e);
-          }
-          // Si falla, mostrar login
-          setCurrentPage('login');
-          setLoadingAuth(false);
-        } else {
-          console.log('[AUTH] No hay sesión, mostrando login');
-          setCurrentPage('login');
-          setLoadingAuth(false);
-        }
-      })
-      .catch((err) => {
-        clearTimeout(authTimeout);
-        console.error('[AUTH] Error getting session:', err);
-        setLoadingAuth(false);
-        setCurrentPage('login');
-      });
+        setUser({
+          id: session.user.id,
+          email: session.user.email,
+          full_name: displayName,
+          avatar_url: avatar,
+        });
+      }
+    };
 
-    // Escuchar cambios de autenticación
+    // onAuthStateChange es la fuente principal de verdad
+    // Con detectSessionInUrl: true, Supabase intercambia el código OAuth automáticamente
+    // y dispara INITIAL_SESSION (sesión existente) o SIGNED_IN (login nuevo/OAuth)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+      console.log('[AUTH] Event:', event, session ? '(con sesión)' : '(sin sesión)');
+      clearTimeout(authTimeout);
 
-        if (data) {
-          setUser(data);
+      if (event === 'INITIAL_SESSION') {
+        if (session) {
+          await loadOrCreateProfile(session);
+          setCurrentPage('home');
         } else {
-          // Usuario nuevo (ej. primer login con Google) — crear perfil básico
-          const displayName = session.user.user_metadata?.full_name
-            || session.user.user_metadata?.name
-            || session.user.email?.split('@')[0]
-            || 'Usuario';
-          const avatar = session.user.user_metadata?.avatar_url || null;
-
-          // Insertar perfil en Supabase
-          await supabase.from('profiles').upsert({
-            id: session.user.id,
-            email: session.user.email,
-            full_name: displayName,
-            avatar_url: avatar,
-          }, { onConflict: 'id' });
-
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            full_name: displayName,
-            avatar_url: avatar,
-          });
+          setCurrentPage('login');
         }
+        setLoadingAuth(false);
+      } else if (event === 'SIGNED_IN') {
+        await loadOrCreateProfile(session);
         setCurrentPage('home');
         setLoadingAuth(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('login');
+        setLoadingAuth(false);
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Token renovado automáticamente, no hacer nada
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(authTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Verificar soporte de Push Notifications

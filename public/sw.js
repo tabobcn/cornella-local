@@ -1,7 +1,7 @@
 // Service Worker para Cornellà Local PWA
-const CACHE_NAME = 'cornella-local-v3';
-const STATIC_CACHE = 'cornella-static-v3';
-const DYNAMIC_CACHE = 'cornella-dynamic-v3';
+const CACHE_NAME = 'cornella-local-v4';
+const STATIC_CACHE = 'cornella-static-v4';
+const DYNAMIC_CACHE = 'cornella-dynamic-v4';
 
 // Recursos estáticos para cachear al instalar
 const STATIC_ASSETS = [
@@ -172,48 +172,49 @@ async function networkFirstWithOffline(request) {
 
 // Manejar notificaciones push
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push recibido:', event);
+  console.log('[SW] Push recibido, data:', event.data ? 'con datos' : 'sin datos');
 
-  if (event.data) {
-    const data = event.data.json();
+  // Valores por defecto (se usan si el payload no llega o no se puede parsear)
+  let title = 'CornellaLocal';
+  let options = {
+    body: 'Tienes una nueva notificación',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    vibrate: [200, 100, 200],
+    tag: 'cornella-notification',
+    requireInteraction: false,
+    data: { url: '/', type: 'general' },
+    actions: [
+      { action: 'open', title: 'Ver' },
+      { action: 'close', title: 'Cerrar' }
+    ]
+  };
 
-    // Configurar opciones según el tipo de notificación
-    const options = {
-      body: data.message || data.body || 'Nueva notificación de CornellaLocal',
-      icon: data.icon || '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
-      vibrate: data.vibrate || [200, 100, 200],
-      tag: data.tag || 'cornella-notification',
-      requireInteraction: data.requireInteraction || false,
-      data: {
-        url: data.url || '/',
-        type: data.type || 'general',
-        metadata: data.metadata || {}
-      },
-      actions: [
-        { action: 'open', title: '👀 Ver', icon: '/icons/icon-72x72.png' },
-        { action: 'close', title: '✕ Cerrar' }
-      ]
-    };
+  try {
+    if (event.data) {
+      const data = event.data.json();
+      title = data.title || title;
+      options.body = data.message || data.body || options.body;
+      options.icon = data.icon || options.icon;
+      options.tag = data.tag || options.tag;
+      options.requireInteraction = data.requireInteraction || false;
+      options.data = { url: data.url || '/', type: data.type || 'general', metadata: data.metadata || {} };
 
-    // Personalizar según el tipo
-    if (data.type === 'new_application') {
-      options.requireInteraction = true; // Requiere acción del usuario
-      options.vibrate = [300, 100, 300, 100, 300]; // Vibración más larga
+      if (data.type === 'new_application') {
+        options.vibrate = [300, 100, 300, 100, 300];
+        options.requireInteraction = true;
+      }
+      if (data.type === 'hired') {
+        options.vibrate = [400, 200, 400];
+        options.requireInteraction = true;
+      }
     }
-
-    if (data.type === 'hired') {
-      options.requireInteraction = true;
-      options.vibrate = [400, 200, 400]; // Vibración especial para contratación
-    }
-
-    event.waitUntil(
-      self.registration.showNotification(
-        data.title || '🔔 CornellaLocal',
-        options
-      )
-    );
+  } catch (e) {
+    console.log('[SW] No se pudo parsear el payload push, usando valores por defecto');
   }
+
+  // Siempre mostrar la notificación, aunque el payload falle
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 // Manejar clic en notificación

@@ -16731,7 +16731,7 @@ const OwnerWelcomeScreen = ({ onNavigate }) => (
 // PANTALLA DE AJUSTES
 // ==============================================
 
-const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboarding, onShowNotificationModal }) => {
+const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboarding, onShowNotificationModal, user, showToast }) => {
   // Estados locales para los toggles
   const [settings, setSettings] = useState(userSettings || {
     // Notificaciones
@@ -16790,6 +16790,45 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
           icon: '/favicon.ico',
         });
       }
+    }
+  };
+
+  const [testingPush, setTestingPush] = useState(false);
+
+  const sendTestPush = async () => {
+    if (!user?.id) { showToast?.('Debes iniciar sesión', 'error'); return; }
+    setTestingPush(true);
+    try {
+      const { data: subs } = await supabase
+        .from('push_subscriptions')
+        .select('subscription')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+
+      if (!subs?.subscription) {
+        showToast?.('No tienes una suscripción push activa. Activa las notificaciones primero.', 'warning');
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('send-push', {
+        body: {
+          subscription: subs.subscription,
+          title: 'CornellaLocal — Prueba',
+          message: '¡Las notificaciones push funcionan correctamente!',
+          url: '/',
+          type: 'test',
+          icon: '/icons/icon-192x192.png',
+        },
+      });
+
+      if (error) throw error;
+      showToast?.('Notificación enviada — revisa tu dispositivo', 'success');
+    } catch (e) {
+      console.error('[PUSH TEST]', e);
+      showToast?.('Error al enviar la notificación de prueba', 'error');
+    } finally {
+      setTestingPush(false);
     }
   };
 
@@ -16903,6 +16942,20 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Botón de prueba push */}
+            {pushPermissionStatus === 'granted' && (
+              <div className="p-4">
+                <button
+                  onClick={sendTestPush}
+                  disabled={testingPush}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-primary/10 text-primary font-medium text-sm hover:bg-primary/20 transition-colors disabled:opacity-50"
+                >
+                  <BellRing size={16} />
+                  {testingPush ? 'Enviando...' : 'Enviar notificación de prueba'}
+                </button>
+              </div>
             )}
 
             {/* Sonido y vibración */}
@@ -19373,6 +19426,8 @@ export default function App() {
             setHasSeenOnboarding(false);
           }}
           onShowNotificationModal={() => setShowNotificationModal(true)}
+          user={user}
+          showToast={showToast}
         />;
       case 'privacy-policy':
         return <PrivacyPolicyScreen onNavigate={navigate} />;

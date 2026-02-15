@@ -16825,7 +16825,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
         return;
       }
 
-      const { error } = await supabase.functions.invoke('send-push', {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('send-push', {
         body: {
           subscription: subs.subscription,
           title: 'CornellaLocal — Prueba',
@@ -16836,11 +16836,31 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
         },
       });
 
-      if (error) throw error;
+      console.log('[PUSH TEST] Response:', fnData, fnError);
+
+      if (fnError) {
+        // Intentar leer el cuerpo del error de la Edge Function
+        let detail = fnError.message || 'Error desconocido';
+        try {
+          if (fnError.context) {
+            const body = await fnError.context.json();
+            detail = body.error || body.message || detail;
+            console.error('[PUSH TEST] Edge Function error body:', body);
+          }
+        } catch (_) {}
+        showToast?.(`Error: ${detail}`, 'error');
+        return;
+      }
+
+      if (fnData?.error) {
+        showToast?.(`Error de push: ${fnData.error}`, 'error');
+        return;
+      }
+
       showToast?.('Notificación enviada — revisa tu dispositivo', 'success');
     } catch (e) {
-      console.error('[PUSH TEST]', e);
-      showToast?.('Error al enviar la notificación de prueba', 'error');
+      console.error('[PUSH TEST] Exception:', e);
+      showToast?.(`Error: ${e.message || 'Error desconocido'}`, 'error');
     } finally {
       setTestingPush(false);
     }

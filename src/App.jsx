@@ -5364,7 +5364,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
               </div>
               <div>
                 <span className="font-medium text-slate-700 block">Mis Reseñas</span>
-                <span className="text-xs text-slate-500">{userReviews.length} reseñas escritas</span>
+                <span className="text-xs text-slate-500">Ver mis reseñas</span>
               </div>
             </div>
             <ChevronRight className="text-slate-400" size={20} />
@@ -8111,13 +8111,37 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
 // ==============================================
 
 // Pantalla de Mis Reseñas
-const UserReviewsScreen = ({ onNavigate }) => {
-  const [reviews, setReviews] = useState(userReviews);
+const UserReviewsScreen = ({ onNavigate, user }) => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editingReview, setEditingReview] = useState(null);
   const [editText, setEditText] = useState('');
   const [editRating, setEditRating] = useState(5);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [editedReviews, setEditedReviews] = useState({}); // { reviewId: true } para rastrear cuáles ya fueron editadas
+  const [editedReviews, setEditedReviews] = useState({});
+
+  useEffect(() => {
+    const loadReviews = async () => {
+      if (!user?.id) { setLoading(false); return; }
+      const { data } = await supabase
+        .from('reviews')
+        .select('*, businesses(name, cover_photo)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (data) {
+        setReviews(data.map(r => ({
+          id: r.id,
+          businessName: r.businesses?.name || 'Negocio',
+          businessImage: r.businesses?.cover_photo || null,
+          date: new Date(r.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+          rating: r.rating,
+          text: r.comment,
+        })));
+      }
+      setLoading(false);
+    };
+    loadReviews();
+  }, [user]);
 
   const renderStars = (rating, interactive = false, onSelect = null) => {
     return Array(5).fill(0).map((_, i) => (
@@ -19405,7 +19429,7 @@ export default function App() {
       case 'owner-welcome':
         return <OwnerWelcomeScreen onNavigate={navigate} />;
       case 'user-reviews':
-        return <UserReviewsScreen onNavigate={navigate} />;
+        return <UserReviewsScreen onNavigate={navigate} user={user} />;
       case 'user-jobs':
         return <UserJobsScreen onNavigate={navigate} user={user} />;
       case 'job-detail':

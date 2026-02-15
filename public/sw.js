@@ -177,7 +177,7 @@ self.addEventListener('push', (event) => {
   // Valores por defecto (se usan si el payload no llega o no se puede parsear)
   let title = 'CornellaLocal';
   let options = {
-    body: 'Tienes una nueva notificación',
+    body: 'Tienes novedades — toca para ver',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
     vibrate: [200, 100, 200],

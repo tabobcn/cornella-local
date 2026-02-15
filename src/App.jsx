@@ -17249,6 +17249,9 @@ export default function App() {
       setCurrentPage('login');
     }, 60000);
 
+    // Detectar si venimos de un redirect OAuth
+    const urlHasOAuthCode = window.location.search.includes('code=') || window.location.hash.includes('access_token=');
+
     // Verificar sesión actual
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
@@ -17279,12 +17282,15 @@ export default function App() {
             setUser(basicUser);
             setCurrentPage('home');
           }
+        } else if (urlHasOAuthCode) {
+          // Venimos de OAuth — esperar a que onAuthStateChange procese el token
+          console.log('[AUTH] Esperando procesamiento de OAuth...');
+          // No llamar setLoadingAuth(false) aquí — onAuthStateChange lo hará
         } else {
           console.log('[AUTH] No hay sesión, mostrando login');
           setCurrentPage('login');
+          setLoadingAuth(false);
         }
-
-        setLoadingAuth(false);
       })
       .catch((err) => {
         clearTimeout(authTimeout);
@@ -17306,7 +17312,6 @@ export default function App() {
 
         if (data) {
           setUser(data);
-          setCurrentPage('home');
         } else {
           // Usuario nuevo (ej. primer login con Google) — crear perfil básico
           const displayName = session.user.user_metadata?.full_name
@@ -17315,7 +17320,7 @@ export default function App() {
             || 'Usuario';
           const avatar = session.user.user_metadata?.avatar_url || null;
 
-          // Intentar insertar perfil en Supabase
+          // Insertar perfil en Supabase
           await supabase.from('profiles').upsert({
             id: session.user.id,
             email: session.user.email,
@@ -17329,8 +17334,9 @@ export default function App() {
             full_name: displayName,
             avatar_url: avatar,
           });
-          setCurrentPage('home');
         }
+        setCurrentPage('home');
+        setLoadingAuth(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('login');

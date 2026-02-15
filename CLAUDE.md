@@ -81,8 +81,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Service Worker: listener para navegar al click en notificación
 - [x] Edge Function `send-push` desplegada (usa `npm:web-push` con firma VAPID)
 - [x] Auto-request a los 3 segundos del primer login (solo si no se ha preguntado antes)
-- ⏳ **PENDIENTE ejecutar en Supabase**: `supabase/setup-push-notifications.sql`
-- ⏳ **PENDIENTE ejecutar en Supabase**: `supabase/add-view-counters.sql`
+- [x] **Triggers push en BD**: `trigger_push_favorite_new_offer`, `trigger_push_new_budget_request`, `trigger_push_budget_response`, `trigger_push_new_job_application`, `trigger_push_application_status_change`
+- [x] **Columnas view_count/click_count**: en `businesses`, `jobs`, `offers` (+ `last_viewed_at`)
 
 #### Sistema de Candidaturas
 - [x] Formulario de aplicación en JobDetailPage
@@ -107,11 +107,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🔜 Pendientes
 
-### SQL que el usuario debe ejecutar en Supabase Dashboard → SQL Editor
-- [ ] `supabase/setup-push-notifications.sql` — crea tabla `push_subscriptions` + triggers para enviar push
-- [ ] `supabase/add-view-counters.sql` — añade columnas `view_count`/`click_count` + RPC functions
-
-### Secrets en Supabase → Edge Functions → Secrets (ya configurados según usuario)
+### Secrets en Supabase → Edge Functions → Secrets (ya configurados)
 - `VAPID_PUBLIC_KEY` = `BA_vRY5jNz2ro0yPN_-GXmTemr-oH4VzVodixY6ukjYigsm_8GFKFrWggD3VqGwMSAfEjxnZuhNbr04HZAL6Mw8`
 - `VAPID_PRIVATE_KEY` = `MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgwSTsogtf6XTi5C1BL3VNoMLLewmSP3nXSSh2lskYZoihRANCAAQP70WOYzc9q6NMjzf_hl5k3pq_qB-Fc1aHYsWOrpI2IoLJv_BhSha1oIA91ahsDEgHxI8Z2boTW69OB2QC-jMP`
 - `VAPID_SUBJECT` = `mailto:noreply@cornellalocal.es`
@@ -168,8 +164,8 @@ Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
 - `supabase/setup-notifications-complete.sql` — ⭐ Triggers notificaciones (ejecutar en Supabase)
 - `supabase/setup-job-applications-complete.sql` — ⭐ Sistema candidaturas (ejecutar en Supabase)
 - `supabase/fix-profiles-rls.sql` — Políticas RLS para profiles (ejecutar si hay timeout en login)
-- `supabase/setup-push-notifications.sql` — ⭐ Push notifications tabla + triggers (PENDIENTE)
-- `supabase/add-view-counters.sql` — ⭐ view_count/click_count columns + RPC (PENDIENTE)
+- `supabase/setup-push-notifications.sql` — Push notifications tabla + triggers (✅ ejecutado)
+- `supabase/add-view-counters.sql` — view_count/click_count columns + RPC (✅ ejecutado)
 - `supabase/add-missing-business-columns.sql` — cover_photo, special_closures
 - `supabase/setup-admin-system-complete.sql` — Panel de administración
 - `supabase/setup-verification-documents.sql` — Documentos de verificación

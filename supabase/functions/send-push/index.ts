@@ -106,8 +106,8 @@ async function encryptPayload(keys: { p256dh: string; auth: string }, plaintext:
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const prk  = await hkdfExtract(salt, ikm);
 
-  const cekBytes = await hkdfExpand(prk, concat('Content-Encoding: aes128gcm\x00', [1]), 16);
-  const nonce    = await hkdfExpand(prk, concat('Content-Encoding: nonce\x00',    [1]), 12);
+  const cekBytes = await hkdfExpand(prk, new TextEncoder().encode('Content-Encoding: aes128gcm\x00'), 16);
+  const nonce    = await hkdfExpand(prk, new TextEncoder().encode('Content-Encoding: nonce\x00'),    12);
 
   // Import CEK
   const cek = await crypto.subtle.importKey('raw', cekBytes, 'AES-GCM', false, ['encrypt']);

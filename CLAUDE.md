@@ -8,14 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-13)
+## ESTADO DEL PROYECTO (Actualizado: 2026-02-15)
 
-### ✅ TODO LO IMPLEMENTADO (resumen completo)
+### ✅ TODO LO IMPLEMENTADO
 
 #### Base y Autenticación
 - [x] Frontend React completo — diseño mobile-first, Tailwind CSS, PWA
-- [x] Supabase Auth (login, registro, sesión persistente, logout)
-- [x] Datos de usuario reales en perfil (full_name, email, avatar)
+- [x] Supabase Auth: login email/password, registro, sesión persistente, logout
+- [x] **Login con Google OAuth** — `signInWithOAuth`, perfil creado automáticamente desde user_metadata
+- [x] Auth flow con `onAuthStateChange` + `INITIAL_SESSION` + `SIGNED_IN`
+- [x] Datos de usuario reales en perfil (full_name, email, avatar_url)
 
 #### Negocios
 - [x] Listado de negocios desde Supabase con categorías, tags, barrio
@@ -23,16 +25,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Tags scrolleables y carga aleatoria (sin duplicados)
 - [x] Prevención de negocios duplicados en registro
 - [x] BusinessDetailPage completa: horario, galería, reseñas, mapa, cierres especiales
-- [x] **Galería con lightbox** — grid de fotos adicionales, lightbox con navegación y puntos indicadores fuera del overflow container
-- [x] **cover_photo e images** — usados en todas las vistas (listings, cards, detalle, "Nuevos en el barrio")
-- [x] **Cierres especiales** — banner rojo/naranja dentro de la sección de horario (hoy/mañana/próximos 14 días)
+- [x] **Galería con lightbox** — grid de fotos, navegación, puntos indicadores fuera del overflow container
+- [x] **cover_photo e images** — usados en todas las vistas
+- [x] **Cierres especiales** — banner rojo/naranja (hoy/mañana/próximos 14 días)
 - [x] "Nuevos en el barrio" con foto de portada
+- [x] **Contadores de vistas/clics** — RPC `increment_business_views` / `increment_business_clicks`
+- [x] **Contadores de vistas de ofertas y empleos** — RPC `increment_offer_views` / `increment_job_views`
 
 #### Flujo de Registro y Publicación de Negocios
 - [x] Registro de negocio en 4 pasos: info → categoría → horario → fotos+documentos
 - [x] Subida de fotos (cover + galería) a Supabase Storage
 - [x] Subida de documentos de verificación
-- [x] **Sistema de apelación** — negocios rechazados pueden enviar mensaje + imágenes de apelación
+- [x] **Sistema de apelación** — negocios rechazados pueden enviar mensaje + imágenes
 - [x] **is_published flow completo** — step 4 muestra UI diferente si publicado/aprobado/pendiente
 - [x] "Guardar cambios" para negocios ya publicados (no muestra "Publicar" de nuevo)
 - [x] Campos guardados correctamente: `cover_photo`, `images`, `opening_hours`, `special_closures`
@@ -40,17 +44,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 #### Panel de Propietarios
 - [x] BusinessOwnerDashboard con estadísticas reales (empleos, ofertas, candidaturas, presupuestos)
 - [x] Gestión completa de ofertas (crear %, 2x1, gratis; pausar; reactivar; eliminar)
-- [x] Gestión completa de empleos (crear, eliminar)
+- [x] Gestión completa de empleos (crear, eliminar, renovar)
 - [x] Presupuestos entrantes con respuesta y cotización
-- [x] Panel de candidatos (filtros, cambio de estado, contratar + auto-rechazar resto)
-- [x] Transición suave al auto-rechazar candidatos (delay 1.5s)
+- [x] Panel de candidatos (filtros, cambio de estado, contratar + auto-rechazar resto con delay 1.5s)
+- [x] BusinessStatsScreen — estadísticas detalladas del negocio
 
 #### Sistema de Presupuestos
-- [x] Usuarios crean solicitudes de presupuesto con categoría/descripción
+- [x] Usuarios crean solicitudes de presupuesto (categoría/descripción)
 - [x] Negocios responden con cotización (precio, mensaje)
-- [x] **acceptBudgetQuote()** — acepta un presupuesto y auto-rechaza los demás con notificación
-- [x] "Mis Presupuestos" carga desde Supabase con JOIN a budget_quotes
-- [x] Presupuesto aceptado NO aparece duplicado en "Otros presupuestos"
+- [x] **acceptBudgetQuote()** — acepta uno y auto-rechaza los demás con notificación
+- [x] "Mis Presupuestos" carga desde Supabase con cotizaciones
+- [x] Presupuesto aceptado no aparece duplicado
 
 #### Sistema de Favoritos
 - [x] toggleFavorite() persiste en tabla `favorites` (Supabase)
@@ -58,17 +62,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Optimistic updates con rollback en error
 - [x] FavoritesPage carga negocios dinámicamente desde Supabase
 
-#### Sistema de Notificaciones
+#### Sistema de Notificaciones In-App
 - [x] Triggers PostgreSQL auto-notifican al crear oferta/empleo a usuarios que favoritearon
 - [x] Trigger notifica al propietario cuando recibe nueva candidatura
 - [x] Notificación al usuario cuando recibe presupuesto (`budget_quote_received`)
 - [x] Notificación al negocio cuando cliente acepta presupuesto (`budget_quote_accepted`)
 - [x] Notificación al negocio cuando cliente rechaza (elige otro) (`budget_quote_rejected`)
 - [x] **Realtime**: nuevas notificaciones aparecen sin refrescar + toast automático
-- [x] Badge de no leídas en icono Bell (HomePage, OffersPage) — actualización en tiempo real
+- [x] Badge de no leídas en icono Bell — actualización en tiempo real
 - [x] **Notificaciones clickeables** — navegan a la pantalla correcta según tipo
-- [x] `markAsRead` actualiza badge del padre inmediatamente (-1)
-- [x] **"Borrar leídas"** — elimina de Supabase y estado todas las leídas, mantiene no leídas
+- [x] `markAsRead` actualiza badge del padre inmediatamente
+- [x] **"Borrar leídas"** — elimina de Supabase y estado
+
+#### Push Notifications (Web Push / VAPID)
+- [x] `requestPushPermission()` — solicita permisos y guarda suscripción en `push_subscriptions`
+- [x] VAPID_PUBLIC_KEY configurada con clave real
+- [x] NotificationPermissionModal — modal bonito (no confirm nativo)
+- [x] Service Worker: listener para navegar al click en notificación
+- [x] Edge Function `send-push` desplegada (usa `npm:web-push` con firma VAPID)
+- [x] Auto-request a los 3 segundos del primer login (solo si no se ha preguntado antes)
+- ⏳ **PENDIENTE ejecutar en Supabase**: `supabase/setup-push-notifications.sql`
+- ⏳ **PENDIENTE ejecutar en Supabase**: `supabase/add-view-counters.sql`
 
 #### Sistema de Candidaturas
 - [x] Formulario de aplicación en JobDetailPage
@@ -81,35 +95,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 #### Panel de Administración
 - [x] AdminDashboard con estadísticas globales
-- [x] BusinessApprovalScreen — aprobar/rechazar con motivo + ver documentos
-- [x] Ver mensaje de apelación e imágenes enviadas por el negocio
+- [x] BusinessApprovalScreen — aprobar/rechazar con motivo + ver documentos + ver apelación
 - [x] ReportsScreen para gestionar reportes
+- [x] BusinessAnalyticsScreen — analítica de negocios
 - [x] Solo visible para usuarios con `is_admin = true`
+
+#### Contadores de Categorías
+- [x] BudgetRequestScreen muestra conteo real de negocios por subcategoría (desde Supabase)
 
 ---
 
 ## 🔜 Pendientes
 
-### Pendiente deploy (usuario lo hace en Supabase)
-- [ ] **Ejecutar SQL** `supabase/setup-push-notifications.sql` — tabla push_subscriptions + triggers
-- [ ] **Ejecutar SQL** `supabase/add-view-counters.sql` — columnas view_count/click_count + RPC functions
-- [ ] **Añadir secrets en Supabase** → Edge Functions → Secrets:
-  - `VAPID_PUBLIC_KEY` = `BA_vRY5jNz2ro0yPN_-GXmTemr-oH4VzVodixY6ukjYigsm_8GFKFrWggD3VqGwMSAfEjxnZuhNbr04HZAL6Mw8`
-  - `VAPID_PRIVATE_KEY` = `***REDACTED-VAPID-PRIVATE-KEY***`
-  - `VAPID_SUBJECT` = `mailto:noreply@cornellalocal.es`
-- [ ] **Deploy Edge Function**: `npx supabase functions deploy send-push`
+### SQL que el usuario debe ejecutar en Supabase Dashboard → SQL Editor
+- [ ] `supabase/setup-push-notifications.sql` — crea tabla `push_subscriptions` + triggers para enviar push
+- [ ] `supabase/add-view-counters.sql` — añade columnas `view_count`/`click_count` + RPC functions
+
+### Secrets en Supabase → Edge Functions → Secrets (ya configurados según usuario)
+- `VAPID_PUBLIC_KEY` = `BA_vRY5jNz2ro0yPN_-GXmTemr-oH4VzVodixY6ukjYigsm_8GFKFrWggD3VqGwMSAfEjxnZuhNbr04HZAL6Mw8`
+- `VAPID_PRIVATE_KEY` = `***REDACTED-VAPID-PRIVATE-KEY***`
+- `VAPID_SUBJECT` = `mailto:noreply@cornellalocal.es`
+
+### TODOs menores en código (no críticos)
+- `redemptions: 0` — contador de redenciones de ofertas (requiere tabla nueva en BD)
+- Pantallas admin futuras: usuarios admin, stats globales avanzadas
 
 ### Nota Push Notifications
-Push solo funciona en HTTPS. Para testear en localhost: Chrome → `chrome://flags/#unsafely-treat-insecure-origin-as-secure`. Para testing real → deploy a Vercel.
+Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
 
-### Corto plazo
-- [ ] **Mejorar búsqueda** — filtros avanzados (precio, distancia, valoración)
+### Mejoras futuras
 - [ ] **Notificaciones por email** — para presupuestos y candidaturas (Supabase Edge Functions)
-
-### Medio plazo
-- [ ] **Deploy a Vercel** + dominio CornellaLocal.es + configurar Supabase
-- [ ] **Sistema de mensajería** entre usuarios y negocios
-- [ ] **Estadísticas avanzadas** en dashboard del propietario (gráficas, historial)
+- [ ] **Búsqueda mejorada** — filtros avanzados (precio, distancia, valoración)
+- [ ] **Dominio propio** — CornellaLocal.es + configurar en Supabase/Vercel
+- [ ] **Sistema de mensajería** — chat entre usuarios y negocios
+- [ ] **Estadísticas avanzadas** — gráficas en dashboard del propietario
 
 ---
 
@@ -124,6 +143,7 @@ Push solo funciona en HTTPS. Para testear en localhost: Chrome → `chrome://fla
 | **Presupuestos** | Propietarios ven solicitudes de su categoría (subcategory match) |
 | **Candidaturas** | Al contratar uno → resto se auto-rechaza automáticamente |
 | **Presupuestos** | Al aceptar uno → resto se notifica como "no seleccionado" |
+| **OAuth** | Perfil creado desde `session.user.user_metadata` (no espera query profiles) |
 
 ---
 
@@ -137,7 +157,7 @@ Push solo funciona en HTTPS. Para testear en localhost: Chrome → `chrome://fla
   - ~10,500-14,000: EditBusinessScreen (registro/edición en 4 pasos)
   - ~14,000-19,500: App principal (state, useEffects, navigation, render)
 
-### Utilidades (creadas en sesiones anteriores)
+### Utilidades
 - `src/constants.js` — LIMITS, TIMING, ERROR_MESSAGES, SUCCESS_MESSAGES, REGEX_PATTERNS
 - `src/utils/formatters.js` — formatDate, formatCurrency, pluralize, getInitials
 - `src/utils/helpers.js` — debounce, copyToClipboard, formatSupabaseError
@@ -148,11 +168,16 @@ Push solo funciona en HTTPS. Para testear en localhost: Chrome → `chrome://fla
 - `supabase/setup-notifications-complete.sql` — ⭐ Triggers notificaciones (ejecutar en Supabase)
 - `supabase/setup-job-applications-complete.sql` — ⭐ Sistema candidaturas (ejecutar en Supabase)
 - `supabase/fix-profiles-rls.sql` — Políticas RLS para profiles (ejecutar si hay timeout en login)
-- `supabase/add-missing-business-columns.sql` — Añade cover_photo y special_closures
+- `supabase/setup-push-notifications.sql` — ⭐ Push notifications tabla + triggers (PENDIENTE)
+- `supabase/add-view-counters.sql` — ⭐ view_count/click_count columns + RPC (PENDIENTE)
+- `supabase/add-missing-business-columns.sql` — cover_photo, special_closures
 - `supabase/setup-admin-system-complete.sql` — Panel de administración
 - `supabase/setup-verification-documents.sql` — Documentos de verificación
-- `supabase/add-business-appeal.sql` — Campos para sistema de apelación
+- `supabase/add-business-appeal.sql` — Sistema de apelación
 - `supabase/add-is-published.sql` — Campo is_published en businesses
+
+### Edge Functions
+- `supabase/functions/send-push/index.ts` — Envía push notifications usando npm:web-push + VAPID
 
 ---
 
@@ -169,20 +194,34 @@ npm run preview  # Preview del build de producción
 ## Tech Stack
 
 - **Frontend**: React 18 + Vite 5
-- **Backend**: Supabase (PostgreSQL + Auth + Realtime + Storage)
+- **Backend**: Supabase (PostgreSQL + Auth + Realtime + Storage + Edge Functions)
 - **Styling**: Tailwind CSS 3 con colores custom
 - **Icons**: Lucide React
 - **State**: React useState/useEffect (sin librerías externas)
-- **Deploy**: Vercel (pendiente)
+- **Deploy**: Vercel (activo en cornella-local.vercel.app)
 
 ---
 
 ## Architecture
 
 ### Single-File Structure
-Toda la aplicación está en `src/App.jsx` (~19,500 líneas). Intencional para este proyecto demo.
+Toda la aplicación está en `src/App.jsx` (~19,500 líneas). Intencional para este proyecto.
 
 ### Key Patterns
+
+**Auth Flow** (Supabase v2 + PKCE):
+```javascript
+// onAuthStateChange con INITIAL_SESSION es la fuente principal de verdad
+// Con detectSessionInUrl: true, Supabase intercambia el código OAuth automáticamente
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+    // Setear usuario inmediatamente desde session.user (no esperar profiles query)
+    setUser({ id, email, full_name, avatar_url }); // desde session.user.user_metadata
+    setCurrentPage('home');
+    // Sincronizar con tabla profiles en segundo plano (sin await)
+  }
+});
+```
 
 **Supabase Integration**:
 ```javascript
@@ -198,12 +237,9 @@ useEffect(() => {
 
 **Optimistic Updates** (favoritos, notificaciones, estados):
 ```javascript
-// 1. Actualizar UI inmediatamente
-setState(prev => newState);
-// 2. Persistir en Supabase
-await supabase.from('table').update(...);
-// 3. Revertir si hay error
-setState(prev => originalState);
+setState(prev => newState);           // 1. Actualizar UI
+await supabase.from('table').update(...); // 2. Persistir
+setState(prev => originalState);     // 3. Revertir si error
 ```
 
 **Navigation**:
@@ -231,13 +267,14 @@ Custom colors en `tailwind.config.js`:
 
 - App mobile-first (max-width: 448px)
 - Todo en español en la UI
-- localStorage solo para: búsquedas recientes, onboarding, settings
+- localStorage solo para: búsquedas recientes, onboarding, push-asked, settings
 - Pull-to-refresh implementado
-- **Todos los datos persisten en Supabase**
+- **Todos los datos críticos persisten en Supabase**
 - Lightbox y modales deben renderizarse FUERA de contenedores `overflow-x-hidden` (usar Fragment `<>`)
-- Campos en BD son snake_case, en React son camelCase — mapear correctamente en handleSave/onUpdateBusiness
+- Campos en BD son snake_case, en React son camelCase — mapear correctamente
 - NUNCA usar `alert()` → siempre `showToast()`
 - NUNCA JOIN `profiles:user_id(...)` en Supabase queries → da PGRST200. Usar `select('*')` y cargar separado
+- Para OAuth, NO esperar query a profiles para navegar — usar `session.user.user_metadata` directamente
 
 ---
 

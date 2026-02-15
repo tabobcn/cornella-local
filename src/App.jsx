@@ -17306,6 +17306,30 @@ export default function App() {
 
         if (data) {
           setUser(data);
+          setCurrentPage('home');
+        } else {
+          // Usuario nuevo (ej. primer login con Google) — crear perfil básico
+          const displayName = session.user.user_metadata?.full_name
+            || session.user.user_metadata?.name
+            || session.user.email?.split('@')[0]
+            || 'Usuario';
+          const avatar = session.user.user_metadata?.avatar_url || null;
+
+          // Intentar insertar perfil en Supabase
+          await supabase.from('profiles').upsert({
+            id: session.user.id,
+            email: session.user.email,
+            full_name: displayName,
+            avatar_url: avatar,
+          }, { onConflict: 'id' });
+
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            full_name: displayName,
+            avatar_url: avatar,
+          });
+          setCurrentPage('home');
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);

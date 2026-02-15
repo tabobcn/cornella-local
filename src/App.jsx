@@ -7683,6 +7683,28 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
 // Página de Detalle de Categoría
 const CategoryDetailPage = ({ categoryId, onNavigate }) => {
   const category = categories.find(c => c.id === categoryId);
+  const [subcategoryCounts, setSubcategoryCounts] = useState({});
+
+  useEffect(() => {
+    const loadCounts = async () => {
+      if (!category) return;
+      const subcategoryNames = category.subcategories?.map(s => s.name) || [];
+      if (subcategoryNames.length === 0) return;
+      const { data } = await supabase
+        .from('businesses')
+        .select('subcategory')
+        .in('subcategory', subcategoryNames)
+        .eq('verification_status', 'approved')
+        .eq('is_published', true);
+      if (!data) return;
+      const counts = {};
+      data.forEach(b => {
+        if (b.subcategory) counts[b.subcategory] = (counts[b.subcategory] || 0) + 1;
+      });
+      setSubcategoryCounts(counts);
+    };
+    loadCounts();
+  }, [categoryId]);
 
   if (!category) {
     return (
@@ -7765,7 +7787,7 @@ const CategoryDetailPage = ({ categoryId, onNavigate }) => {
               </div>
               <div className="flex-1 text-left">
                 <h3 className="font-semibold text-slate-900">{sub.name}</h3>
-                <p className="text-sm text-gray-500">{sub.count} comercios</p>
+                <p className="text-sm text-gray-500">{subcategoryCounts[sub.name] ?? sub.count} comercios</p>
               </div>
               <ChevronRight size={20} className="text-gray-400" />
             </button>

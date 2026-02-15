@@ -17283,9 +17283,25 @@ export default function App() {
             setCurrentPage('home');
           }
         } else if (urlHasOAuthCode) {
-          // Venimos de OAuth — esperar a que onAuthStateChange procese el token
-          console.log('[AUTH] Esperando procesamiento de OAuth...');
-          // No llamar setLoadingAuth(false) aquí — onAuthStateChange lo hará
+          // Venimos de OAuth — intentar intercambiar el código manualmente
+          console.log('[AUTH] Procesando código OAuth...');
+          try {
+            const code = new URLSearchParams(window.location.search).get('code');
+            if (code) {
+              const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+              if (exchangeData?.session) {
+                console.log('[AUTH] Código OAuth canjeado correctamente');
+                // onAuthStateChange se disparará con SIGNED_IN
+                return;
+              }
+              console.error('[AUTH] Error canjeando código:', exchangeError);
+            }
+          } catch (e) {
+            console.error('[AUTH] Exception en exchange:', e);
+          }
+          // Si falla, mostrar login
+          setCurrentPage('login');
+          setLoadingAuth(false);
         } else {
           console.log('[AUTH] No hay sesión, mostrando login');
           setCurrentPage('login');

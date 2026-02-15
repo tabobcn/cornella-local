@@ -161,22 +161,18 @@ serve(async (req) => {
       timestamp: Date.now(),
     });
 
-    const [jwt, body] = await Promise.all([
-      createVapidJwt(subscription.endpoint),
-      encryptPayload(subscription.keys, payload),
-    ]);
+    const jwt = await createVapidJwt(subscription.endpoint);
 
     console.log('[SEND-PUSH] Sending to:', subscription.endpoint.substring(0, 60));
 
+    // Enviar sin payload cifrado para máxima compatibilidad
+    // El Service Worker mostrará la notificación con texto genérico
     const pushRes = await fetch(subscription.endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `vapid t=${jwt},k=${VAPID_PUBLIC_KEY}`,
-        'Content-Type': 'application/octet-stream',
-        'Content-Encoding': 'aes128gcm',
         'TTL': '86400',
       },
-      body,
     });
 
     if (!pushRes.ok && pushRes.status !== 201) {

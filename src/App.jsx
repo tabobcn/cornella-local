@@ -16731,7 +16731,7 @@ const OwnerWelcomeScreen = ({ onNavigate }) => (
 // PANTALLA DE AJUSTES
 // ==============================================
 
-const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboarding, onShowNotificationModal, user, showToast }) => {
+const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboarding, onShowNotificationModal, user, showToast, onRequestPushPermission }) => {
   // Estados locales para los toggles
   const [settings, setSettings] = useState(userSettings || {
     // Notificaciones
@@ -16799,15 +16799,29 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
     if (!user?.id) { showToast?.('Debes iniciar sesión', 'error'); return; }
     setTestingPush(true);
     try {
-      const { data: subs } = await supabase
+      let { data: subs } = await supabase
         .from('push_subscriptions')
         .select('subscription')
         .eq('user_id', user.id)
         .limit(1)
         .single();
 
+      // Si no hay suscripción en BD pero el permiso está concedido, intentar registrar ahora
+      if (!subs?.subscription && pushPermissionStatus === 'granted' && onRequestPushPermission) {
+        showToast?.('Registrando suscripción...', 'info');
+        await onRequestPushPermission();
+        // Volver a buscar
+        const { data: subsRetry } = await supabase
+          .from('push_subscriptions')
+          .select('subscription')
+          .eq('user_id', user.id)
+          .limit(1)
+          .single();
+        subs = subsRetry;
+      }
+
       if (!subs?.subscription) {
-        showToast?.('No tienes una suscripción push activa. Activa las notificaciones primero.', 'warning');
+        showToast?.('No se pudo registrar la suscripción. Ve a Ajustes → Notificaciones y actívalas.', 'warning');
         return;
       }
 
@@ -17469,15 +17483,19 @@ export default function App() {
         console.log('[PUSH] Subscription existente encontrada');
       }
 
-      // Guardar subscription en Supabase
+      // Guardar subscription en Supabase (delete+insert para evitar problemas con onConflict en índices de expresión)
+      const endpoint = subscription.toJSON().endpoint;
+      await supabase.from('push_subscriptions')
+        .delete()
+        .eq('user_id', user.id)
+        .filter('subscription->>endpoint', 'eq', endpoint);
+
       const { error } = await supabase
         .from('push_subscriptions')
-        .upsert({
+        .insert({
           user_id: user.id,
           subscription: subscription.toJSON(),
-          user_agent: navigator.userAgent
-        }, {
-          onConflict: 'user_id,subscription->endpoint'
+          user_agent: navigator.userAgent,
         });
 
       if (error) {
@@ -19428,6 +19446,7 @@ export default function App() {
           onShowNotificationModal={() => setShowNotificationModal(true)}
           user={user}
           showToast={showToast}
+          onRequestPushPermission={requestPushPermission}
         />;
       case 'privacy-policy':
         return <PrivacyPolicyScreen onNavigate={navigate} />;

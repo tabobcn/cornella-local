@@ -17290,27 +17290,42 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[AUTH] Event:', event, session ? '(con sesión)' : '(sin sesión)');
-      clearTimeout(authTimeout);
 
-      if (event === 'INITIAL_SESSION') {
-        if (session) {
-          await loadOrCreateProfile(session);
-          setCurrentPage('home');
-        } else {
-          setCurrentPage('login');
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        // Siempre cancelar timeout y desbloquear carga (en finally para garantizarlo)
+        try {
+          if (session) {
+            await loadOrCreateProfile(session);
+            setCurrentPage('home');
+          } else if (event === 'INITIAL_SESSION') {
+            // INITIAL_SESSION sin sesión = no hay usuario logueado
+            setCurrentPage('login');
+          }
+          // Si SIGNED_IN sin sesión (no debería pasar), no hacer nada
+        } catch (e) {
+          console.error('[AUTH] Error cargando perfil:', e);
+          // Fallback: usar datos mínimos de la sesión
+          if (session) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email,
+              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+              avatar_url: session.user.user_metadata?.avatar_url || null,
+            });
+            setCurrentPage('home');
+          } else {
+            setCurrentPage('login');
+          }
+        } finally {
+          clearTimeout(authTimeout);
+          setLoadingAuth(false);
         }
-        setLoadingAuth(false);
-      } else if (event === 'SIGNED_IN') {
-        await loadOrCreateProfile(session);
-        setCurrentPage('home');
-        setLoadingAuth(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('login');
         setLoadingAuth(false);
-      } else if (event === 'TOKEN_REFRESHED') {
-        // Token renovado automáticamente, no hacer nada
       }
+      // TOKEN_REFRESHED: ignorar
     });
 
     return () => {

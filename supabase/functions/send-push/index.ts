@@ -12,7 +12,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey',
 };
 
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY');

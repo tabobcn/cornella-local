@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-15)
+## ESTADO DEL PROYECTO (Actualizado: 2026-02-15 — noche)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -79,7 +79,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] VAPID_PUBLIC_KEY configurada con clave real
 - [x] NotificationPermissionModal — modal bonito (no confirm nativo)
 - [x] Service Worker: listener para navegar al click en notificación
-- [x] Edge Function `send-push` desplegada (usa `npm:web-push` con firma VAPID)
+- [x] **Edge Function `send-push`** — cifrado RFC 8291 nativo Deno (sin npm:web-push), VAPID JWT ES256
+- [x] Fix cifrado: CEK/nonce HKDF info sin byte `[1]` extra (bug resuelto, push llega con texto real)
 - [x] Auto-request a los 3 segundos del primer login (solo si no se ha preguntado antes)
 - [x] **Triggers push en BD**: `trigger_push_favorite_new_offer`, `trigger_push_new_budget_request`, `trigger_push_budget_response`, `trigger_push_new_job_application`, `trigger_push_application_status_change`
 - [x] **Columnas view_count/click_count**: en `businesses`, `jobs`, `offers` (+ `last_viewed_at`)
@@ -102,6 +103,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 #### Contadores de Categorías
 - [x] BudgetRequestScreen muestra conteo real de negocios por subcategoría (desde Supabase)
+- [x] **CategoryDetailPage** carga counts de subcategorías dinámicamente desde Supabase (no hardcodeados)
+- [x] mockData.js: `userReviews = []` — reseñas cargadas desde Supabase en `UserReviewsScreen`
 
 ---
 

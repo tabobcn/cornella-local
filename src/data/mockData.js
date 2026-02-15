@@ -593,40 +593,7 @@ export const navItems = [
 ];
 
 // Reseñas del usuario
-export const userReviews = [
-  {
-    id: 1,
-    businessName: "Cafetería La Plaza",
-    businessImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuDrf5Tz0_21w4a9PJyJbrXy0rw9AtnV-5IRHh8EQEWnQMDJ6P1AwG3GvY7Bfe7QtkssX-5fJciFBbhXfNI6b6ekp2TwH7Mwp6HWBRfYiF9G0DUVokbZpyCHSJRUIyNsh0UWvw59CyQepIsdCNAPAqsndpki_1X92rEfS11P8m_zwuyNmtvVzSL1fzxS-0PcdI7dZg7F9kHo8NQepkAvf2AxwYlmSv2QXulR7DyZ_fbJRtfOb57cA_B1Oix18xqW_rho97lEcxwb1_ZN",
-    date: "12 Oct 2023",
-    rating: 5,
-    text: "El mejor café de Cornellà, el servicio es muy rápido y amable. Las tostadas con tomate son espectaculares. Volveré seguro con amigos.",
-  },
-  {
-    id: 2,
-    businessName: "Biblioteca Central",
-    businessImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuC4s_LYkV96e3BeKYVAZIxLoAssWMX7uj0MDaSfO6Ju8w_50WZLHlskI3HsVw-BV-D9gLqg1gpsXF8SsTj9Kw2yw3lhMWJ2gPjoSFTyel9rdKHj71lz5FKykpU25Nu39Q44XijTYW5GxkT8va0Kl6zl7DWb8LS9ZJ8QF3BIr-8BM2c4LP7nWrHd22_Bb8i3rXAbY_YabTJy6hWP4QnCgtyV4RrxZRUIHRozt5A-cXq7FW9QKiGX66XW9jbpvsBw9EUjMn_s4PVvinHN",
-    date: "05 Sep 2023",
-    rating: 4,
-    text: "Muy tranquila para estudiar, pero el wifi fallaba un poco en la segunda planta durante la tarde. Por lo demás, excelente colección de libros.",
-  },
-  {
-    id: 3,
-    businessName: "Polideportivo Municipal",
-    businessImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuBd4R0V-5JfkYo6He3rb-83U2ZilWGQB5OHM9xx0h0YApb4pRl-ZsxtU4-d9BGFriHxBHqNU31nsLvd6YF3z2En9sFLHEenwNL2AgtALMTEhMoZhfnPDSCJ3ZnaogCdKBP7ExmS4it6KX4b5xe1T1eQzRuB5T914P6-Gz4meNxIEienZ0VD3Eb0NqUK1f3F4-KQwoMEZVDWPBrk5QgrgbwLi1zBWaF1fSh9ORl9iKCHzzShqvplK7QsJ9G3g6zb6Yo7cdDjB9H0zYaR",
-    date: "20 Ago 2023",
-    rating: 5,
-    text: "Instalaciones renovadas, muy limpio. Los vestuarios están impecables y el personal de recepción es muy atento con las reservas.",
-  },
-  {
-    id: 4,
-    businessName: "Parque de Can Mercader",
-    businessImage: null,
-    date: "15 Jul 2023",
-    rating: 3,
-    text: "Un espacio verde genial para pasear, aunque los fines de semana se llena demasiado.",
-  },
-];
+export const userReviews = [];
 
 // Candidaturas del usuario
 export const userJobApplications = {

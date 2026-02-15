@@ -17250,37 +17250,49 @@ export default function App() {
     }, 15000);
 
     // Helper: cargar o crear perfil a partir de una sesión
+    // Estrategia: setear usuario inmediatamente con datos de la sesión,
+    // luego sincronizar con profiles en segundo plano (sin bloquear)
     const loadOrCreateProfile = async (session) => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
+      const displayName = session.user.user_metadata?.full_name
+        || session.user.user_metadata?.name
+        || session.user.email?.split('@')[0]
+        || 'Usuario';
+      const avatar = session.user.user_metadata?.avatar_url || null;
+
+      // 1. Setear usuario inmediatamente con datos de la sesión (no esperar a DB)
+      setUser({
+        id: session.user.id,
+        email: session.user.email,
+        full_name: displayName,
+        avatar_url: avatar,
+      });
+
+      // 2. Sincronizar con profiles en segundo plano (sin await — no bloquea el login)
+      supabase.from('profiles')
+        .select('id, full_name, avatar_url')
         .eq('id', session.user.id)
-        .single();
-
-      if (data) {
-        setUser(data);
-      } else {
-        // Usuario nuevo (primer login con Google u OAuth)
-        const displayName = session.user.user_metadata?.full_name
-          || session.user.user_metadata?.name
-          || session.user.email?.split('@')[0]
-          || 'Usuario';
-        const avatar = session.user.user_metadata?.avatar_url || null;
-
-        await supabase.from('profiles').upsert({
-          id: session.user.id,
-          email: session.user.email,
-          full_name: displayName,
-          avatar_url: avatar,
-        }, { onConflict: 'id' });
-
-        setUser({
-          id: session.user.id,
-          email: session.user.email,
-          full_name: displayName,
-          avatar_url: avatar,
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            // Perfil existe: actualizar estado con datos completos del perfil
+            setUser(prev => ({ ...prev, ...data }));
+          } else {
+            // Perfil no existe: crearlo
+            supabase.from('profiles').upsert({
+              id: session.user.id,
+              email: session.user.email,
+              full_name: displayName,
+              avatar_url: avatar,
+            }, { onConflict: 'id' }).then(() => {
+              console.log('[AUTH] Perfil creado para nuevo usuario');
+            }).catch(err => {
+              console.warn('[AUTH] Error creando perfil:', err.message);
+            });
+          }
+        })
+        .catch(err => {
+          console.warn('[AUTH] Error cargando perfil (no crítico):', err.message);
         });
-      }
     };
 
     // onAuthStateChange es la fuente principal de verdad

@@ -8163,28 +8163,42 @@ const UserReviewsScreen = ({ onNavigate, user }) => {
     ));
   };
 
-  const handleDelete = (reviewId) => {
+  const handleDelete = async (reviewId) => {
+    const { error } = await supabase.from('reviews').delete().eq('id', reviewId).eq('user_id', user?.id);
+    if (error) { showToast?.('Error al eliminar la reseña', 'error'); return; }
     setReviews(prev => prev.filter(r => r.id !== reviewId));
     setDeleteConfirm(null);
+    showToast?.('Reseña eliminada', 'success');
   };
 
   const handleEdit = (review) => {
-    if (editedReviews[review.id]) return; // Ya fue editada
+    if ((review.edit_count || 0) >= 1) {
+      showToast?.('Solo puedes editar una reseña 1 vez', 'warning');
+      return;
+    }
     setEditingReview(review);
-    setEditText(review.text);
+    setEditText(review.text || review.comment || '');
     setEditRating(review.rating);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingReview || !editText.trim()) return;
+    const moderation = moderateContent(editText.trim());
+    if (!moderation.isClean) { showToast?.(`⚠️ ${moderation.reason}`, 'error'); return; }
+    const { error } = await supabase
+      .from('reviews')
+      .update({ comment: editText.trim(), rating: editRating, edit_count: 1 })
+      .eq('id', editingReview.id)
+      .eq('user_id', user?.id);
+    if (error) { showToast?.('Error al guardar los cambios', 'error'); return; }
     setReviews(prev => prev.map(r =>
       r.id === editingReview.id
-        ? { ...r, text: editText, rating: editRating, editedAt: 'Editada' }
+        ? { ...r, text: editText.trim(), comment: editText.trim(), rating: editRating, edit_count: 1 }
         : r
     ));
-    setEditedReviews(prev => ({ ...prev, [editingReview.id]: true }));
     setEditingReview(null);
     setEditText('');
+    showToast?.('Reseña actualizada', 'success');
   };
 
   return (
@@ -8255,7 +8269,7 @@ const UserReviewsScreen = ({ onNavigate, user }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 -mr-2">
-                  {!editedReviews[review.id] && !review.editedAt && (
+                  {(review.edit_count || 0) < 1 ? (
                     <button
                       onClick={() => handleEdit(review)}
                       className="p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-primary/5"
@@ -8263,6 +8277,8 @@ const UserReviewsScreen = ({ onNavigate, user }) => {
                     >
                       <Edit2 size={18} />
                     </button>
+                  ) : (
+                    <span className="text-[10px] text-gray-400 px-2">Editada</span>
                   )}
                   <button
                     onClick={() => setDeleteConfirm(review)}

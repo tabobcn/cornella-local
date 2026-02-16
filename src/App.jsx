@@ -2647,9 +2647,10 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     )}
                   </div>
 
-                  {/* Fila 1: Categoría izq — Rating der */}
-                  <div className="flex items-center justify-between">
+                  {/* Fila 1: Categoría | Rating */}
+                  <div className="flex items-center justify-center gap-2">
                     <p className="text-sm font-medium text-primary/80">{business.subcategory || business.category}</p>
+                    <span className="text-gray-300 text-sm">│</span>
                     <div className="flex items-center gap-1">
                       <Star className="text-yellow-500 fill-yellow-500" size={15} />
                       <span className="font-bold text-slate-900 text-sm">{business.rating || '5.0'}</span>
@@ -2657,12 +2658,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     </div>
                   </div>
 
-                  {/* Fila 2: Barrio izq — Favoritos der */}
-                  <div className="flex items-center justify-between">
+                  {/* Fila 2: Barrio | Favoritos */}
+                  <div className="flex items-center justify-center gap-2">
                     <div className="flex items-center gap-1">
                       <MapPin size={13} className="text-primary" />
                       <span className="text-xs text-gray-500">{business.neighborhood || business.address}</span>
                     </div>
+                    <span className="text-gray-300 text-sm">│</span>
                     <div className="flex items-center gap-1">
                       <Heart className="text-red-400 fill-red-400" size={13} />
                       <span className="text-xs text-gray-500">{business.favoriteCount || 0}</span>

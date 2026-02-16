@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-15 — noche)
+## ESTADO DEL PROYECTO (Actualizado: 2026-02-16)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -18,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Login con Google OAuth** — `signInWithOAuth`, perfil creado automáticamente desde user_metadata
 - [x] Auth flow con `onAuthStateChange` + `INITIAL_SESSION` + `SIGNED_IN`
 - [x] Datos de usuario reales en perfil (full_name, email, avatar_url)
+- [x] **EditProfileScreen** — editar nombre, email (con confirmación), fecha de nacimiento (`birth_date`)
 
 #### Negocios
 - [x] Listado de negocios desde Supabase con categorías, tags, barrio
@@ -25,6 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Tags scrolleables y carga aleatoria (sin duplicados)
 - [x] Prevención de negocios duplicados en registro
 - [x] BusinessDetailPage completa: horario, galería, reseñas, mapa, cierres especiales
+- [x] **Google Maps iframe** — mapa real embebido + botón "Cómo llegar" (Google Maps directions)
+- [x] **BusinessCard mejorada** — nombre centrado + layout izquierda/derecha con divisor `│` (categoría│rating, barrio│favoritos)
 - [x] **Galería con lightbox** — grid de fotos, navegación, puntos indicadores fuera del overflow container
 - [x] **cover_photo e images** — usados en todas las vistas
 - [x] **Cierres especiales** — banner rojo/naranja (hoy/mañana/próximos 14 días)
@@ -93,6 +96,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 #### Sistema de Reseñas
 - [x] Verificación de 30 días de antigüedad + email verificado (RPC `can_user_review`)
 - [x] Reseñas cargadas con `select('*')` (sin JOIN problemático)
+- [x] **1 reseña por negocio** — validado en RPC
+- [x] **Máx 2 reseñas por semana** — validado en RPC
+- [x] **Editable solo 1 vez** — columna `edit_count` en BD, persiste en Supabase
+- [x] **Eliminar reseña** persiste en Supabase
+- [x] **Filtro de contenido** — `moderateContent()`: insultos, spam, teléfonos, emails, mayúsculas
 
 #### Panel de Administración
 - [x] AdminDashboard con estadísticas globales
@@ -105,6 +113,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] BudgetRequestScreen muestra conteo real de negocios por subcategoría (desde Supabase)
 - [x] **CategoryDetailPage** carga counts de subcategorías dinámicamente desde Supabase (no hardcodeados)
 - [x] mockData.js: `userReviews = []` — reseñas cargadas desde Supabase en `UserReviewsScreen`
+
+#### Pantalla de Ajustes
+- [x] **SettingsScreen limpia** — sin modo oscuro, sin selector de idioma, sin anuncios personalizados, sin botón test push
+- [x] "Editar perfil" → navega a `EditProfileScreen` (nombre, email, fecha de nacimiento)
+- [x] Contacto y soporte — solo email `soporte@cornellalocal.es` (sin teléfono)
+- [x] Términos y condiciones — back button navega a `settings` correctamente
+- [x] Política de privacidad — sección sobre eliminación de documentos de verificación
 
 ---
 
@@ -125,7 +140,7 @@ Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
 ### Mejoras futuras
 - [ ] **Notificaciones por email** — para presupuestos y candidaturas (Supabase Edge Functions)
 - [ ] **Búsqueda mejorada** — filtros avanzados (precio, distancia, valoración)
-- [ ] **Dominio propio** — CornellaLocal.es + configurar en Supabase/Vercel
+- [ ] **Dominio propio** — CornellaLocal.es comprado en Dondominio (pendiente configurar DNS en Supabase/Vercel)
 - [ ] **Sistema de mensajería** — chat entre usuarios y negocios
 - [ ] **Estadísticas avanzadas** — gráficas en dashboard del propietario
 
@@ -174,9 +189,12 @@ Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
 - `supabase/setup-verification-documents.sql` — Documentos de verificación
 - `supabase/add-business-appeal.sql` — Sistema de apelación
 - `supabase/add-is-published.sql` — Campo is_published en businesses
+- `supabase/setup-reviews-controls.sql` — edit_count en reviews + RPC can_user_review actualizada (✅ ejecutado)
+- `supabase/add-birth-date.sql` — Campo birth_date en profiles (✅ ejecutado)
+- `supabase/cleanup-test-data.sql` — Borra negocio 81 (rechazado) + todas las reseñas de prueba
 
 ### Edge Functions
-- `supabase/functions/send-push/index.ts` — Envía push notifications usando npm:web-push + VAPID
+- `supabase/functions/send-push/index.ts` — Envía push notifications con cifrado RFC 8291 nativo Deno (sin npm:web-push)
 
 ---
 

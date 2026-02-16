@@ -140,7 +140,7 @@ Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
 ### Mejoras futuras
 - [ ] **Notificaciones por email** — para presupuestos y candidaturas (Supabase Edge Functions)
 - [ ] **Búsqueda mejorada** — filtros avanzados (precio, distancia, valoración)
-- [ ] **Dominio propio** — CornellaLocal.es comprado en Dondominio (pendiente configurar DNS en Supabase/Vercel)
+- [x] **Dominio propio** — CornellaLocal.es activo (DNS delegado a Vercel ns1/ns2.vercel-dns.com, Supabase Auth URLs actualizadas)
 - [ ] **Sistema de mensajería** — chat entre usuarios y negocios
 - [ ] **Estadísticas avanzadas** — gráficas en dashboard del propietario
 

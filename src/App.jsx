@@ -6467,25 +6467,34 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           {/* Location */}
           <div className="flex flex-col gap-4">
             <h2 className="text-lg font-bold text-gray-900">Ubicación</h2>
-            <div className="bg-white rounded-2xl p-2 shadow-soft border border-gray-100/50">
-              <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-gray-100">
-                <div
-                  className="w-full h-full bg-cover bg-center"
-                  style={{ backgroundImage: `url("${mapData.backgroundImage}")` }}
-                >
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200/30 relative">
-                    <div className="relative flex flex-col items-center -mt-6 animate-bounce">
-                      <MapPin className="text-primary fill-primary drop-shadow-xl" size={48} />
-                      <div className="bg-white px-3 py-1.5 rounded-lg shadow-lg text-[11px] font-bold mt-1 text-gray-900 border border-gray-100">
-                        {business.address}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div className="bg-white rounded-2xl overflow-hidden shadow-soft border border-gray-100/50">
+              {/* Google Maps embed */}
+              <div className="relative w-full h-48 overflow-hidden">
+                <iframe
+                  title="Mapa ubicación"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent((business.fullAddress || business.address || '') + ', Cornellà de Llobregat')}&output=embed&z=16`}
+                />
               </div>
-              <div className="p-3 flex items-start gap-3">
-                <Navigation className="text-gray-400 mt-0.5" size={20} />
-                <p className="text-sm text-gray-600 flex-1 leading-relaxed">{business.fullAddress}</p>
+              {/* Dirección + botón navegar */}
+              <div className="p-3 flex items-center justify-between gap-3">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <MapPin className="text-primary shrink-0 mt-0.5" size={16} />
+                  <p className="text-sm text-gray-600 leading-relaxed truncate">{business.fullAddress || business.address}</p>
+                </div>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((business.fullAddress || business.address || '') + ', Cornellà de Llobregat')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  <Navigation size={14} />
+                  Cómo llegar
+                </a>
               </div>
             </div>
           </div>

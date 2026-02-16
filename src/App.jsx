@@ -2638,26 +2638,26 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                   </button>
                 </div>
                 {/* Content */}
-                <div className="p-4 flex flex-col items-center text-center gap-2">
+                <div className="px-4 pt-4 pb-5 flex flex-col items-center text-center gap-2.5">
                   {/* Nombre + Badge Verificado */}
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-slate-900 text-lg">{business.name}</h3>
+                    <h3 className="font-bold text-slate-900 text-xl leading-tight">{business.name}</h3>
                     {business.is_verified && (
                       <BadgeCheck className="text-white fill-primary shrink-0" size={22} />
                     )}
                   </div>
 
                   {/* Subcategoría */}
-                  <p className="text-sm text-gray-600">{business.subcategory || business.category}</p>
+                  <p className="text-sm font-medium text-primary/80">{business.subcategory || business.category}</p>
 
                   {/* Rating y Seguidores en la misma línea */}
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3">
                     {/* Rating */}
                     <div className="flex items-center gap-1.5">
-                      <Star className="text-yellow-500 fill-yellow-500" size={16} />
-                      <span className="font-semibold text-slate-900">{business.rating || '5.0'}</span>
-                      <span className="text-gray-400">·</span>
-                      <span className="text-gray-500 text-xs">{business.reviews || 0}</span>
+                      <Star className="text-yellow-500 fill-yellow-500" size={17} />
+                      <span className="font-bold text-slate-900 text-sm">{business.rating || '5.0'}</span>
+                      <span className="text-gray-400 text-sm">·</span>
+                      <span className="text-gray-500 text-sm">{business.reviews || 0}</span>
                     </div>
 
                     {/* Separador */}
@@ -2665,13 +2665,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
                     {/* Seguidores */}
                     <div className="flex items-center gap-1.5">
-                      <Heart className="text-red-500 fill-red-500" size={16} />
-                      <span className="font-semibold text-slate-900">{business.favoriteCount || 0}</span>
+                      <Heart className="text-red-500 fill-red-500" size={17} />
+                      <span className="font-bold text-slate-900 text-sm">{business.favoriteCount || 0}</span>
                     </div>
                   </div>
 
                   {/* Barrio */}
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
                     <MapPin size={14} className="text-primary" />
                     <span>{business.neighborhood || business.address}</span>
                   </div>

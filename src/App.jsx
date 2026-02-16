@@ -11999,7 +11999,7 @@ const TermsScreen = ({ onNavigate, fromRegister = false }) => {
     if (fromRegister) {
       onNavigate('register');
     } else {
-      onNavigate('profile');
+      onNavigate('settings');
     }
   };
 
@@ -12012,7 +12012,7 @@ const TermsScreen = ({ onNavigate, fromRegister = false }) => {
           Términos y Condiciones
         </h2>
         <button
-          onClick={() => fromRegister ? onNavigate('register') : onNavigate('profile')}
+          onClick={() => fromRegister ? onNavigate('register') : onNavigate('settings')}
           className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-900 hover:bg-black/5 transition-colors"
         >
           <X size={24} />
@@ -12174,7 +12174,19 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
         'Teléfono: 93 XXX XX XX',
         'Dirección: Cornellà de Llobregat, Barcelona'
       ]
-    }
+    },
+    {
+      id: 7,
+      icon: 'Trash2',
+      title: 'Documentos de verificación de negocios',
+      content: 'Los documentos aportados para verificar un negocio (DNI, licencias, certificados) son utilizados exclusivamente para el proceso de verificación.',
+      bullets: [
+        'Los documentos se eliminan una vez completado el proceso de verificación',
+        'No se conservan copias de documentos de identidad tras la aprobación o rechazo',
+        'Solo el equipo de administración accede a estos documentos durante la revisión',
+        'En caso de apelación, los documentos se eliminan al resolverse'
+      ]
+    },
   ];
 
   return (
@@ -12274,8 +12286,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
   const [submitted, setSubmitted] = useState(false);
 
   const contactOptions = [
-    { icon: 'Mail', label: 'Email', value: 'soporte@cornellalocal.com', action: 'mailto:soporte@cornellalocal.com' },
-    { icon: 'Phone', label: 'Teléfono', value: '93 XXX XX XX', action: 'tel:93XXXXXXXX' },
+    { icon: 'Mail', label: 'Email', value: 'soporte@cornellalocal.es', action: 'mailto:soporte@cornellalocal.es' },
     { icon: 'Clock', label: 'Horario', value: 'Lun-Vie 9:00-18:00', action: null },
   ];
 
@@ -16774,6 +16785,121 @@ const OwnerWelcomeScreen = ({ onNavigate }) => (
 );
 
 // ==============================================
+// PANTALLA DE EDITAR PERFIL
+// ==============================================
+
+// Pantalla de Editar Perfil
+const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
+  const [fullName, setFullName] = useState(user?.full_name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [birthDate, setBirthDate] = useState(user?.birth_date || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!fullName.trim()) { showToast('El nombre no puede estar vacío', 'error'); return; }
+    setSaving(true);
+    try {
+      // Actualizar nombre y fecha en tabla profiles
+      const updates = { full_name: fullName.trim(), birth_date: birthDate || null };
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+      if (profileError) throw profileError;
+
+      // Si cambió el email, actualizar en Supabase Auth (enviará email de confirmación)
+      if (email.trim() !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email: email.trim() });
+        if (emailError) throw emailError;
+        showToast('Se ha enviado un enlace de confirmación al nuevo correo', 'info');
+      }
+
+      // Actualizar estado global del usuario
+      setUser(prev => ({ ...prev, full_name: fullName.trim(), birth_date: birthDate || null }));
+      showToast('Perfil actualizado correctamente', 'success');
+      onNavigate('settings');
+    } catch (e) {
+      showToast(e.message || 'Error al guardar', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-gray-50 text-slate-900 font-display antialiased min-h-screen flex flex-col max-w-md mx-auto shadow-2xl">
+      <header className="sticky top-0 z-50 bg-gray-50/95 backdrop-blur-md border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            onClick={() => onNavigate('settings')}
+            className="flex size-10 items-center justify-center rounded-full hover:bg-black/5 transition-colors text-slate-800"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <h1 className="text-lg font-bold text-slate-900">Editar perfil</h1>
+          <div className="w-10" />
+        </div>
+      </header>
+
+      <main className="flex-1 px-4 pt-6 pb-8 space-y-4">
+        {/* Info foto */}
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-3">
+          <div className="bg-blue-100 p-2 rounded-lg text-blue-600 shrink-0">
+            <Camera size={20} />
+          </div>
+          <p className="text-sm text-blue-700">Para cambiar la foto de perfil, ve a la pantalla de <span className="font-semibold">Perfil</span>.</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          {/* Nombre */}
+          <div className="p-4">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nombre completo</label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              placeholder="Tu nombre"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-slate-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            />
+          </div>
+
+          {/* Email */}
+          <div className="p-4">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Correo electrónico</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="tu@email.com"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-slate-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">Si cambias el correo recibirás un email de confirmación.</p>
+          </div>
+
+          {/* Fecha de nacimiento */}
+          <div className="p-4">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Fecha de nacimiento</label>
+            <input
+              type="date"
+              value={birthDate}
+              onChange={e => setBirthDate(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full h-14 bg-primary text-white font-bold rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+        >
+          {saving ? 'Guardando...' : 'Guardar cambios'}
+        </button>
+      </main>
+    </div>
+  );
+};
+
+// ==============================================
 // PANTALLA DE AJUSTES
 // ==============================================
 
@@ -17110,26 +17236,12 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                 <ToggleSwitch enabled={settings.profileVisible} onToggle={() => handleToggle('profileVisible')} />
               </div>
             </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.personalizedAds ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-400'}`}>
-                    <Tag size={20} />
-                  </div>
-                  <div>
-                    <span className="font-medium text-slate-700 block">Anuncios personalizados</span>
-                    <span className="text-xs text-slate-500">Ofertas basadas en tus gustos</span>
-                  </div>
-                </div>
-                <ToggleSwitch enabled={settings.personalizedAds} onToggle={() => handleToggle('personalizedAds')} />
-              </div>
-            </div>
           </div>
         </section>
 
-        {/* Sección: Idioma y Apariencia */}
+        {/* Sección: Idioma */}
         <section className="px-4 pt-6">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Idioma y Apariencia</h2>
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Idioma</h2>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
             <button
               onClick={() => setShowLanguageModal(true)}
@@ -17146,20 +17258,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
               </div>
               <ChevronRight className="text-gray-400" size={20} />
             </button>
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.darkMode ? 'bg-slate-700 text-slate-200' : 'bg-amber-100 text-amber-600'}`}>
-                    {settings.darkMode ? <Moon size={20} /> : <Sun size={20} />}
-                  </div>
-                  <div>
-                    <span className="font-medium text-slate-700 block">Modo oscuro</span>
-                    <span className="text-xs text-slate-500">Reduce la fatiga visual</span>
-                  </div>
-                </div>
-                <ToggleSwitch enabled={settings.darkMode} onToggle={() => handleToggle('darkMode')} />
-              </div>
-            </div>
           </div>
         </section>
 
@@ -17168,7 +17266,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
           <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Cuenta</h2>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
             <button
-              onClick={() => onNavigate('profile')}
+              onClick={() => onNavigate('edit-profile')}
               className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -19430,6 +19528,8 @@ export default function App() {
         return <OwnerWelcomeScreen onNavigate={navigate} />;
       case 'user-reviews':
         return <UserReviewsScreen onNavigate={navigate} user={user} />;
+      case 'edit-profile':
+        return <EditProfileScreen onNavigate={navigate} user={user} setUser={setUser} showToast={showToast} />;
       case 'user-jobs':
         return <UserJobsScreen onNavigate={navigate} user={user} />;
       case 'job-detail':

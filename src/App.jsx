@@ -16957,78 +16957,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
     }
   };
 
-  const [testingPush, setTestingPush] = useState(false);
-
-  const sendTestPush = async () => {
-    if (!user?.id) { showToast?.('Debes iniciar sesión', 'error'); return; }
-    setTestingPush(true);
-    try {
-      let { data: subs } = await supabase
-        .from('push_subscriptions')
-        .select('subscription')
-        .eq('user_id', user.id)
-        .limit(1)
-        .single();
-
-      // Si no hay suscripción en BD pero el permiso está concedido, intentar registrar ahora
-      if (!subs?.subscription && pushPermissionStatus === 'granted' && onRequestPushPermission) {
-        showToast?.('Registrando suscripción...', 'info');
-        await onRequestPushPermission();
-        // Volver a buscar
-        const { data: subsRetry } = await supabase
-          .from('push_subscriptions')
-          .select('subscription')
-          .eq('user_id', user.id)
-          .limit(1)
-          .single();
-        subs = subsRetry;
-      }
-
-      if (!subs?.subscription) {
-        showToast?.('No se pudo registrar la suscripción. Ve a Ajustes → Notificaciones y actívalas.', 'warning');
-        return;
-      }
-
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('send-push', {
-        body: {
-          subscription: subs.subscription,
-          title: 'CornellaLocal — Prueba',
-          message: '¡Las notificaciones push funcionan correctamente!',
-          url: '/',
-          type: 'test',
-          icon: '/icons/icon-192x192.png',
-        },
-      });
-
-      console.log('[PUSH TEST] Response:', fnData, fnError);
-
-      if (fnError) {
-        // Intentar leer el cuerpo del error de la Edge Function
-        let detail = fnError.message || 'Error desconocido';
-        try {
-          if (fnError.context) {
-            const body = await fnError.context.json();
-            detail = body.error || body.message || detail;
-            console.error('[PUSH TEST] Edge Function error body:', body);
-          }
-        } catch (_) {}
-        showToast?.(`Error: ${detail}`, 'error');
-        return;
-      }
-
-      if (fnData?.error) {
-        showToast?.(`Error de push: ${fnData.error}`, 'error');
-        return;
-      }
-
-      showToast?.('Notificación enviada — revisa tu dispositivo', 'success');
-    } catch (e) {
-      console.error('[PUSH TEST] Exception:', e);
-      showToast?.(`Error: ${e.message || 'Error desconocido'}`, 'error');
-    } finally {
-      setTestingPush(false);
-    }
-  };
 
   // Toggle Switch Component
   const ToggleSwitch = ({ enabled, onToggle, disabled = false }) => (
@@ -17134,19 +17062,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
               </>
             )}
 
-            {/* Botón de prueba push */}
-            {pushPermissionStatus === 'granted' && (
-              <div className="p-4">
-                <button
-                  onClick={sendTestPush}
-                  disabled={testingPush}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-primary/10 text-primary font-medium text-sm hover:bg-primary/20 transition-colors disabled:opacity-50"
-                >
-                  <BellRing size={16} />
-                  {testingPush ? 'Enviando...' : 'Enviar notificación de prueba'}
-                </button>
-              </div>
-            )}
 
             {/* Sonido y vibración */}
             <div className="p-4">

@@ -2638,42 +2638,35 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                   </button>
                 </div>
                 {/* Content */}
-                <div className="px-4 pt-4 pb-5 flex flex-col items-center text-center gap-2.5">
-                  {/* Nombre + Badge Verificado */}
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-slate-900 text-xl leading-tight">{business.name}</h3>
+                <div className="px-4 pt-3.5 pb-4 flex flex-col gap-2">
+                  {/* Nombre + Badge Verificado — centrado */}
+                  <div className="flex items-center justify-center gap-1.5">
+                    <h3 className="font-bold text-slate-900 text-xl leading-tight text-center">{business.name}</h3>
                     {business.is_verified && (
                       <BadgeCheck className="text-white fill-primary shrink-0" size={22} />
                     )}
                   </div>
 
-                  {/* Subcategoría */}
-                  <p className="text-sm font-medium text-primary/80">{business.subcategory || business.category}</p>
-
-                  {/* Rating y Seguidores en la misma línea */}
-                  <div className="flex items-center gap-3">
-                    {/* Rating */}
-                    <div className="flex items-center gap-1.5">
-                      <Star className="text-yellow-500 fill-yellow-500" size={17} />
+                  {/* Fila 1: Categoría izq — Rating der */}
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-primary/80">{business.subcategory || business.category}</p>
+                    <div className="flex items-center gap-1">
+                      <Star className="text-yellow-500 fill-yellow-500" size={15} />
                       <span className="font-bold text-slate-900 text-sm">{business.rating || '5.0'}</span>
-                      <span className="text-gray-400 text-sm">·</span>
-                      <span className="text-gray-500 text-sm">{business.reviews || 0}</span>
-                    </div>
-
-                    {/* Separador */}
-                    <span className="text-gray-300">|</span>
-
-                    {/* Seguidores */}
-                    <div className="flex items-center gap-1.5">
-                      <Heart className="text-red-500 fill-red-500" size={17} />
-                      <span className="font-bold text-slate-900 text-sm">{business.favoriteCount || 0}</span>
+                      <span className="text-gray-400 text-xs">· {business.reviews || 0}</span>
                     </div>
                   </div>
 
-                  {/* Barrio */}
-                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                    <MapPin size={14} className="text-primary" />
-                    <span>{business.neighborhood || business.address}</span>
+                  {/* Fila 2: Barrio izq — Favoritos der */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <MapPin size={13} className="text-primary" />
+                      <span className="text-xs text-gray-500">{business.neighborhood || business.address}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Heart className="text-red-400 fill-red-400" size={13} />
+                      <span className="text-xs text-gray-500">{business.favoriteCount || 0}</span>
+                    </div>
                   </div>
                 </div>
               </button>

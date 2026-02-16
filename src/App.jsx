@@ -16924,7 +16924,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
     darkMode: false,
   });
 
-  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [pushPermissionStatus, setPushPermissionStatus] = useState('default');
 
@@ -16940,13 +16939,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
     const newSettings = { ...settings, [key]: !settings[key] };
     setSettings(newSettings);
     if (updateSettings) updateSettings(newSettings);
-  };
-
-  const handleLanguageChange = (lang) => {
-    const newSettings = { ...settings, language: lang };
-    setSettings(newSettings);
-    if (updateSettings) updateSettings(newSettings);
-    setShowLanguageModal(false);
   };
 
   // Solicitar permisos de notificaciones push
@@ -17037,14 +17029,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
       setTestingPush(false);
     }
   };
-
-  const languages = [
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'ca', name: 'Català', flag: '🏴' },
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-  ];
-
-  const currentLanguage = languages.find(l => l.code === settings.language) || languages[0];
 
   // Toggle Switch Component
   const ToggleSwitch = ({ enabled, onToggle, disabled = false }) => (
@@ -17239,28 +17223,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
           </div>
         </section>
 
-        {/* Sección: Idioma */}
-        <section className="px-4 pt-6">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Idioma</h2>
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
-            <button
-              onClick={() => setShowLanguageModal(true)}
-              className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
-                  <Languages size={20} />
-                </div>
-                <div className="text-left">
-                  <span className="font-medium text-slate-700 block">Idioma</span>
-                  <span className="text-xs text-slate-500">{currentLanguage.flag} {currentLanguage.name}</span>
-                </div>
-              </div>
-              <ChevronRight className="text-gray-400" size={20} />
-            </button>
-          </div>
-        </section>
-
         {/* Sección: Cuenta */}
         <section className="px-4 pt-6">
           <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Cuenta</h2>
@@ -17375,40 +17337,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
           <p className="text-[10px] text-gray-300 mt-1">Hecho con ❤️ en Cornellà</p>
         </div>
       </main>
-
-      {/* Modal de selección de idioma */}
-      {showLanguageModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setShowLanguageModal(false)}>
-          <div
-            className="bg-white rounded-t-3xl w-full max-w-md p-6 pb-8 animate-in slide-in-from-bottom"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6"></div>
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Seleccionar idioma</h3>
-            <div className="space-y-2">
-              {languages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => handleLanguageChange(lang.code)}
-                  className={`w-full p-4 rounded-xl flex items-center justify-between transition-colors ${
-                    settings.language === lang.code
-                      ? 'bg-primary/10 border-2 border-primary'
-                      : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{lang.flag}</span>
-                    <span className="font-medium text-slate-700">{lang.name}</span>
-                  </div>
-                  {settings.language === lang.code && (
-                    <Check className="text-primary" size={20} />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal de confirmación de borrado */}
       {showDeleteModal && (

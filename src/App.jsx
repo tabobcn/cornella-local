@@ -5868,6 +5868,12 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         return;
       }
 
+      // El propietario no puede reseñar su propio negocio
+      if (business?.user_id === user.id) {
+        setCanReview({ can_review: false, reason: 'No puedes reseñar tu propio negocio' });
+        return;
+      }
+
       try {
         const { data, error } = await supabase.rpc('can_user_review', {
           p_user_id: user.id,

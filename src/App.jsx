@@ -2007,9 +2007,12 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   // Filtrar negocios según la búsqueda y barrio
   const filteredBusinesses = searchQuery.trim() === '' && !selectedBarrio && !selectedCategory && minRating === 0 ? [] : businesses
     .filter(business => {
-      // Filtro por barrio
-      if (selectedBarrio && business.neighborhood !== selectedBarrio) {
-        return false;
+      // Filtro por barrio (compara ID y nombre por si están guardados de forma diferente en BD)
+      if (selectedBarrio) {
+        const barrioObj = barrios.find(b => b.id === selectedBarrio);
+        if (business.neighborhood !== selectedBarrio && business.neighborhood !== barrioObj?.name) {
+          return false;
+        }
       }
       // Filtro por categoría
       if (selectedCategory && business.subcategory !== selectedCategory) {

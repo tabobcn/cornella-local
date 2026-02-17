@@ -103,7 +103,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Eliminar reseña** persiste en Supabase
 - [x] **Filtro de contenido** — `moderateContent()`: insultos, spam, teléfonos, emails, mayúsculas
 - [x] **Rating actualizado en tiempo real** — tras publicar reseña recalcula la media localmente sin recargar
-- [x] **Propietario no puede reseñar su negocio** — validado en frontend y en RPC `can_user_review`
+- [x] **Propietario no puede reseñar su negocio** — validado en frontend (`owner_id`) y en RPC `can_user_review`
 
 #### Panel de Administración
 - [x] AdminDashboard con estadísticas globales
@@ -299,6 +299,7 @@ Custom colors en `tailwind.config.js`:
 - Campos en BD son snake_case, en React son camelCase — mapear correctamente
 - NUNCA usar `alert()` → siempre `showToast()`
 - NUNCA JOIN `profiles:user_id(...)` en Supabase queries → da PGRST200. Usar `select('*')` y cargar separado
+- En tabla `businesses` el propietario se identifica con `owner_id` (NO `user_id`)
 - Para OAuth, NO esperar query a profiles para navegar — usar `session.user.user_metadata` directamente
 
 ---

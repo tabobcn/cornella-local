@@ -18893,6 +18893,27 @@ export default function App() {
       return;
     }
 
+    // Límite: 1 oferta cada 7 días
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const { data: recentOffers, error: limitError } = await supabase
+      .from('offers')
+      .select('created_at')
+      .eq('business_id', businessData.id)
+      .gte('created_at', sevenDaysAgo.toISOString())
+      .limit(1);
+    if (limitError) {
+      showToast('Error al verificar el límite de ofertas', 'error');
+      return;
+    }
+    if (recentOffers && recentOffers.length > 0) {
+      const nextAllowed = new Date(recentOffers[0].created_at);
+      nextAllowed.setDate(nextAllowed.getDate() + 7);
+      const daysLeft = Math.ceil((nextAllowed - new Date()) / (1000 * 60 * 60 * 24));
+      showToast(`Límite alcanzado. Podrás crear otra oferta en ${daysLeft} día${daysLeft !== 1 ? 's' : ''}`, 'warning');
+      return;
+    }
+
     try {
       // Calcular fecha de expiración
       const startsAt = new Date();

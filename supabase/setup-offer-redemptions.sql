@@ -8,9 +8,10 @@
 ALTER TABLE offers ADD COLUMN IF NOT EXISTS redemption_count INTEGER DEFAULT 0;
 
 -- 2. Tabla de redenciones
+-- Nota: offers.id es UUID, businesses.id es INTEGER
 CREATE TABLE IF NOT EXISTS offer_redemptions (
   id SERIAL PRIMARY KEY,
-  offer_id INTEGER NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
+  offer_id UUID NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
   code TEXT UNIQUE NOT NULL,
@@ -76,7 +77,7 @@ $$ LANGUAGE plpgsql;
 
 -- 5. RPC: Obtener o crear código de redención (llamado por el usuario)
 CREATE OR REPLACE FUNCTION get_or_create_redemption(
-  p_offer_id INTEGER,
+  p_offer_id UUID,
   p_user_id UUID,
   p_business_id INTEGER
 )

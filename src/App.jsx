@@ -2733,7 +2733,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     {barrio.name}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {businesses.filter(b => b.barrio === barrio.id).length} comercios
+                    {businesses.filter(b => b.neighborhood === barrio.id).length} comercios
                   </p>
                 </div>
                 {selectedBarrio === barrio.id && <Check size={20} className="text-primary" />}

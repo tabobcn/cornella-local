@@ -34,6 +34,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] "Nuevos en el barrio" con foto de portada
 - [x] **Contadores de vistas/clics** — RPC `increment_business_views` / `increment_business_clicks`
 - [x] **Contadores de vistas de ofertas y empleos** — RPC `increment_offer_views` / `increment_job_views`
+- [x] **Botón web** — oculto si no hay URL; abre la web del negocio en nueva pestaña con `https://` automático
+- [x] **Pantalla owner-welcome eliminada** — redirige directo a `business-data`; botón atrás vuelve a `profile`
 
 #### Flujo de Registro y Publicación de Negocios
 - [x] Registro de negocio en 4 pasos: info → categoría → horario → fotos+documentos

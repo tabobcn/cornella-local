@@ -6110,7 +6110,12 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   };
 
   // Ordenar reseñas por fecha (más recientes primero)
-  const sortedReviews = [...reviews].sort((a, b) => b.timestamp - a.timestamp);
+  const sortedReviews = [...reviews].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  // Rating calculado en tiempo real desde el array de reseñas
+  const liveRating = reviews.length > 0
+    ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
+    : (business?.rating ? Number(business.rating).toFixed(1) : null);
 
   // Función para publicar una reseña
   const handlePublishReview = () => {
@@ -6133,17 +6138,33 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   };
 
   // Función para manejar valoración rápida desde el modal
-  const handleQuickRating = (ratingData) => {
-    const newReview = {
-      id: Date.now(),
-      user: "Tú",
-      avatar: "T",
-      rating: ratingData.rating,
-      date: "Ahora",
-      timestamp: Date.now(),
-      comment: ratingData.comment || ''
-    };
-    setReviews(prev => [newReview, ...prev]);
+  const handleQuickRating = async (ratingData) => {
+    if (!user?.id) {
+      setShowRatingModal(false);
+      return;
+    }
+    const moderation = moderateContent(ratingData.comment || '');
+    if (ratingData.comment && !moderation.isClean) {
+      setShowRatingModal(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert({
+          business_id: businessId,
+          user_id: user.id,
+          rating: ratingData.rating,
+          comment: ratingData.comment ? sanitizeText(ratingData.comment.trim()) : ''
+        })
+        .select('*')
+        .single();
+      if (error) throw error;
+      setReviews(prev => [data, ...prev]);
+      setCanReview({ can_review: false, reason: 'Ya has reseñado este negocio', already_reviewed: true });
+    } catch (err) {
+      console.error('[REVIEWS] Error quick rating:', err);
+    }
     setShowRatingModal(false);
   };
 
@@ -6240,9 +6261,9 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   onClick={() => setShowReviews(true)}
                   className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
-                  <span className="text-gray-900 font-bold">{business.rating}</span>
+                  <span className="text-gray-900 font-bold">{liveRating ?? '—'}</span>
                   <Star className="text-yellow-500 fill-yellow-500" size={16} />
-                  <span className="text-gray-400 text-xs">({business.reviews})</span>
+                  <span className="text-gray-400 text-xs">({reviews.length} reseña{reviews.length !== 1 ? 's' : ''})</span>
                 </button>
                 {/* Contador de favoritos/seguidores */}
                 <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
@@ -6537,8 +6558,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                 <h3 className="text-lg font-bold text-gray-900">Reseñas</h3>
                 <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full">
                   <Star className="text-yellow-500 fill-yellow-500" size={14} />
-                  <span className="text-sm font-bold text-yellow-700">{business.rating}</span>
-                  <span className="text-xs text-yellow-600">({reviews.length})</span>
+                  <span className="text-sm font-bold text-yellow-700">{liveRating ?? '—'}</span>
+                  <span className="text-xs text-yellow-600">({reviews.length} reseña{reviews.length !== 1 ? 's' : ''})</span>
                 </div>
               </div>
               <button
@@ -6622,7 +6643,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                       Cancelar
                     </button>
                     <button
-                      onClick={handlePublishReview}
+                      onClick={handleSubmitReview}
                       disabled={newReviewText.trim() === ''}
                       className="flex-1 h-11 bg-primary text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
@@ -17320,6 +17341,18 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [pageParams, setPageParams] = useState({});
 
+  // Capturar deep link de URL al inicio (antes de que auth lo sobreescriba)
+  const deepLinkRef = useRef((() => {
+    const params = new URLSearchParams(window.location.search);
+    const negocioId = params.get('negocio');
+    const ofertaId = params.get('oferta');
+    const empleoId = params.get('empleo');
+    if (negocioId) return { page: 'business', params: { id: parseInt(negocioId) } };
+    if (ofertaId) return { page: 'coupon-detail', params: { id: parseInt(ofertaId) } };
+    if (empleoId) return { page: 'job-detail', params: { id: parseInt(empleoId) } };
+    return null;
+  })());
+
   // Estado del usuario autenticado
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -17398,7 +17431,13 @@ export default function App() {
         try {
           if (session) {
             await loadOrCreateProfile(session);
-            setCurrentPage('home');
+            if (deepLinkRef.current) {
+              setCurrentPage(deepLinkRef.current.page);
+              setPageParams(deepLinkRef.current.params);
+              deepLinkRef.current = null;
+            } else {
+              setCurrentPage('home');
+            }
           } else if (event === 'INITIAL_SESSION') {
             // INITIAL_SESSION sin sesión = no hay usuario logueado
             setCurrentPage('login');
@@ -17414,7 +17453,13 @@ export default function App() {
               full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
               avatar_url: session.user.user_metadata?.avatar_url || null,
             });
-            setCurrentPage('home');
+            if (deepLinkRef.current) {
+              setCurrentPage(deepLinkRef.current.page);
+              setPageParams(deepLinkRef.current.params);
+              deepLinkRef.current = null;
+            } else {
+              setCurrentPage('home');
+            }
           } else {
             setCurrentPage('login');
           }

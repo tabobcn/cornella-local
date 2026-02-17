@@ -19444,7 +19444,8 @@ export default function App() {
       case 'forgot-password':
         return <ForgotPasswordScreen onNavigate={navigate} showToast={showToast} />;
       case 'owner-welcome':
-        return <OwnerWelcomeScreen onNavigate={navigate} />;
+        navigate('business-data');
+        return null;
       case 'user-reviews':
         return <UserReviewsScreen onNavigate={navigate} user={user} />;
       case 'edit-profile':

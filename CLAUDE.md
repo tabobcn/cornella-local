@@ -103,6 +103,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Eliminar reseña** persiste en Supabase
 - [x] **Filtro de contenido** — `moderateContent()`: insultos, spam, teléfonos, emails, mayúsculas
 - [x] **Rating actualizado en tiempo real** — tras publicar reseña recalcula la media localmente sin recargar
+- [x] **Flujo de reseñas corregido** — estrella muestra últimas 10 reseñas; botón "Valorar" abre formulario directo (conectado a Supabase, mín. 10 caracteres)
 - [x] **Propietario no puede reseñar su negocio** — validado en frontend (`owner_id`) y en RPC `can_user_review`
 
 #### Panel de Administración

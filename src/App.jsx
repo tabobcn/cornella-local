@@ -6293,7 +6293,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   </span>
                 </div>
                 <button
-                  onClick={() => setShowRatingModal(true)}
+                  onClick={() => { setShowReviews(true); setShowWriteReview(true); }}
                   className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors cursor-pointer"
                 >
                   <Star size={14} className="fill-white" />
@@ -6589,9 +6589,9 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
               </button>
             </div>
 
-            {/* Reviews List - Scrollable */}
+            {/* Reviews List - Scrollable (últimas 10) */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-              {sortedReviews.map(review => (
+              {sortedReviews.slice(0, 10).map(review => (
                 <div key={review.id} className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${review.user === "Tú" ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"}`}>

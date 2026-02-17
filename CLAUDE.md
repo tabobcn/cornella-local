@@ -103,6 +103,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Eliminar reseña** persiste en Supabase
 - [x] **Filtro de contenido** — `moderateContent()`: insultos, spam, teléfonos, emails, mayúsculas
 - [x] **Rating actualizado en tiempo real** — tras publicar reseña recalcula la media localmente sin recargar
+- [x] **Propietario no puede reseñar su negocio** — validado en frontend y en RPC `can_user_review`
 
 #### Panel de Administración
 - [x] AdminDashboard con estadísticas globales
@@ -116,6 +117,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **CategoryDetailPage** carga counts de subcategorías dinámicamente desde Supabase (no hardcodeados)
 - [x] mockData.js: `userReviews = []` — reseñas cargadas desde Supabase en `UserReviewsScreen`
 - [x] **Contador de barrios** — `neighborhoodCounts` query directa a Supabase (cubre nombre e ID de barrio)
+- [x] **Filtro de barrios** — compara `neighborhood` contra ID y nombre del barrio (cubre ambos formatos en BD)
 - [x] **Countdown HH:MM:SS** — hook `useCountdown` en ofertas flash (actualización cada segundo)
 - [x] **Deep links** — `?negocio=ID`, `?oferta=ID`, `?empleo=ID` abren directamente la pantalla correcta
 - [x] **Share de negocios** — URL con deep link `?negocio=ID` (sin undefined)

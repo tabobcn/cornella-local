@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-17 noche)
+## ESTADO DEL PROYECTO (Actualizado: 2026-02-17 noche v2)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -54,6 +54,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Presupuestos entrantes con respuesta y cotización
 - [x] Panel de candidatos (filtros, cambio de estado, contratar + auto-rechazar resto con delay 1.5s)
 - [x] BusinessStatsScreen — estadísticas detalladas del negocio
+- [x] **ValidateCodeScreen** — propietario valida código del cliente (`CL-XXXX`), confirma descuento o muestra error
 
 #### Sistema de Presupuestos
 - [x] Usuarios crean solicitudes de presupuesto (categoría/descripción)
@@ -126,6 +127,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Formulario de contacto funcional** — guarda en tabla `support_requests` (Supabase), visible en panel admin
 - [x] Solo visible para usuarios con `is_admin = true`
 
+#### Sistema de Redención de Ofertas
+- [x] **Código único por usuario+oferta** — formato `CL-XXXX`, generado en BD con RPC `get_or_create_redemption`
+- [x] **CouponDetailPage rediseñada** — boarding pass azul con código en grande (reemplaza QR falso)
+- [x] **3 estados visuales**: sin código (botón "Obtener mi código") / código activo (código en grande) / ya canjeado (tick verde)
+- [x] **ValidateCodeScreen** — propietario escribe el código del cliente, valida via RPC `validate_redemption_code`
+- [x] **redemption_count real** — columna en tabla `offers`, se incrementa al validar, mostrado en dashboard propietario
+- [x] **offer_id es UUID** en tabla `offer_redemptions` (businesses.id es INTEGER, offers.id es UUID)
+- [x] SQL ejecutado: `supabase/setup-offer-redemptions.sql`
+
 #### Contadores y Deep Links
 - [x] BudgetRequestScreen muestra conteo real de negocios por subcategoría (desde Supabase)
 - [x] **CategoryDetailPage** carga counts de subcategorías dinámicamente desde Supabase (no hardcodeados)
@@ -153,8 +163,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `VAPID_SUBJECT` = `mailto:noreply@cornellalocal.es`
 
 ### TODOs menores en código (no críticos)
-- `redemptions: 0` — contador de redenciones de ofertas (requiere tabla nueva en BD)
-- Pantallas admin futuras: usuarios admin, stats globales avanzadas
+- Pantallas admin futuras: stats globales avanzadas
 
 ### Nota Push Notifications
 Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.

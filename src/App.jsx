@@ -2675,7 +2675,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     <div className="flex items-center gap-1">
                       <Star className="text-yellow-500 fill-yellow-500" size={15} />
                       <span className="font-bold text-slate-900 text-sm">{business.rating || '—'}</span>
-                      <span className="text-gray-400 text-xs">· {business.review_count || business.reviews || 0}</span>
+                      <span className="text-gray-400 text-xs">({business.review_count || business.reviews || 0})</span>
                     </div>
                   </div>
 

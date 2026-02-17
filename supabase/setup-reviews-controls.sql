@@ -19,6 +19,7 @@ DECLARE
   v_account_age_days INTEGER;
   v_already_reviewed BOOLEAN;
   v_weekly_count INTEGER;
+  v_is_owner BOOLEAN;
 BEGIN
   -- Obtener perfil
   SELECT created_at INTO v_profile
@@ -27,6 +28,19 @@ BEGIN
 
   IF NOT FOUND THEN
     RETURN json_build_object('can_review', false, 'reason', 'Perfil no encontrado');
+  END IF;
+
+  -- Verificar que no es el propietario del negocio
+  SELECT EXISTS(
+    SELECT 1 FROM businesses
+    WHERE id = p_business_id AND user_id = p_user_id
+  ) INTO v_is_owner;
+
+  IF v_is_owner THEN
+    RETURN json_build_object(
+      'can_review', false,
+      'reason', 'No puedes reseñar tu propio negocio'
+    );
   END IF;
 
   -- Verificar antigüedad mínima de 30 días

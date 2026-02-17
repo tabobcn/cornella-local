@@ -1749,6 +1749,26 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [loadingOffers, setLoadingOffers] = useState(true);
   const [newBusinesses, setNewBusinesses] = useState([]);
   const [loadingNewBusinesses, setLoadingNewBusinesses] = useState(true);
+  const [neighborhoodCounts, setNeighborhoodCounts] = useState({});
+
+  // Cargar conteos de negocios por barrio (publicados y verificados)
+  useEffect(() => {
+    const fetchNeighborhoodCounts = async () => {
+      const { data } = await supabase
+        .from('businesses')
+        .select('neighborhood')
+        .eq('is_verified', true)
+        .eq('is_published', true);
+      if (!data) return;
+      const counts = {};
+      data.forEach(b => {
+        const n = b.neighborhood?.trim();
+        if (n) counts[n] = (counts[n] || 0) + 1;
+      });
+      setNeighborhoodCounts(counts);
+    };
+    fetchNeighborhoodCounts();
+  }, []);
 
   // 🔍 Advanced filters state
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -2733,7 +2753,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     {barrio.name}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {businesses.filter(b => b.neighborhood === barrio.id).length} comercios
+                    {(neighborhoodCounts[barrio.id] || neighborhoodCounts[barrio.name] || 0)} comercios
                   </p>
                 </div>
                 {selectedBarrio === barrio.id && <Check size={20} className="text-primary" />}

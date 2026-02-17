@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-16)
+## ESTADO DEL PROYECTO (Actualizado: 2026-02-17)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -47,6 +47,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 #### Panel de Propietarios
 - [x] BusinessOwnerDashboard con estadísticas reales (empleos, ofertas, candidaturas, presupuestos)
 - [x] Gestión completa de ofertas (crear %, 2x1, gratis; pausar; reactivar; eliminar)
+- [x] **Límite 1 oferta cada 7 días** — validado en `createOffer()` antes de insertar
 - [x] Gestión completa de empleos (crear, eliminar, renovar)
 - [x] Presupuestos entrantes con respuesta y cotización
 - [x] Panel de candidatos (filtros, cambio de estado, contratar + auto-rechazar resto con delay 1.5s)
@@ -101,6 +102,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Editable solo 1 vez** — columna `edit_count` en BD, persiste en Supabase
 - [x] **Eliminar reseña** persiste en Supabase
 - [x] **Filtro de contenido** — `moderateContent()`: insultos, spam, teléfonos, emails, mayúsculas
+- [x] **Rating actualizado en tiempo real** — tras publicar reseña recalcula la media localmente sin recargar
 
 #### Panel de Administración
 - [x] AdminDashboard con estadísticas globales
@@ -109,10 +111,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] BusinessAnalyticsScreen — analítica de negocios
 - [x] Solo visible para usuarios con `is_admin = true`
 
-#### Contadores de Categorías
+#### Contadores y Deep Links
 - [x] BudgetRequestScreen muestra conteo real de negocios por subcategoría (desde Supabase)
 - [x] **CategoryDetailPage** carga counts de subcategorías dinámicamente desde Supabase (no hardcodeados)
 - [x] mockData.js: `userReviews = []` — reseñas cargadas desde Supabase en `UserReviewsScreen`
+- [x] **Contador de barrios** — `neighborhoodCounts` query directa a Supabase (cubre nombre e ID de barrio)
+- [x] **Countdown HH:MM:SS** — hook `useCountdown` en ofertas flash (actualización cada segundo)
+- [x] **Deep links** — `?negocio=ID`, `?oferta=ID`, `?empleo=ID` abren directamente la pantalla correcta
+- [x] **Share de negocios** — URL con deep link `?negocio=ID` (sin undefined)
 
 #### Pantalla de Ajustes
 - [x] **SettingsScreen limpia** — sin modo oscuro, sin selector de idioma, sin anuncios personalizados, sin botón test push

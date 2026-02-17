@@ -1761,6 +1761,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [isFocused, setIsFocused] = useState(false);
   const [businesses, setBusinesses] = useState([]);
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
+  const [neighborhoodCounts, setNeighborhoodCounts] = useState({});
   const [flashOffers, setFlashOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
   const [newBusinesses, setNewBusinesses] = useState([]);
@@ -1795,6 +1796,23 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     };
 
     fetchBusinesses();
+  }, []);
+
+  // Cargar conteos de negocios por barrio desde Supabase
+  useEffect(() => {
+    const fetchNeighborhoodCounts = async () => {
+      const { data } = await supabase
+        .from('businesses')
+        .select('neighborhood')
+        .eq('verification_status', 'approved')
+        .eq('is_published', true);
+      const counts = {};
+      data?.forEach(b => {
+        if (b.neighborhood) counts[b.neighborhood] = (counts[b.neighborhood] || 0) + 1;
+      });
+      setNeighborhoodCounts(counts);
+    };
+    fetchNeighborhoodCounts();
   }, []);
 
   // Cargar ofertas flash desde Supabase
@@ -2750,7 +2768,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     {barrio.name}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {businesses.filter(b => b.barrio === barrio.id).length} comercios
+                    {neighborhoodCounts[barrio.id] || neighborhoodCounts[barrio.name] || 0} comercios
                   </p>
                 </div>
                 {selectedBarrio === barrio.id && <Check size={20} className="text-primary" />}
@@ -6093,6 +6111,15 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
       // Añadir reseña a la lista
       setReviews(prev => [data, ...prev]);
+
+      // Actualizar rating del negocio en tiempo real
+      setBusiness(prev => {
+        if (!prev) return prev;
+        const totalReviews = (prev.review_count || prev.reviews || 0) + 1;
+        const currentRating = parseFloat(prev.rating) || 0;
+        const newRating = ((currentRating * (totalReviews - 1)) + newReviewRating) / totalReviews;
+        return { ...prev, rating: newRating.toFixed(1), review_count: totalReviews };
+      });
 
       // Limpiar formulario y cerrar modales
       setNewReviewText('');
@@ -18890,6 +18917,20 @@ export default function App() {
     }
     if (businessData?.verification_status !== 'approved') {
       showToast('Tu negocio debe estar aprobado para crear ofertas', 'warning');
+      return;
+    }
+
+    // Verificar límite de 1 oferta cada 7 días
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const { data: recentOffers } = await supabase
+      .from('offers')
+      .select('id')
+      .eq('business_id', businessData.id)
+      .gte('created_at', sevenDaysAgo.toISOString())
+      .limit(1);
+    if (recentOffers?.length > 0) {
+      showToast('Solo puedes crear 1 oferta cada 7 días', 'warning');
       return;
     }
 

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-17)
+## ESTADO DEL PROYECTO (Actualizado: 2026-02-17 noche)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -104,7 +104,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Editable solo 1 vez** — columna `edit_count` en BD, persiste en Supabase
 - [x] **Eliminar reseña** persiste en Supabase
 - [x] **Filtro de contenido** — `moderateContent()`: insultos, spam, teléfonos, emails, mayúsculas
-- [x] **Rating actualizado en tiempo real** — tras publicar reseña recalcula la media localmente sin recargar
+- [x] **Rating persiste en Supabase** — tras publicar reseña recalcula media + review_count y actualiza tabla `businesses`
+- [x] **review_count en todas las vistas** — BusinessCard, DetailPage header, SubcategoryDetailPage, WhatsApp share usan `review_count || reviews || 0`
+- [x] **Review count con paréntesis** — formato `(N)` en BusinessCard en lugar de `· N`
+- [x] **Admin sin restricciones en reseñas** — bypass en frontend (`user.is_admin`) y en RPC `can_user_review`
+- [x] **`is_admin` en query de profiles** — `select('id, full_name, avatar_url, is_admin, birth_date')` para que esté disponible
 - [x] **Flujo de reseñas corregido** — estrella muestra últimas 10 reseñas; botón "Valorar" abre formulario directo (conectado a Supabase, mín. 10 caracteres)
 - [x] **Reseñas mapeadas correctamente** — campos Supabase (`user_id`, `created_at`) mapeados a display (`user`, `avatar`, `date`) al cargar y al crear
 - [x] **Sort de reseñas** — usa `created_at` (antes usaba `timestamp` inexistente)

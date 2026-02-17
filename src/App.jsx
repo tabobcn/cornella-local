@@ -5778,7 +5778,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
 };
 
 // Página de Detalle de Negocio
-const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite, user, trackAnalyticsEvent }) => {
+const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite, user, trackAnalyticsEvent, showToast }) => {
   const [business, setBusiness] = useState(null);
   const [loadingBusiness, setLoadingBusiness] = useState(true);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -19447,7 +19447,7 @@ export default function App() {
       case 'admin-reports':
         return <ReportsScreen onNavigate={navigate} user={user} />;
       case 'business':
-        return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} />;
+        return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} showToast={showToast} />;
       case 'coupon':
         return <CouponDetailPage couponId={pageParams.id} onNavigate={navigate} savedCoupons={savedCoupons} toggleSaveCoupon={toggleSaveCoupon} isCouponSaved={isCouponSaved} />;
       case 'category':

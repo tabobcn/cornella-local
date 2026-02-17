@@ -5984,6 +5984,12 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         return;
       }
 
+      // Admin puede reseñar cualquier negocio sin restricciones
+      if (user?.is_admin) {
+        setCanReview({ can_review: true, reason: null });
+        return;
+      }
+
       // El propietario no puede reseñar su propio negocio
       if (business?.owner_id === user.id) {
         setCanReview({ can_review: false, reason: 'No puedes reseñar tu propio negocio' });
@@ -17533,7 +17539,7 @@ export default function App() {
 
       // 2. Sincronizar con profiles en segundo plano (sin await — no bloquea el login)
       supabase.from('profiles')
-        .select('id, full_name, avatar_url')
+        .select('id, full_name, avatar_url, is_admin, birth_date')
         .eq('id', session.user.id)
         .single()
         .then(({ data }) => {

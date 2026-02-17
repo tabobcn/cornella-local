@@ -30,6 +30,11 @@ BEGIN
     RETURN json_build_object('can_review', false, 'reason', 'Perfil no encontrado');
   END IF;
 
+  -- Admins pueden reseñar sin restricciones
+  IF EXISTS (SELECT 1 FROM profiles WHERE id = p_user_id AND is_admin = true) THEN
+    RETURN json_build_object('can_review', true, 'reason', null);
+  END IF;
+
   -- Verificar que no es el propietario del negocio
   SELECT EXISTS(
     SELECT 1 FROM businesses

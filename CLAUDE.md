@@ -117,6 +117,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] BusinessApprovalScreen — aprobar/rechazar con motivo + ver documentos + ver apelación
 - [x] ReportsScreen para gestionar reportes
 - [x] BusinessAnalyticsScreen — analítica de negocios
+- [x] **AdminUsersScreen** — lista de usuarios registrados con fecha y badge Admin
+- [x] **AdminSupportScreen** — bandeja de mensajes de soporte (pendiente/resuelto)
+- [x] **Formulario de contacto funcional** — guarda en tabla `support_requests` (Supabase), visible en panel admin
 - [x] Solo visible para usuarios con `is_admin = true`
 
 #### Contadores y Deep Links
@@ -207,6 +210,7 @@ Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
 - `supabase/setup-reviews-controls.sql` — edit_count en reviews + RPC can_user_review actualizada (✅ ejecutado)
 - `supabase/add-birth-date.sql` — Campo birth_date en profiles (✅ ejecutado)
 - `supabase/cleanup-test-data.sql` — Borra negocio 81 (rechazado) + todas las reseñas de prueba
+- `supabase/setup-support-requests.sql` — Tabla support_requests con RLS (insert público, select/update admin) (✅ ejecutado)
 
 ### Edge Functions
 - `supabase/functions/send-push/index.ts` — Envía push notifications con cifrado RFC 8291 nativo Deno (sin npm:web-push)

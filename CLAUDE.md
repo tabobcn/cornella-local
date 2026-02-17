@@ -107,6 +107,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Reseñas mapeadas correctamente** — campos Supabase (`user_id`, `created_at`) mapeados a display (`user`, `avatar`, `date`) al cargar y al crear
 - [x] **Sort de reseñas** — usa `created_at` (antes usaba `timestamp` inexistente)
 - [x] **Bloqueo visible al propietario** — toast inmediato al pulsar "Valorar" o "Escribir reseña", sin acceso al formulario
+- [x] `showToast` pasado como prop a `BusinessDetailPage` (era `undefined` y daba error)
 - [x] **Propietario no puede reseñar su negocio** — validado en frontend (`owner_id`) y en RPC `can_user_review`
 
 #### Panel de Administración
@@ -304,6 +305,7 @@ Custom colors en `tailwind.config.js`:
 - NUNCA usar `alert()` → siempre `showToast()`
 - NUNCA JOIN `profiles:user_id(...)` en Supabase queries → da PGRST200. Usar `select('*')` y cargar separado
 - En tabla `businesses` el propietario se identifica con `owner_id` (NO `user_id`)
+- `showToast` debe pasarse como prop explícitamente a cada componente que lo necesite (no es global)
 - Para OAuth, NO esperar query a profiles para navegar — usar `session.user.user_metadata` directamente
 
 ---

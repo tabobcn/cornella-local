@@ -5849,7 +5849,12 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         if (error) throw error;
 
         console.log('[REVIEWS] Loaded:', data?.length || 0, 'reviews');
-        setReviews(data || []);
+        setReviews((data || []).map(r => ({
+          ...r,
+          user: r.user_id === user?.id ? 'Tú' : 'Usuario',
+          avatar: r.user_id === user?.id ? 'Tú' : 'U',
+          date: new Date(r.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+        })));
       } catch (error) {
         console.error('[REVIEWS] Error loading reviews:', error);
       } finally {
@@ -6118,8 +6123,13 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
       console.log('[REVIEWS] Review submitted:', data);
 
-      // Añadir reseña a la lista
-      setReviews(prev => [data, ...prev]);
+      // Añadir reseña a la lista (con campos mapeados para display)
+      setReviews(prev => [{
+        ...data,
+        user: 'Tú',
+        avatar: 'Tú',
+        date: new Date(data.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+      }, ...prev]);
 
       // Actualizar rating del negocio en tiempo real
       setBusiness(prev => {
@@ -6155,7 +6165,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   };
 
   // Ordenar reseñas por fecha (más recientes primero)
-  const sortedReviews = [...reviews].sort((a, b) => b.timestamp - a.timestamp);
+  const sortedReviews = [...reviews].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   // Función para publicar una reseña
   const handlePublishReview = () => {
@@ -6293,7 +6303,14 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   </span>
                 </div>
                 <button
-                  onClick={() => { setShowReviews(true); setShowWriteReview(true); }}
+                  onClick={() => {
+                    if (!canReview.can_review) {
+                      showToast(canReview.reason || 'No puedes reseñar este negocio', 'warning');
+                      return;
+                    }
+                    setShowReviews(true);
+                    setShowWriteReview(true);
+                  }}
                   className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors cursor-pointer"
                 >
                   <Star size={14} className="fill-white" />
@@ -6616,7 +6633,13 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
             <div className="shrink-0 bg-white border-t border-gray-100 p-4">
               {!showWriteReview ? (
                 <button
-                  onClick={() => setShowWriteReview(true)}
+                  onClick={() => {
+                    if (!canReview.can_review) {
+                      showToast(canReview.reason || 'No puedes reseñar este negocio', 'warning');
+                      return;
+                    }
+                    setShowWriteReview(true);
+                  }}
                   className="w-full h-12 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <Edit3 size={18} />

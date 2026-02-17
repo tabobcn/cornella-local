@@ -1530,7 +1530,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
             <div className="flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1">
               <Star className="text-yellow-400 fill-yellow-400" size={16} />
               <span className="text-xs font-bold text-slate-700">{business.rating}</span>
-              <span className="text-[10px] text-gray-400">({business.reviews})</span>
+              <span className="text-[10px] text-gray-400">({business.review_count || business.reviews || 0})</span>
             </div>
             <div className="flex items-center gap-1 text-gray-500">
               <MapPin size={16} />
@@ -2674,8 +2674,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     <span className="text-gray-300 text-sm">│</span>
                     <div className="flex items-center gap-1">
                       <Star className="text-yellow-500 fill-yellow-500" size={15} />
-                      <span className="font-bold text-slate-900 text-sm">{business.rating || '5.0'}</span>
-                      <span className="text-gray-400 text-xs">· {business.reviews || 0}</span>
+                      <span className="font-bold text-slate-900 text-sm">{business.rating || '—'}</span>
+                      <span className="text-gray-400 text-xs">· {business.review_count || business.reviews || 0}</span>
                     </div>
                   </div>
 
@@ -6249,14 +6249,22 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         date: new Date(data.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
       }, ...prev]);
 
-      // Actualizar rating del negocio en tiempo real
-      setBusiness(prev => {
-        if (!prev) return prev;
-        const totalReviews = (prev.review_count || prev.reviews || 0) + 1;
-        const currentRating = parseFloat(prev.rating) || 0;
-        const newRating = ((currentRating * (totalReviews - 1)) + newReviewRating) / totalReviews;
-        return { ...prev, rating: newRating.toFixed(1), review_count: totalReviews };
-      });
+      // Recalcular rating real desde todas las reseñas y actualizar en Supabase
+      const { data: allReviews } = await supabase
+        .from('reviews')
+        .select('rating')
+        .eq('business_id', businessId);
+
+      if (allReviews?.length > 0) {
+        const avgRating = (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1);
+        await supabase
+          .from('businesses')
+          .update({ rating: avgRating, review_count: allReviews.length })
+          .eq('id', businessId);
+
+        // Actualizar estado local del negocio
+        setBusiness(prev => prev ? { ...prev, rating: avgRating, review_count: allReviews.length } : prev);
+      }
 
       // Limpiar formulario y cerrar modales
       setNewReviewText('');
@@ -6323,7 +6331,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   // Función para compartir por WhatsApp
   const handleShareWhatsApp = () => {
     const profileUrl = `${window.location.origin}?negocio=${business.id}`;
-    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business.name}*\n⭐ ${business.rating} (${business.reviews} reseñas)\n📍 ${business.address}\n📂 ${business.category}\n\n👉 Ver perfil: ${profileUrl}\n\nDescúbrelo en Cornellà Local`;
+    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business.name}*\n⭐ ${business.rating} (${business.review_count || business.reviews || 0} reseñas)\n📍 ${business.address}\n📂 ${business.category}\n\n👉 Ver perfil: ${profileUrl}\n\nDescúbrelo en Cornellà Local`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -6410,7 +6418,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                 >
                   <span className="text-gray-900 font-bold">{business.rating}</span>
                   <Star className="text-yellow-500 fill-yellow-500" size={16} />
-                  <span className="text-gray-400 text-xs">({business.reviews})</span>
+                  <span className="text-gray-400 text-xs">({business.review_count || business.reviews || 0})</span>
                 </button>
                 {/* Contador de favoritos/seguidores */}
                 <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
@@ -8228,7 +8236,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
                     <div className="flex items-center gap-1">
                       <Star className="text-yellow-500 fill-yellow-500" size={16} />
                       <span className="font-bold text-slate-900">{business.rating}</span>
-                      <span className="text-gray-400 text-sm">({business.reviews})</span>
+                      <span className="text-gray-400 text-sm">({business.review_count || business.reviews || 0})</span>
                     </div>
                     {business.distance && (
                       <div className="flex items-center gap-1 text-gray-500 text-sm">

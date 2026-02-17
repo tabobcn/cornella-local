@@ -6884,9 +6884,12 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 };
 
 // Página de Detalle de Cupón
-const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveCoupon, isCouponSaved }) => {
+const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveCoupon, isCouponSaved, user }) => {
   const [offer, setOffer] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [redemptionCode, setRedemptionCode] = useState(null);
+  const [redemptionStatus, setRedemptionStatus] = useState(null);
+  const [redemptionLoading, setRedemptionLoading] = useState(false);
 
   // Cargar oferta desde Supabase
   useEffect(() => {
@@ -6931,6 +6934,28 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
 
     incrementViews();
   }, [couponId]);
+
+  // Verificar si el usuario ya tiene un código para esta oferta
+  useEffect(() => {
+    const checkExistingCode = async () => {
+      if (!user?.id || !couponId) return;
+      try {
+        const { data } = await supabase
+          .from('offer_redemptions')
+          .select('code, status')
+          .eq('offer_id', couponId)
+          .eq('user_id', user.id)
+          .single();
+        if (data) {
+          setRedemptionCode(data.code);
+          setRedemptionStatus(data.status);
+        }
+      } catch (_) {
+        // Sin código todavía, es normal
+      }
+    };
+    checkExistingCode();
+  }, [couponId, user?.id]);
 
   if (loading) {
     return <OfferCardSkeleton />;
@@ -6998,8 +7023,30 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
 
   const handleShareWhatsApp = () => {
     const ofertaUrl = `${window.location.origin}${window.location.pathname}?oferta=${coupon.id}`;
-    const text = `¡Mira esta oferta en Cornellà! 🎉\n\n*${coupon.title}*\n🏪 ${coupon.business}\n🎫 Código: ${coupon.code}\n⏰ Válido hasta ${coupon.validUntil}\n\n👉 Ver oferta: ${ofertaUrl}`;
+    const text = `¡Mira esta oferta en Cornellà! 🎉\n\n*${coupon.title}*\n🏪 ${coupon.business}\n⏰ Válido hasta ${coupon.validUntil}\n\n👉 Ver oferta: ${ofertaUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const handleGetCode = async () => {
+    if (!user?.id) {
+      onNavigate('login');
+      return;
+    }
+    setRedemptionLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('get_or_create_redemption', {
+        p_offer_id: offer.id,
+        p_user_id: user.id,
+        p_business_id: offer.businesses?.id,
+      });
+      if (error) throw error;
+      setRedemptionCode(data.code);
+      setRedemptionStatus(data.status);
+    } catch (err) {
+      console.error('[REDEMPTION]', err);
+    } finally {
+      setRedemptionLoading(false);
+    }
   };
 
   return (
@@ -7057,59 +7104,65 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
             <p className="text-gray-400 text-sm">{coupon.type}</p>
           </div>
 
-          {/* QR Code */}
-          <div className="relative w-full bg-primary rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-4 mb-8 group/qr transition-transform active:scale-[0.98] duration-200">
-            <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
-            <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
-            <div className="text-center">
-              <p className="text-xs font-bold text-white/90 uppercase tracking-wider">Escanea para canjear</p>
-            </div>
-            <img src={coupon.qrCode} alt="QR Code" className="w-56 h-56 rounded-xl" />
-            <div className="flex flex-col items-center w-full">
-              <div className="flex items-center gap-2">
-                <p className="text-2xl font-mono font-bold text-white tracking-widest">{coupon.code}</p>
-                <button
-                  onClick={async () => {
-                    const success = await copyToClipboard(coupon.code);
-                    if (success) {
-                      // Feedback visual temporal
-                      const btn = event.currentTarget;
-                      btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-                      setTimeout(() => {
-                        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>';
-                      }, 2000);
-                    }
-                  }}
-                  className="p-1.5 hover:bg-white/20 rounded-lg transition-colors active:scale-95"
-                  title="Copiar código"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                  </svg>
-                </button>
+          {/* Sección de código de redención */}
+          {redemptionStatus === 'validated' ? (
+            /* Código ya canjeado */
+            <div className="relative w-full bg-gray-100 rounded-2xl p-5 flex flex-col items-center gap-2 mb-6">
+              <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
+              <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Check className="text-green-600" size={24} />
               </div>
-              <p className="text-xs text-white/80 mt-1">O muestra este código al personal</p>
+              <p className="font-bold text-gray-700">Descuento ya canjeado</p>
+              <p className="text-sm text-gray-400 font-mono">{redemptionCode}</p>
             </div>
-          </div>
+          ) : redemptionCode ? (
+            /* Código obtenido, pendiente de canjear */
+            <div className="relative w-full bg-gradient-to-br from-primary to-blue-700 rounded-2xl p-6 shadow-lg flex flex-col items-center gap-3 mb-6 transition-transform active:scale-[0.98]">
+              <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
+              <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
+              <p className="text-xs font-bold text-white/80 uppercase tracking-widest">Muestra este código en el negocio</p>
+              <p className="text-5xl font-mono font-black text-white tracking-widest">{redemptionCode}</p>
+              <p className="text-xs text-white/60">Código único e intransferible · 1 uso</p>
+            </div>
+          ) : (
+            /* Sin código todavía */
+            <div className="relative w-full bg-gradient-to-br from-primary to-blue-700 rounded-2xl p-6 shadow-lg flex flex-col items-center gap-4 mb-6">
+              <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
+              <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
+              <Ticket className="text-white/80" size={32} />
+              <div className="text-center">
+                <p className="text-white font-bold text-lg">¿Quieres usar este descuento?</p>
+                <p className="text-white/70 text-sm mt-1">Genera tu código único y muéstralo en el negocio</p>
+              </div>
+              <button
+                onClick={handleGetCode}
+                disabled={redemptionLoading}
+                className="bg-white text-primary font-bold px-8 py-3 rounded-xl hover:bg-white/90 transition-colors disabled:opacity-60 text-sm"
+              >
+                {redemptionLoading ? 'Generando...' : user?.id ? 'Obtener mi código' : 'Inicia sesión para canjear'}
+              </button>
+            </div>
+          )}
 
           {/* Action buttons */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="flex gap-3 mb-8">
             <button
               onClick={() => toggleSaveCoupon && toggleSaveCoupon(coupon)}
-              className={`flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border font-semibold transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border font-semibold transition-colors text-sm ${
                 isCurrentCouponSaved
                   ? 'bg-primary border-primary text-white'
                   : 'border-gray-200 bg-transparent text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <Heart className={isCurrentCouponSaved ? 'fill-current' : ''} size={20} />
+              <Heart className={isCurrentCouponSaved ? 'fill-current' : ''} size={18} />
               {isCurrentCouponSaved ? 'Guardado' : 'Guardar'}
             </button>
             <button
               onClick={handleShareWhatsApp}
-              className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors text-sm"
             >
-              <MessageCircle size={20} />
+              <MessageCircle size={18} />
               Compartir
             </button>
           </div>
@@ -15733,6 +15786,112 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
 };
 
 // =============================================
+// =============================================
+// VALIDATE CODE SCREEN - Propietario valida código de cliente
+// =============================================
+const ValidateCodeScreen = ({ onNavigate, user, showToast }) => {
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleValidate = async () => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const { data, error } = await supabase.rpc('validate_redemption_code', {
+        p_code: trimmed,
+        p_owner_id: user.id,
+      });
+      if (error) throw error;
+      setResult(data);
+      if (data.success) {
+        setCode('');
+        showToast('¡Código validado! Descuento aplicado.', 'success');
+      }
+    } catch (err) {
+      console.error('[VALIDATE CODE]', err);
+      setResult({ success: false, error: 'Error al validar el código. Inténtalo de nuevo.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50 font-display">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 flex items-center gap-3">
+        <button
+          onClick={() => onNavigate('owner-dashboard')}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+        >
+          <ArrowLeft size={20} className="text-gray-700" />
+        </button>
+        <div>
+          <h1 className="text-lg font-bold text-gray-900">Validar código</h1>
+          <p className="text-xs text-gray-500">Canjea el descuento de un cliente</p>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-6">
+        {/* Instrucciones */}
+        <div className="bg-primary/10 rounded-2xl p-4 flex gap-3">
+          <Ticket className="text-primary shrink-0 mt-0.5" size={20} />
+          <p className="text-sm text-primary font-medium leading-relaxed">
+            El cliente te muestra un código en su móvil (ej. <span className="font-mono font-bold">CL-A7X3</span>). Introdúcelo aquí para validar el descuento y que quede registrado.
+          </p>
+        </div>
+
+        {/* Input del código */}
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-gray-700">Código del cliente</label>
+          <input
+            type="text"
+            value={code}
+            onChange={e => setCode(e.target.value.toUpperCase())}
+            onKeyDown={e => e.key === 'Enter' && handleValidate()}
+            placeholder="CL-XXXX"
+            maxLength={7}
+            className="w-full text-center text-3xl font-mono font-bold tracking-widest border-2 border-gray-200 rounded-2xl py-5 px-4 focus:border-primary focus:outline-none transition-colors uppercase bg-white"
+          />
+          <button
+            onClick={handleValidate}
+            disabled={loading || !code.trim()}
+            className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+          >
+            {loading ? 'Validando...' : 'Validar descuento'}
+          </button>
+        </div>
+
+        {/* Resultado */}
+        {result && (
+          result.success ? (
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center space-y-2">
+              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle2 className="text-green-600" size={28} />
+              </div>
+              <p className="font-bold text-green-800 text-lg">¡Código válido!</p>
+              <p className="text-green-700 font-semibold">{result.offer_title}</p>
+              <p className="text-green-600 text-sm">Descuento: <span className="font-bold">{result.discount}</span></p>
+              <p className="text-green-500 text-sm">Cliente: {result.user_name}</p>
+            </div>
+          ) : (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center space-y-2">
+              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                <XCircle className="text-red-500" size={28} />
+              </div>
+              <p className="font-bold text-red-700">Código no válido</p>
+              <p className="text-red-500 text-sm">{result.error}</p>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
+
+// =============================================
 // BUSINESS OWNER DASHBOARD - Panel principal del propietario
 // =============================================
 const BusinessOwnerDashboard = ({
@@ -15967,6 +16126,22 @@ const BusinessOwnerDashboard = ({
                 <div>
                   <span className="font-medium text-slate-700 block">Estadísticas</span>
                   <span className="text-xs text-slate-500">Ver rendimiento</span>
+                </div>
+              </div>
+              <ChevronRight className="text-slate-400" size={20} />
+            </button>
+
+            <button
+              onClick={() => onNavigate('validate-code')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-100 p-2 rounded-lg text-amber-600 group-hover:text-amber-700 transition-colors">
+                  <Ticket size={20} />
+                </div>
+                <div>
+                  <span className="font-medium text-slate-700 block">Validar código</span>
+                  <span className="text-xs text-slate-500">Canjear descuento de cliente</span>
                 </div>
               </div>
               <ChevronRight className="text-slate-400" size={20} />
@@ -18404,7 +18579,7 @@ export default function App() {
             createdAt: offer.created_at,
             status: offer.status,
             isVisible: offer.is_visible,
-            redemptions: 0, // TODO: Contar redenciones reales
+            redemptions: offer.redemption_count || 0,
           };
         });
 
@@ -19578,7 +19753,7 @@ export default function App() {
       case 'business':
         return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} showToast={showToast} />;
       case 'coupon':
-        return <CouponDetailPage couponId={pageParams.id} onNavigate={navigate} savedCoupons={savedCoupons} toggleSaveCoupon={toggleSaveCoupon} isCouponSaved={isCouponSaved} />;
+        return <CouponDetailPage couponId={pageParams.id} onNavigate={navigate} savedCoupons={savedCoupons} toggleSaveCoupon={toggleSaveCoupon} isCouponSaved={isCouponSaved} user={user} />;
       case 'category':
         return <CategoryDetailPage categoryId={pageParams.id} onNavigate={navigate} />;
       case 'subcategory':
@@ -19642,6 +19817,8 @@ export default function App() {
         return <BusinessAppealScreen onNavigate={navigate} businessData={businessData} user={user} showToast={showToast} />;
       case 'edit-business':
         return <EditBusinessScreen onNavigate={navigate} businessData={businessData} onUpdateBusiness={updateBusiness} user={user} showToast={showToast} />;
+      case 'validate-code':
+        return <ValidateCodeScreen onNavigate={navigate} user={user} showToast={showToast} />;
       case 'owner-dashboard':
         return (
           <BusinessOwnerDashboard

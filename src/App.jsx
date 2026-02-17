@@ -1017,13 +1017,11 @@ const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport }
         onSubmitReport();
       }
 
-      // Resetear form
+      // Resetear form y cerrar — el callback onSubmitReport muestra el toast
       setReportType('');
       setMessage('');
       onClose();
-
-      // Mostrar confirmación
-      alert('✅ Reporte enviado correctamente. Gracias por ayudarnos a mejorar Cornellà Local.');
+      if (onSubmitReport) onSubmitReport('success');
     } catch (err) {
       console.error('[REPORT] Error al enviar reporte:', err);
       setError('Error al enviar el reporte. Intenta de nuevo.');
@@ -1600,34 +1598,20 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
   );
 };
 
-// Hook para countdown real
-const useCountdown = (initialTime) => {
-  // Parsear el tiempo inicial (formato: "HH:MM:SS" o "Xh")
-  const parseTime = (timeStr) => {
-    if (!timeStr) return 0;
-    if (timeStr.includes(':')) {
-      const parts = timeStr.split(':').map(Number);
-      return (parts[0] * 3600 + parts[1] * 60 + (parts[2] || 0)) * 1000;
-    }
-    if (timeStr.includes('h')) {
-      return parseInt(timeStr) * 3600 * 1000;
-    }
-    return 3600 * 1000; // Default 1 hora
-  };
+// Hook para countdown real — acepta ISO timestamp expires_at
+const useCountdown = (expiresAt) => {
+  const getMs = () => Math.max(0, new Date(expiresAt) - Date.now());
 
-  const [timeLeft, setTimeLeft] = useState(parseTime(initialTime));
+  const [timeLeft, setTimeLeft] = useState(getMs);
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
-
+    if (!expiresAt) return;
     const timer = setInterval(() => {
-      setTimeLeft(prev => Math.max(0, prev - 1000));
+      setTimeLeft(getMs());
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [expiresAt]);
 
-  // Formatear tiempo restante
   const formatTime = (ms) => {
     if (ms <= 0) return 'Expirado';
     const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -1641,7 +1625,7 @@ const useCountdown = (initialTime) => {
 
 // Tarjeta de oferta flash
 const FlashOfferCard = ({ offer, onClick }) => {
-  const { timeLeft, isExpired } = useCountdown(offer.timeLeft);
+  const { timeLeft, isExpired } = useCountdown(offer.expiresAt);
 
   const handleShareWhatsApp = (e) => {
     e.stopPropagation();
@@ -1966,7 +1950,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
   // Transformar ofertas de Supabase al formato esperado
   const allFlashOffers = flashOffers.map(offer => {
-    const timeLeft = calculateTimeLeft(offer.expires_at);
     const now = new Date();
     const expires = new Date(offer.expires_at);
     const diffMinutes = Math.floor((expires - now) / 60000);
@@ -1977,7 +1960,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       image: offer.image || 'https://via.placeholder.com/400x300?text=Oferta',
       discount: offer.discount_label || offer.discount_value + '%',
       discountType: offer.discount_type,
-      timeLeft: timeLeft,
+      expiresAt: offer.expires_at,
       timeMinutes: diffMinutes,
       originalPrice: offer.original_price || 0,
       discountedPrice: offer.discounted_price || 0,
@@ -3380,6 +3363,17 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName }) => {
 };
 
 // Página de Todas las Ofertas Flash
+// Countdown en tiempo real para la lista de ofertas flash
+const FlashOfferTimer = ({ expiresAt, timeMinutes, getTimeColor, getTimeIcon }) => {
+  const { timeLeft } = useCountdown(expiresAt);
+  return (
+    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold ${getTimeColor(timeMinutes)}`}>
+      <Clock size={12} className={getTimeIcon(timeMinutes)} />
+      <span>{timeLeft === 'Expirado' ? 'Expirado' : `Quedan ${timeLeft}`}</span>
+    </div>
+  );
+};
+
 const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
   const [flashOffers, setFlashOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
@@ -3433,7 +3427,6 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
 
   // Transformar ofertas de Supabase al formato esperado
   const allFlashOffers = flashOffers.map(offer => {
-    const timeLeft = calculateTimeLeft(offer.expires_at);
     const now = new Date();
     const expires = new Date(offer.expires_at);
     const diffMinutes = Math.floor((expires - now) / 60000);
@@ -3444,7 +3437,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
       image: offer.image || 'https://via.placeholder.com/400x300?text=Oferta',
       discount: offer.discount_label || offer.discount_value + '%',
       discountType: offer.discount_type,
-      timeLeft: timeLeft,
+      expiresAt: offer.expires_at,
       timeMinutes: diffMinutes,
       originalPrice: offer.original_price || 0,
       discountedPrice: offer.discounted_price || 0,
@@ -3548,10 +3541,8 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
 
                   {/* Time & Price */}
                   <div className="flex items-center justify-between mt-2">
-                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold ${getTimeColor(offer.timeMinutes)}`}>
-                      <Clock size={12} className={getTimeIcon(offer.timeMinutes)} />
-                      <span>Quedan {offer.timeLeft}</span>
-                    </div>
+                    <FlashOfferTimer expiresAt={offer.expiresAt} timeMinutes={offer.timeMinutes} getTimeColor={getTimeColor} getTimeIcon={getTimeIcon} />
+
                     <div className="text-right">
                       {offer.originalPrice > 0 && (
                         <span className="text-xs text-gray-400 line-through mr-1">{formatCurrency(offer.originalPrice)}</span>
@@ -5757,7 +5748,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
 };
 
 // Página de Detalle de Negocio
-const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite, user, trackAnalyticsEvent }) => {
+const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite, user, trackAnalyticsEvent, showToast }) => {
   const [business, setBusiness] = useState(null);
   const [loadingBusiness, setLoadingBusiness] = useState(true);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -6158,8 +6149,13 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
   // Función para compartir por WhatsApp
   const handleShareWhatsApp = () => {
-    const profileUrl = `${window.location.origin}?negocio=${business.id}`;
-    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business.name}*\n⭐ ${business.rating} (${business.reviews} reseñas)\n📍 ${business.address}\n📂 ${business.category}\n\n👉 Ver perfil: ${profileUrl}\n\nDescúbrelo en Cornellà Local`;
+    const profileUrl = `https://www.cornellalocal.es?negocio=${business.id}`;
+    const reviewCount = reviews.length;
+    const ratingText = business.rating
+      ? `⭐ ${Number(business.rating).toFixed(1)} (${reviewCount} reseña${reviewCount !== 1 ? 's' : ''})`
+      : '⭐ Sin valoraciones aún';
+    const categoryText = business.subcategory || '';
+    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business.name}*\n${ratingText}\n📍 ${business.address}${categoryText ? `\n📂 ${categoryText}` : ''}\n\n👉 Ver perfil: ${profileUrl}\n\nDescúbrelo en Cornellà Local`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -6656,7 +6652,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         business={business}
         user={user}
         onSubmitReport={() => {
-          console.log('[REPORT] Modal cerrado después de enviar');
+          if (showToast) showToast('Reporte enviado. ¡Gracias por ayudarnos a mejorar!', 'success');
         }}
       />
 
@@ -19395,7 +19391,7 @@ export default function App() {
       case 'admin-reports':
         return <ReportsScreen onNavigate={navigate} user={user} />;
       case 'business':
-        return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} />;
+        return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} showToast={showToast} />;
       case 'coupon':
         return <CouponDetailPage couponId={pageParams.id} onNavigate={navigate} savedCoupons={savedCoupons} toggleSaveCoupon={toggleSaveCoupon} isCouponSaved={isCouponSaved} />;
       case 'category':

@@ -5944,7 +5944,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   const handleWebClick = () => {
     handleClick('website');
     if (business?.website) {
-      window.open(business.website, '_blank');
+      const url = business.website.startsWith('http') ? business.website : `https://${business.website}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -6355,12 +6356,14 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                 <span className="text-white font-bold">Presupuesto</span>
               </button>
             )}
-            <button
-              onClick={handleWebClick}
-              className="size-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
-            >
-              <Globe className="text-primary" size={22} />
-            </button>
+            {business?.website && (
+              <button
+                onClick={handleWebClick}
+                className="size-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+              >
+                <Globe className="text-primary" size={22} />
+              </button>
+            )}
           </div>
 
           {/* Services */}

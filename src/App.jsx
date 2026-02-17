@@ -6308,7 +6308,6 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                       showToast(canReview.reason || 'No puedes reseñar este negocio', 'warning');
                       return;
                     }
-                    setShowReviews(true);
                     setShowWriteReview(true);
                   }}
                   className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors cursor-pointer"
@@ -6629,72 +6628,56 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
               ))}
             </div>
 
-            {/* Write Review Section */}
-            <div className="shrink-0 bg-white border-t border-gray-100 p-4">
-              {!showWriteReview ? (
+          </div>
+        </div>
+      )}
+
+      {/* Modal independiente para escribir reseña (abierto desde Valorar) */}
+      {showWriteReview && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center">
+          <div className="bg-white w-full max-w-md rounded-t-3xl animate-slide-up">
+            <div className="shrink-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-3xl">
+              <h3 className="text-lg font-bold text-gray-900">Escribir reseña</h3>
+              <button onClick={() => { setShowWriteReview(false); setNewReviewText(''); setNewReviewRating(5); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Tu valoración:</span>
+                <StarRating rating={newReviewRating} onRate={setNewReviewRating} size={28} showValue={false} />
+              </div>
+              <div className="text-center py-2 bg-amber-50 rounded-lg">
+                <span className="text-sm font-medium text-amber-700">
+                  {newReviewRating === 1 && '😞 Muy malo'}
+                  {newReviewRating === 2 && '😕 Malo'}
+                  {newReviewRating === 3 && '😐 Normal'}
+                  {newReviewRating === 4 && '😊 Bueno'}
+                  {newReviewRating === 5 && '🤩 Excelente'}
+                </span>
+              </div>
+              <textarea
+                value={newReviewText}
+                onChange={(e) => setNewReviewText(e.target.value)}
+                placeholder="Escribe tu opinión (mínimo 10 caracteres)..."
+                className="w-full h-24 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+              <div className="flex gap-3 pb-2">
                 <button
-                  onClick={() => {
-                    if (!canReview.can_review) {
-                      showToast(canReview.reason || 'No puedes reseñar este negocio', 'warning');
-                      return;
-                    }
-                    setShowWriteReview(true);
-                  }}
-                  className="w-full h-12 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  onClick={() => { setShowWriteReview(false); setNewReviewText(''); setNewReviewRating(5); }}
+                  className="flex-1 h-11 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
                 >
-                  <Edit3 size={18} />
-                  Escribir una reseña
+                  Cancelar
                 </button>
-              ) : (
-                <div className="space-y-4">
-                  {/* Rating selector */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Tu valoración:</span>
-                    <StarRating
-                      rating={newReviewRating}
-                      onRate={setNewReviewRating}
-                      size={28}
-                      showValue={false}
-                    />
-                  </div>
-                  {/* Rating feedback */}
-                  <div className="text-center py-2 bg-amber-50 rounded-lg">
-                    <span className="text-sm font-medium text-amber-700">
-                      {newReviewRating === 1 && '😞 Muy malo'}
-                      {newReviewRating === 2 && '😕 Malo'}
-                      {newReviewRating === 3 && '😐 Normal'}
-                      {newReviewRating === 4 && '😊 Bueno'}
-                      {newReviewRating === 5 && '🤩 Excelente'}
-                    </span>
-                  </div>
-
-                  {/* Text area */}
-                  <textarea
-                    value={newReviewText}
-                    onChange={(e) => setNewReviewText(e.target.value)}
-                    placeholder="Escribe tu opinión sobre este negocio..."
-                    className="w-full h-24 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                  />
-
-                  {/* Action buttons */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => { setShowWriteReview(false); setNewReviewText(''); setNewReviewRating(5); }}
-                      className="flex-1 h-11 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handlePublishReview}
-                      disabled={newReviewText.trim() === ''}
-                      className="flex-1 h-11 bg-primary text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      <Send size={16} />
-                      Publicar
-                    </button>
-                  </div>
-                </div>
-              )}
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={newReviewText.trim().length < 10}
+                  className="flex-1 h-11 bg-primary text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Send size={16} />
+                  Publicar
+                </button>
+              </div>
             </div>
           </div>
         </div>

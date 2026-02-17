@@ -3953,6 +3953,117 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
 // PANEL DE ADMINISTRACIÓN
 // =====================================================
 
+// AdminUsersScreen - Lista de usuarios registrados
+const AdminUsersScreen = ({ onNavigate }) => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, created_at, is_admin')
+        .order('created_at', { ascending: false });
+      setUsers(data || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
+      <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
+        <button onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+          <ArrowLeft size={24} />
+        </button>
+        <h2 className="text-slate-900 text-lg font-bold flex-1 text-center pr-10">Usuarios</h2>
+      </header>
+      <div className="p-4 space-y-3">
+        {loading ? (
+          <div className="text-center text-gray-400 py-10">Cargando...</div>
+        ) : users.map(u => (
+          <div key={u.id} className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+              {(u.full_name || u.email || '?')[0].toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-slate-800 text-sm truncate">{u.full_name || 'Sin nombre'}</p>
+              <p className="text-xs text-gray-400 truncate">{u.email}</p>
+              <p className="text-xs text-gray-300">{new Date(u.created_at).toLocaleDateString('es-ES')}</p>
+            </div>
+            {u.is_admin && (
+              <span className="text-xs bg-primary/10 text-primary font-semibold px-2 py-0.5 rounded-full shrink-0">Admin</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// AdminSupportScreen - Mensajes de soporte recibidos
+const AdminSupportScreen = ({ onNavigate }) => {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from('support_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setMessages(data || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const markResolved = async (id) => {
+    await supabase.from('support_requests').update({ status: 'resolved' }).eq('id', id);
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, status: 'resolved' } : m));
+  };
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
+      <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
+        <button onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+          <ArrowLeft size={24} />
+        </button>
+        <h2 className="text-slate-900 text-lg font-bold flex-1 text-center pr-10">Mensajes de Soporte</h2>
+      </header>
+      <div className="p-4 space-y-3">
+        {loading ? (
+          <div className="text-center text-gray-400 py-10">Cargando...</div>
+        ) : messages.length === 0 ? (
+          <div className="text-center text-gray-400 py-10">No hay mensajes</div>
+        ) : messages.map(m => (
+          <div key={m.id} className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${m.status === 'resolved' ? 'border-green-400 opacity-60' : 'border-amber-400'}`}>
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div>
+                <p className="font-semibold text-slate-800 text-sm">{m.name}</p>
+                <p className="text-xs text-gray-400">{m.email}</p>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${m.status === 'resolved' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+                {m.status === 'resolved' ? 'Resuelto' : 'Pendiente'}
+              </span>
+            </div>
+            {m.subject && <p className="text-xs font-semibold text-primary mb-1">{m.subject}</p>}
+            <p className="text-sm text-gray-600 leading-relaxed mb-3">{m.message}</p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-300">{new Date(m.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+              {m.status !== 'resolved' && (
+                <button onClick={() => markResolved(m.id)} className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 transition-colors">
+                  Marcar resuelto
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // AdminDashboard - Panel principal de administración
 const AdminDashboard = ({ onNavigate, user }) => {
   const [stats, setStats] = useState({
@@ -4045,15 +4156,15 @@ const AdminDashboard = ({ onNavigate, user }) => {
       description: `${stats.totalUsers} registrados`,
       icon: Users,
       color: 'green',
-      route: 'profile' // TODO: crear pantalla de usuarios
+      route: 'admin-users'
     },
     {
-      id: 'stats',
-      title: 'Estadísticas',
-      description: 'Ver métricas completas',
-      icon: BarChart3,
+      id: 'support',
+      title: 'Soporte',
+      description: 'Mensajes recibidos',
+      icon: MessageCircle,
       color: 'purple',
-      route: 'profile' // TODO: crear pantalla de stats
+      route: 'admin-support'
     },
   ];
 
@@ -12362,9 +12473,23 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
     { q: '¿Cómo elimino mi cuenta?', a: 'Contacta con soporte y procesaremos tu solicitud en 48h.' },
   ];
 
-  const handleSubmit = () => {
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async () => {
     if (!formData.name || !formData.email || !formData.message) {
       if (showToast) showToast('Por favor completa todos los campos obligatorios', 'error');
+      return;
+    }
+    setSending(true);
+    const { error } = await supabase.from('support_requests').insert({
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      subject: formData.subject.trim() || 'Sin asunto',
+      message: formData.message.trim(),
+    });
+    setSending(false);
+    if (error) {
+      if (showToast) showToast('Error al enviar el mensaje. Inténtalo de nuevo.', 'error');
       return;
     }
     setSubmitted(true);
@@ -19428,6 +19553,10 @@ export default function App() {
         return <AdminDashboard onNavigate={navigate} user={user} />;
       case 'admin-approve-businesses':
         return <BusinessApprovalScreen onNavigate={navigate} user={user} showToast={showToast} />;
+      case 'admin-users':
+        return <AdminUsersScreen onNavigate={navigate} />;
+      case 'admin-support':
+        return <AdminSupportScreen onNavigate={navigate} />;
       case 'business-analytics':
         return <BusinessAnalyticsScreen onNavigate={navigate} user={user} businessData={businessData} />;
       case 'admin-reports':

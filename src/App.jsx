@@ -12791,7 +12791,7 @@ const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, businessData
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
         <button
-          onClick={() => onNavigate('owner-welcome')}
+          onClick={() => onNavigate('profile')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
         >
           <ArrowLeft size={24} />

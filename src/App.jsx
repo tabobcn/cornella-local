@@ -5869,7 +5869,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
       }
 
       // El propietario no puede reseñar su propio negocio
-      if (business?.user_id === user.id) {
+      if (business?.owner_id === user.id) {
         setCanReview({ can_review: false, reason: 'No puedes reseñar tu propio negocio' });
         return;
       }

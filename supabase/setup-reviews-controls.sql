@@ -33,7 +33,7 @@ BEGIN
   -- Verificar que no es el propietario del negocio
   SELECT EXISTS(
     SELECT 1 FROM businesses
-    WHERE id = p_business_id AND user_id = p_user_id
+    WHERE id = p_business_id AND owner_id = p_user_id
   ) INTO v_is_owner;
 
   IF v_is_owner THEN

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-17 noche v2)
+## ESTADO DEL PROYECTO (Actualizado: 2026-02-18 noche)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -135,6 +135,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **redemption_count real** — columna en tabla `offers`, se incrementa al validar, mostrado en dashboard propietario
 - [x] **offer_id es UUID** en tabla `offer_redemptions` (businesses.id es INTEGER, offers.id es UUID)
 - [x] SQL ejecutado: `supabase/setup-offer-redemptions.sql`
+- [x] **Probado end-to-end** — código generado, mostrado al propietario, validado ✅, cliente identificado correctamente
 
 #### Contadores y Deep Links
 - [x] BudgetRequestScreen muestra conteo real de negocios por subcategoría (desde Supabase)

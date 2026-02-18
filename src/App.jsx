@@ -5746,6 +5746,21 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
               <ChevronRight className="text-slate-400" size={20} />
             </button>
             <button
+              onClick={() => onNavigate('validate-code')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-100 p-2 rounded-lg text-amber-600 group-hover:text-amber-700 transition-colors">
+                  <Ticket size={20} />
+                </div>
+                <div>
+                  <span className="font-medium text-slate-700 block">Validar código</span>
+                  <span className="text-xs text-slate-500">Canjear descuento de cliente</span>
+                </div>
+              </div>
+              <ChevronRight className="text-slate-400" size={20} />
+            </button>
+            <button
               onClick={() => onNavigate('edit-business')}
               className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
             >

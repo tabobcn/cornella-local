@@ -7120,7 +7120,18 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
           </div>
 
           {/* Sección de código de redención */}
-          {redemptionStatus === 'validated' ? (
+          {offer.max_uses && offer.redemption_count >= offer.max_uses && !redemptionCode ? (
+            /* Oferta agotada */
+            <div className="relative w-full bg-gray-100 rounded-2xl p-5 flex flex-col items-center gap-2 mb-6">
+              <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
+              <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <XCircle className="text-red-500" size={24} />
+              </div>
+              <p className="font-bold text-gray-700">Oferta agotada</p>
+              <p className="text-sm text-gray-500">Se han canjeado los {offer.max_uses} usos disponibles</p>
+            </div>
+          ) : redemptionStatus === 'validated' ? (
             /* Código ya canjeado */
             <div className="relative w-full bg-gray-100 rounded-2xl p-5 flex flex-col items-center gap-2 mb-6">
               <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
@@ -11001,6 +11012,18 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
 
             {/* Divider */}
             <div className="h-px w-full bg-gray-100 mb-3" />
+
+            {/* Stats de redención */}
+            <div className="flex items-center gap-1.5 text-sm mb-3">
+              <Ticket size={14} className="text-amber-500" />
+              <span className="text-gray-600">
+                <span className="font-bold text-gray-900">{offer.redemptions}</span>
+                {offer.maxUses ? <span className="text-gray-400">/{offer.maxUses}</span> : ''} canjeados
+              </span>
+              {offer.maxUses && offer.redemptions >= offer.maxUses && (
+                <span className="ml-1 text-xs font-bold text-red-500">· AGOTADA</span>
+              )}
+            </div>
 
             {/* Actions */}
             <div className="flex items-center justify-between">
@@ -18595,6 +18618,7 @@ export default function App() {
             status: offer.status,
             isVisible: offer.is_visible,
             redemptions: offer.redemption_count || 0,
+            maxUses: offer.max_uses || null,
           };
         });
 
@@ -19308,6 +19332,7 @@ export default function App() {
           expires_at: expiresAt.toISOString(),
           status: 'active',
           is_visible: true,
+          max_uses: offerData.isLimited ? offerData.limitedUnits : null,
         })
         .select()
         .single();

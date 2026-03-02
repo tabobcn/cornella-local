@@ -33,25 +33,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 })
 
-// Verificar conectividad al cargar
-console.log('[SUPABASE] Cliente inicializado:', supabaseUrl)
-
-// Test de conectividad REST
-fetch(supabaseUrl + '/rest/v1/')
-  .then(() => console.log('[SUPABASE] ✅ REST API funciona'))
-  .catch(err => console.error('[SUPABASE] ❌ REST API error:', err))
-
-// Test de conectividad AUTH
-const testAuthStart = Date.now()
-fetch(supabaseUrl + '/auth/v1/health', {
-  headers: {
-    'apikey': supabaseAnonKey,
-  }
-})
-  .then(res => {
-    const elapsed = Date.now() - testAuthStart
-    console.log(`[SUPABASE] ✅ AUTH API funciona (${elapsed}ms)`)
-    return res.json()
-  })
-  .then(data => console.log('[SUPABASE] AUTH health:', data))
-  .catch(err => console.error('[SUPABASE] ❌ AUTH API error:', err))

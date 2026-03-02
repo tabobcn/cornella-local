@@ -1010,7 +1010,6 @@ const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport }
 
       if (insertError) throw insertError;
 
-      console.log('[REPORT] Reporte enviado exitosamente');
 
       // Llamar callback si existe
       if (onSubmitReport) {
@@ -1025,7 +1024,6 @@ const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport }
       // Mostrar confirmación
       alert('✅ Reporte enviado correctamente. Gracias por ayudarnos a mejorar Cornellà Local.');
     } catch (err) {
-      console.error('[REPORT] Error al enviar reporte:', err);
       setError('Error al enviar el reporte. Intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
@@ -1786,10 +1784,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        console.log('Businesses loaded from Supabase:', data);
         setBusinesses(data || []);
       } catch (error) {
-        console.error('Error loading businesses:', error);
       } finally {
         setLoadingBusinesses(false);
       }
@@ -1832,10 +1828,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           .order('expires_at', { ascending: true });
 
         if (error) throw error;
-        console.log('Flash offers loaded from Supabase:', data);
         setFlashOffers(data || []);
       } catch (error) {
-        console.error('Error loading flash offers:', error);
       } finally {
         setLoadingOffers(false);
       }
@@ -1867,7 +1861,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             .in('business_id', businessIds);
 
           if (favError) {
-            console.error('[NEW BUSINESSES] Error loading favorites:', favError);
           } else {
             // Contar favoritos por negocio
             const favoriteCounts = {};
@@ -1881,7 +1874,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
               favoriteCount: favoriteCounts[business.id] || 0
             }));
 
-            console.log('[NEW BUSINESSES] Loaded:', businessesWithCounts.length);
             setNewBusinesses(businessesWithCounts);
             setLoadingNewBusinesses(false);
             return;
@@ -1890,7 +1882,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
         setNewBusinesses(data || []);
       } catch (error) {
-        console.error('[NEW BUSINESSES] Error:', error);
       } finally {
         setLoadingNewBusinesses(false);
       }
@@ -1935,7 +1926,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
         setUserLocation(location);
         setSortByDistance(true);
         setLoadingLocation(false);
-        console.log('[LOCATION] User location obtained:', location);
         showToast('Ubicación obtenida correctamente', 'success');
       },
       (error) => {
@@ -1954,7 +1944,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
         setLocationError(errorMessage);
         setLoadingLocation(false);
         showToast(errorMessage, 'error');
-        console.error('[LOCATION] Error:', error);
       },
       {
         enableHighAccuracy: true,
@@ -2072,7 +2061,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     });
 
   if (searchQuery && searchQuery.includes('tag')) {
-    console.log('Search query:', searchQuery, 'Total businesses:', businesses.length, 'Filtered:', filteredBusinesses.length);
   }
 
   // Filtrar ofertas según la búsqueda y precio
@@ -3158,7 +3146,6 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
                 }
                 setEnviado(true);
               } catch (error) {
-                console.error('Error enviando solicitud:', error);
               } finally {
                 setLoading(false);
               }
@@ -3422,10 +3409,8 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
           .order('expires_at', { ascending: true });
 
         if (error) throw error;
-        console.log('Flash offers loaded from Supabase:', data);
         setFlashOffers(data || []);
       } catch (error) {
-        console.error('Error loading flash offers:', error);
       } finally {
         setLoadingOffers(false);
       }
@@ -3629,7 +3614,6 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        console.log('Normal offers loaded:', data);
 
         // Transformar al formato esperado
         const transformedOffers = data.map(offer => {
@@ -3652,7 +3636,6 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
 
         setOffers(transformedOffers);
       } catch (error) {
-        console.error('Error loading offers:', error);
       } finally {
         setLoadingOffers(false);
       }
@@ -3891,9 +3874,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
 
         if (error) throw error;
         setFavoriteBusinesses(data || []);
-        console.log('[FAVORITES PAGE] Loaded', data?.length || 0, 'businesses');
       } catch (error) {
-        console.error('[FAVORITES PAGE] Error loading businesses:', error);
       } finally {
         setLoading(false);
       }
@@ -4122,7 +4103,6 @@ const AdminDashboard = ({ onNavigate, user }) => {
           activeJobs: activeJb || 0,
         });
       } catch (error) {
-        console.error('[ADMIN] Error loading stats:', error);
       } finally {
         setLoading(false);
       }
@@ -4288,10 +4268,8 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
       const { data, error } = await query;
       if (error) throw error;
 
-      console.log('[ADMIN] Businesses loaded:', data?.length);
       setBusinesses(data || []);
     } catch (error) {
-      console.error('[ADMIN] Error loading businesses:', error);
     } finally {
       setLoading(false);
     }
@@ -4334,7 +4312,6 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
       setSelectedBusiness(null);
       loadBusinesses();
     } catch (error) {
-      console.error('[ADMIN] Error approving business:', error);
       showToast(`Error: ${error.message}`, 'error');
     } finally {
       setActionLoading(false);
@@ -4384,7 +4361,6 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
       setSelectedBusiness(null);
       loadBusinesses();
     } catch (error) {
-      console.error('[ADMIN] Error rejecting business:', error);
       showToast('Error al rechazar el negocio', 'error');
     } finally {
       setActionLoading(false);
@@ -4859,9 +4835,7 @@ const BusinessAnalyticsScreen = ({ onNavigate, user, businessData }) => {
       if (hourlyError) throw hourlyError;
       setHourlyStats(hourlyData || []);
 
-      console.log('[ANALYTICS] Data loaded:', { stats: statsData?.[0], dailyCount: dailyData?.length, hourlyCount: hourlyData?.length });
     } catch (error) {
-      console.error('[ANALYTICS] Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -5174,10 +5148,8 @@ const ReportsScreen = ({ onNavigate, user }) => {
       const { data, error } = await query;
       if (error) throw error;
 
-      console.log('[ADMIN] Reports loaded:', data?.length);
       setReports(data || []);
     } catch (error) {
-      console.error('[ADMIN] Error loading reports:', error);
     } finally {
       setLoading(false);
     }
@@ -5199,7 +5171,6 @@ const ReportsScreen = ({ onNavigate, user }) => {
       alert('✅ Reporte marcado como resuelto');
       loadReports();
     } catch (error) {
-      console.error('[ADMIN] Error resolving report:', error);
       alert('❌ Error al resolver el reporte');
     }
   };
@@ -5220,7 +5191,6 @@ const ReportsScreen = ({ onNavigate, user }) => {
       alert('Reporte desestimado');
       loadReports();
     } catch (error) {
-      console.error('[ADMIN] Error dismissing report:', error);
       alert('❌ Error al desestimar el reporte');
     }
   };
@@ -5934,13 +5904,9 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
         if (error) throw error;
 
-        console.log('[BUSINESS DETAIL] Negocio cargado:', data);
-        console.log('[BUSINESS DETAIL] Tags:', data?.tags);
-        console.log('[BUSINESS DETAIL] Neighborhood:', data?.neighborhood);
 
         setBusiness(data);
       } catch (error) {
-        console.error('Error loading business:', error);
       } finally {
         setLoadingBusiness(false);
       }
@@ -5955,7 +5921,6 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     if (trackAnalyticsEvent) trackAnalyticsEvent(businessId, 'view');
     // Incrementar view_count en businesses
     supabase.rpc('increment_business_views', { business_id: businessId }).then(({ error }) => {
-      if (error) console.warn('[VIEWS] Error incrementando vista:', error.message);
     });
   }, [businessId]);
 
@@ -5974,7 +5939,6 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
         if (error) throw error;
 
-        console.log('[REVIEWS] Loaded:', data?.length || 0, 'reviews');
         setReviews((data || []).map(r => ({
           ...r,
           user: r.user_id === user?.id ? 'Tú' : 'Usuario',
@@ -5982,7 +5946,6 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           date: new Date(r.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
         })));
       } catch (error) {
-        console.error('[REVIEWS] Error loading reviews:', error);
       } finally {
         setLoadingReviews(false);
       }
@@ -6018,10 +5981,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         });
 
         if (error) throw error;
-        console.log('[REVIEWS] Can review:', data);
         setCanReview(data || { can_review: false, reason: 'Error de validación' });
       } catch (error) {
-        console.error('[REVIEWS] Error checking can review:', error);
         setCanReview({ can_review: false, reason: 'Error de validación' });
       }
     };
@@ -6043,10 +6004,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
         if (error) throw error;
 
-        console.log('[FAVORITES] Count for business:', businessId, '=', count);
         setFavoriteCount(count || 0);
       } catch (error) {
-        console.error('[FAVORITES] Error loading count:', error);
         setFavoriteCount(0);
       } finally {
         setLoadingFavorites(false);
@@ -6060,9 +6019,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
   const handleClick = async (type) => {
     try {
       await supabase.rpc('increment_business_clicks', { business_id: businessId });
-      console.log('[ANALYTICS] Clic registrado:', type);
     } catch (error) {
-      console.error('[ANALYTICS] Error incrementando clics:', error);
     }
   };
 
@@ -6233,7 +6190,6 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     const moderation = moderateContent(newReviewText.trim());
     if (!moderation.isClean) {
       showToast(`⚠️ ${moderation.reason}`, 'error');
-      console.warn('[MODERATION] Review blocked:', moderation);
       return;
     }
 
@@ -6254,7 +6210,6 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
       if (error) throw error;
 
-      console.log('[REVIEWS] Review submitted:', data);
 
       // Añadir reseña a la lista (con campos mapeados para display)
       setReviews(prev => [{
@@ -6292,7 +6247,6 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
       showToast(SUCCESS_MESSAGES.created, 'success');
     } catch (error) {
-      console.error('[REVIEWS] Error submitting review:', error);
 
       // Mensaje de error más detallado
       const errorMessage = error.message?.includes('unique')
@@ -6841,7 +6795,6 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         business={business}
         user={user}
         onSubmitReport={() => {
-          console.log('[REPORT] Modal cerrado después de enviar');
         }}
       />
 
@@ -6920,10 +6873,8 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
           .single();
 
         if (error) throw error;
-        console.log('Offer loaded:', data);
         setOffer(data);
       } catch (error) {
-        console.error('Error loading offer:', error);
       } finally {
         setLoading(false);
       }
@@ -6941,9 +6892,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
 
       try {
         await supabase.rpc('increment_offer_views', { offer_id: couponId });
-        console.log('[ANALYTICS] Vista de oferta registrada:', couponId);
       } catch (error) {
-        console.error('[ANALYTICS] Error incrementando vistas:', error);
       }
     };
 
@@ -7058,7 +7007,6 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
       setRedemptionCode(data.code);
       setRedemptionStatus(data.status);
     } catch (err) {
-      console.error('[REDEMPTION]', err);
     } finally {
       setRedemptionLoading(false);
     }
@@ -7315,7 +7263,6 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
 
         setJob(transformedJob);
       } catch (error) {
-        console.error('Error loading job:', error);
         showToast(ERROR_MESSAGES.generic, 'error');
       } finally {
         setLoading(false);
@@ -7332,9 +7279,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
 
       try {
         await supabase.rpc('increment_job_views', { job_id: jobId });
-        console.log('[ANALYTICS] Vista de empleo registrada:', jobId);
       } catch (error) {
-        console.error('[ANALYTICS] Error incrementando vistas:', error);
       }
     };
 
@@ -7416,7 +7361,6 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
           .getPublicUrl(filePath);
 
         cvUrl = publicUrl;
-        console.log('[CV UPLOAD] Archivo subido:', cvUrl);
       }
 
       // Guardar candidatura en Supabase
@@ -7437,7 +7381,6 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
 
       if (error) throw error;
 
-      console.log('[JOB APPLICATION] Candidatura creada:', data);
 
       // Cerrar modal y mostrar pantalla de éxito
       setShowApplyModal(false);
@@ -7464,7 +7407,6 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
         });
       }
     } catch (error) {
-      console.error('[JOB APPLICATION] Error al enviar candidatura:', error);
       showToast(formatSupabaseError(error), 'error');
     }
   };
@@ -8076,20 +8018,15 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
         if (error) throw error;
 
         // Filtrar por subcategoría si está definida
-        console.log('[SUBCATEGORY] Category:', category?.name, 'Subcategory:', subcategory?.name);
-        console.log('[SUBCATEGORY] Data from Supabase:', data);
 
         const filtered = data?.filter(b => {
           if (!subcategory) return true;
           const match = b.subcategory && b.subcategory.toLowerCase().includes(subcategory.name.toLowerCase());
-          console.log(`[SUBCATEGORY] Business "${b.name}" - subcategory: "${b.subcategory}" - matches "${subcategory.name}": ${match}`);
           return match;
         }) || [];
 
-        console.log('[SUBCATEGORY] Filtered businesses:', filtered);
         setBusinesses(filtered);
       } catch (error) {
-        console.error('Error loading businesses:', error);
       } finally {
         setLoadingBusinesses(false);
       }
@@ -8741,9 +8678,7 @@ const UserJobsScreen = ({ onNavigate, user }) => {
         });
 
         setApplications(transformed);
-        console.log('[MY APPLICATIONS] Loaded:', transformed.length, 'applications');
       } catch (error) {
-        console.error('[MY APPLICATIONS] Error loading:', error);
       } finally {
         setLoading(false);
       }
@@ -8788,9 +8723,7 @@ const UserJobsScreen = ({ onNavigate, user }) => {
           : app
       ));
 
-      console.log('[INTERVIEW] Entrevista aceptada:', applicationId);
     } catch (error) {
-      console.error('[INTERVIEW] Error al aceptar:', error);
     }
   };
 
@@ -8827,9 +8760,7 @@ const UserJobsScreen = ({ onNavigate, user }) => {
       setProposedTime('');
       setProposedMessage('');
 
-      console.log('[INTERVIEW] Nueva fecha propuesta:', showProposeModal.id);
     } catch (error) {
-      console.error('[INTERVIEW] Error al proponer fecha:', error);
     }
   };
 
@@ -10313,26 +10244,18 @@ const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onA
   const incomingRequests = requests;
 
   const handleSendQuote = async () => {
-    console.log('[BUDGET] handleSendQuote called');
-    console.log('[BUDGET] replyPrice:', replyPrice);
-    console.log('[BUDGET] replyMessage:', replyMessage);
-    console.log('[BUDGET] selectedRequest:', selectedRequest);
 
     if (!replyPrice || !replyMessage.trim()) {
-      console.log('[BUDGET] Validation failed - missing price or message');
       return;
     }
 
     try {
-      console.log('[BUDGET] Calling onSendQuote...');
       if (onSendQuote) {
         await onSendQuote(selectedRequest.id, {
           price: replyPrice,
           message: replyMessage,
         });
-        console.log('[BUDGET] onSendQuote completed successfully');
       } else {
-        console.log('[BUDGET] ERROR: onSendQuote is not defined!');
       }
 
       // Mostrar toast de éxito
@@ -10344,7 +10267,6 @@ const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onA
       setReplyPrice('');
       setReplyMessage('');
     } catch (error) {
-      console.error('[BUDGET] Error sending quote:', error);
       if (showToast) {
         showToast(formatSupabaseError(error), 'error');
       }
@@ -10907,11 +10829,9 @@ const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibility: t
 
         if (error) throw error;
 
-        console.log('[OFFERS] Offer deleted:', offerToDelete.id);
         setOffersState(prev => prev.filter(o => o.id !== offerToDelete.id));
         showToast(SUCCESS_MESSAGES.deleted, 'success');
       } catch (error) {
-        console.error('[OFFERS] Error deleting offer:', error);
         showToast(formatSupabaseError(error), 'error');
       } finally {
         setShowDeleteConfirm(false);
@@ -11279,10 +11199,8 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
 
   // Cargar candidaturas desde Supabase
   useEffect(() => {
-    console.log('[CANDIDATES] useEffect ejecutado. user:', user?.id, 'businessData:', businessData?.id);
     const loadCandidates = async () => {
       if (!user?.id || !businessData?.id) {
-        console.log('[CANDIDATES] Saliendo temprano. user?.id:', user?.id, 'businessData?.id:', businessData?.id);
         setCandidates([]);
         setLoading(false);
         return;
@@ -11360,12 +11278,9 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         });
 
         setCandidates(transformedCandidates);
-        console.log('[CANDIDATES] Loaded:', transformedCandidates.length, 'candidates');
       } catch (error) {
-        console.error('[CANDIDATES] Error loading candidates:', error);
       } finally {
         setLoading(false);
-        console.log('[CANDIDATES] Loading finished, setLoading(false) executed');
       }
     };
 
@@ -11448,7 +11363,6 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         .eq('id', id);
 
       if (error) throw error;
-      console.log('[CANDIDATES] Status updated:', id, '->', dbStatus);
 
       // Si contratamos a alguien, rechazar a los demás y enviar notificaciones
       if (newStatus === 'hired' && hiredCandidate) {
@@ -11464,9 +11378,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
             .in('id', otherIds);
 
           if (rejectError) {
-            console.error('[CANDIDATES] Error rejecting others:', rejectError);
           } else {
-            console.log('[CANDIDATES] Auto-rejected', otherCandidates.length, 'other candidates');
           }
 
           // Crear notificaciones para los rechazados
@@ -11494,7 +11406,6 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
           created_at: new Date().toISOString()
         });
 
-        console.log('[CANDIDATES] Notifications sent to hired and rejected candidates');
 
         // Cerrar automáticamente la oferta de empleo
         const { error: jobCloseError } = await supabase
@@ -11503,9 +11414,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
           .eq('id', hiredCandidate.jobId);
 
         if (jobCloseError) {
-          console.error('[CANDIDATES] Error closing job:', jobCloseError);
         } else {
-          console.log('[CANDIDATES] Job closed automatically:', hiredCandidate.jobId);
         }
       }
 
@@ -11520,11 +11429,9 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
           is_read: false,
           created_at: new Date().toISOString()
         });
-        console.log('[CANDIDATES] Rejection notification sent');
         showToast('Candidato rechazado. Se ha enviado notificación.', 'success');
       }
     } catch (error) {
-      console.error('[CANDIDATES] Error updating status:', error);
       showToast(formatSupabaseError(error), 'error');
       // Revertir optimistic update en caso de error
       setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: candidates.find(cc => cc.id === id)?.status || 'new' } : c));
@@ -11559,7 +11466,6 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
 
       if (error) throw error;
 
-      console.log('[INTERVIEW] Entrevista programada:', selectedCandidate.id, dateTime);
 
       // Enviar notificación al candidato
       await supabase.from('notifications').insert({
@@ -11572,10 +11478,8 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         created_at: new Date().toISOString()
       });
 
-      console.log('[INTERVIEW] Notification sent to candidate');
       showToast(`Entrevista programada. ${selectedCandidate.candidate.name} ha sido notificado.`, 'success');
     } catch (error) {
-      console.error('[INTERVIEW] Error al programar entrevista:', error);
       showToast('Error al programar entrevista', 'error');
       // Revertir optimistic update si falla
       setCandidates(prev => prev.map(c =>
@@ -12785,7 +12689,6 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
 
         if (error) throw error;
       } catch (error) {
-        console.error('[NOTIFICATIONS] Error marking as read:', error);
         // Revert on error
         const revert = prev => prev.map(n => n.id === id ? { ...n, isRead: false } : n);
         setNotificationsState(revert);
@@ -12810,9 +12713,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
           .eq('is_read', true);
 
         if (error) throw error;
-        console.log('[NOTIFICATIONS] Deleted all read notifications');
       } catch (error) {
-        console.error('[NOTIFICATIONS] Error deleting read notifications:', error);
       }
     }
   };
@@ -13267,10 +13168,8 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
           .eq('id', businessId);
       }
 
-      console.log('[VERIFICATION] Registro y upload exitoso');
       onNavigate('registration-success');
     } catch (error) {
-      console.error('[VERIFICATION] Error:', error);
       setIsSubmitting(false);
       setUploadProgress('');
       setErrors({ general: 'Error al registrar el negocio. Intenta de nuevo.' });
@@ -13529,7 +13428,6 @@ const BusinessAppealScreen = ({ onNavigate, businessData, user, showToast }) => 
       showToast('Apelación enviada. El administrador la revisará pronto', 'success');
       setTimeout(() => onNavigate('profile'), 1500);
     } catch (error) {
-      console.error('[APPEAL]', error);
       showToast('Error al enviar la apelación', 'error');
     } finally {
       setUploading(false);
@@ -13781,7 +13679,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
   // Sincronizar formData cuando businessData cambia
   useEffect(() => {
     if (businessData) {
-      console.log('[EDIT] Cargando datos del negocio:', businessData);
       setFormData({
         name: businessData.name || '',
         description: businessData.description || '',
@@ -13822,7 +13719,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
 
   // Debug: mostrar qué subcategoría y cuántos tags se cargan
   if (formData.subcategory) {
-    console.log('[TAGS DEBUG] Subcategoría:', formData.subcategory, '| Tags disponibles:', availableTags.length, '| Tiene tags específicos:', hasTagsForSubcategory(formData.subcategory));
   }
 
   const dayNames = {
@@ -14012,9 +13908,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
 
       setVerificationDocuments(newDocuments);
       showToast('Documento subido correctamente', 'success');
-      console.log('[VERIFICATION] Document uploaded:', publicUrl);
     } catch (error) {
-      console.error('[VERIFICATION] Upload error:', error);
       showToast('Error al subir el documento', 'error');
     } finally {
       setUploadingDocument(false);
@@ -14041,7 +13935,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
       setVerificationDocuments(newDocuments);
       showToast('Documento eliminado', 'info');
     } catch (error) {
-      console.error('[VERIFICATION] Remove error:', error);
       showToast('Error al eliminar documento', 'error');
     }
   };
@@ -14054,9 +13947,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
 
     try {
       // Debug: ver qué tags se están guardando
-      console.log('[SAVE DEBUG] Tags a guardar:', formData.tags);
-      console.log('[SAVE DEBUG] Tipo de tags:', Array.isArray(formData.tags) ? 'Array' : typeof formData.tags);
-      console.log('[SAVE DEBUG] Cantidad de tags:', formData.tags?.length);
 
       const dataToUpdate = {
         name: formData.name,
@@ -14075,10 +13965,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
         updated_at: new Date().toISOString(),
       };
 
-      console.log('[SAVE] Datos a actualizar:', dataToUpdate);
-      console.log('[SAVE] Business ID:', businessData.id);
-      console.log('[SAVE] Owner ID:', user?.id);
-      console.log('[SAVE] Iniciando UPDATE en Supabase...');
 
       const { data: updatedData, error: updateError } = await supabase
         .from('businesses')
@@ -14088,9 +13974,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
         .select()
         .single();
 
-      console.log('[SAVE] ✅ UPDATE completado');
-      console.log('[SAVE] Datos actualizados:', updatedData);
-      console.log('[SAVE] Error de Supabase:', updateError);
 
       if (updateError) throw updateError;
 
@@ -14108,7 +13991,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
       setSaved(true);
       setTimeout(() => setSaved(false), TIMING.refreshCooldown);
     } catch (err) {
-      console.error('Error saving business:', err);
       setError('Error al guardar los cambios');
     } finally {
       setIsSaving(false);
@@ -14261,7 +14143,6 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
         onNavigate('profile');
       }, 2000);
     } catch (err) {
-      console.error('Error publishing business:', err);
       setError('Error al publicar el negocio');
     } finally {
       setIsPublishing(false);
@@ -15849,7 +15730,6 @@ const ValidateCodeScreen = ({ onNavigate, user, showToast }) => {
         showToast('¡Código validado! Descuento aplicado.', 'success');
       }
     } catch (err) {
-      console.error('[VALIDATE CODE]', err);
       setResult({ success: false, error: 'Error al validar el código. Inténtalo de nuevo.' });
     } finally {
       setLoading(false);
@@ -16587,7 +16467,6 @@ const LoginScreen = ({ onNavigate, setUser }) => {
     });
 
     try {
-      console.log('[LOGIN] Intentando login con email:', email);
 
       // Login con Supabase Auth con timeout
       const loginPromise = supabase.auth.signInWithPassword({
@@ -16601,7 +16480,6 @@ const LoginScreen = ({ onNavigate, setUser }) => {
         throw authError;
       }
 
-      console.log('[LOGIN] Autenticación exitosa:', authData);
 
       // Cargar perfil del usuario
       const { data: userData, error: userError } = await supabase
@@ -16614,11 +16492,9 @@ const LoginScreen = ({ onNavigate, setUser }) => {
         throw new Error('Error al cargar perfil del usuario');
       }
 
-      console.log('[LOGIN] Perfil cargado:', userData);
       setUser(userData);
       onNavigate('home');
     } catch (error) {
-      console.error('[LOGIN] Error al iniciar sesión:', error);
       if (error.message === 'TIMEOUT') {
         setError('El servidor tardó demasiado en responder. Verifica tu conexión e intenta de nuevo.');
       } else if (error.message === 'Invalid login credentials') {
@@ -16797,7 +16673,6 @@ const RegisterScreen = ({ onNavigate }) => {
     });
 
     try {
-      console.log('[REGISTER] Iniciando registro...');
 
       // Registrar usuario en Supabase Auth con timeout
       const signUpPromise = supabase.auth.signUp({
@@ -16814,26 +16689,21 @@ const RegisterScreen = ({ onNavigate }) => {
       const { data, error } = await Promise.race([signUpPromise, timeoutPromise]);
 
       if (error) {
-        console.error('[REGISTER] Error en signUp:', error);
         throw error;
       }
 
-      console.log('[REGISTER] SignUp exitoso:', data);
 
       // El perfil se crea automáticamente con el trigger handle_new_user
       // Solo mostrar éxito
       setSuccess(true);
-      console.log('[REGISTER] Registro completado exitosamente');
 
       // Si el email no requiere confirmación, redirigir automáticamente
       if (data.session) {
-        console.log('[REGISTER] Sesión creada automáticamente, redirigiendo...');
         setTimeout(() => {
           onNavigate('home');
         }, 2000);
       }
     } catch (error) {
-      console.error('[REGISTER] Error al registrarse:', error);
 
       if (error.message === 'TIMEOUT') {
         setError('El servidor tardó demasiado en responder. El usuario puede haberse creado correctamente. Intenta iniciar sesión.');
@@ -16851,7 +16721,6 @@ const RegisterScreen = ({ onNavigate }) => {
         setError(`Error al crear la cuenta: ${error.message}`);
       }
     } finally {
-      console.log('[REGISTER] Finalizando proceso de registro');
       setLoading(false);
     }
   };
@@ -17731,11 +17600,9 @@ export default function App() {
 
   // Persistir sesión con Supabase Auth
   useEffect(() => {
-    console.log('[AUTH] Iniciando verificación de sesión...');
 
     // Timeout de seguridad (15s) — si onAuthStateChange no dispara, mostrar login
     const authTimeout = setTimeout(() => {
-      console.warn('[AUTH] Timeout alcanzado, continuando sin sesión');
       setLoadingAuth(false);
       setCurrentPage('login');
     }, 15000);
@@ -17775,14 +17642,11 @@ export default function App() {
               full_name: displayName,
               avatar_url: avatar,
             }, { onConflict: 'id' }).then(() => {
-              console.log('[AUTH] Perfil creado para nuevo usuario');
             }).catch(err => {
-              console.warn('[AUTH] Error creando perfil:', err.message);
             });
           }
         })
         .catch(err => {
-          console.warn('[AUTH] Error cargando perfil (no crítico):', err.message);
         });
     };
 
@@ -17792,7 +17656,6 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[AUTH] Event:', event, session ? '(con sesión)' : '(sin sesión)');
 
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
         // Siempre cancelar timeout y desbloquear carga (en finally para garantizarlo)
@@ -17806,7 +17669,6 @@ export default function App() {
           }
           // Si SIGNED_IN sin sesión (no debería pasar), no hacer nada
         } catch (e) {
-          console.error('[AUTH] Error cargando perfil:', e);
           // Fallback: usar datos mínimos de la sesión
           if (session) {
             setUser({
@@ -17842,9 +17704,7 @@ export default function App() {
     if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
       setPushSupported(true);
       setPushPermission(Notification.permission);
-      console.log('[PUSH] Push notifications soportadas. Permission:', Notification.permission);
     } else {
-      console.log('[PUSH] Push notifications NO soportadas en este navegador');
     }
   }, []);
 
@@ -17868,18 +17728,15 @@ export default function App() {
     }
 
     if (VAPID_PUBLIC_KEY === 'PLACEHOLDER_GENERATE_VAPID_KEYS') {
-      console.error('[PUSH] VAPID_PUBLIC_KEY no configurada. Ejecuta: node supabase/generate-vapid-keys.js');
       showToast('Push notifications no configuradas', 'error');
       return false;
     }
 
     if (!user?.id) {
-      console.error('[PUSH] Usuario no autenticado');
       return false;
     }
 
     try {
-      console.log('[PUSH] Solicitando permiso...');
       const permission = await Notification.requestPermission();
       setPushPermission(permission);
 
@@ -17888,7 +17745,6 @@ export default function App() {
         return false;
       }
 
-      console.log('[PUSH] Permiso concedido, registrando subscription...');
 
       // Esperar a que el Service Worker esté listo
       const registration = await navigator.serviceWorker.ready;
@@ -17902,9 +17758,7 @@ export default function App() {
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
         });
-        console.log('[PUSH] Nueva subscription creada');
       } else {
-        console.log('[PUSH] Subscription existente encontrada');
       }
 
       // Guardar subscription en Supabase (delete+insert para evitar problemas con onConflict en índices de expresión)
@@ -17923,17 +17777,14 @@ export default function App() {
         });
 
       if (error) {
-        console.error('[PUSH] Error guardando subscription:', error);
         showToast('Error al activar notificaciones', 'error');
         return false;
       }
 
-      console.log('[PUSH] Subscription guardada correctamente en Supabase');
       showToast('¡Notificaciones activadas! 🔔', 'success');
       return true;
 
     } catch (error) {
-      console.error('[PUSH] Error al suscribirse:', error);
       if (error.name === 'NotAllowedError') {
         showToast('Permisos de notificación bloqueados. Habilítalos en configuración del navegador.', 'warning');
       } else {
@@ -17948,7 +17799,6 @@ export default function App() {
     if ('serviceWorker' in navigator) {
       const messageHandler = (event) => {
         if (event.data && event.data.type === 'NAVIGATE') {
-          console.log('[PUSH] Navegando desde notificación push:', event.data);
           // Navegar a la URL especificada
           const url = event.data.url;
           if (url) {
@@ -18002,7 +17852,6 @@ export default function App() {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('[BUSINESS] Error loading businesses:', error);
           setBusinessData(null);
           setBusinessStatus(null);
           return;
@@ -18010,7 +17859,6 @@ export default function App() {
 
         // Si no hay negocios
         if (!data || data.length === 0) {
-          console.log('[BUSINESS] No businesses found');
           setBusinessData(null);
           setBusinessStatus(null);
           return;
@@ -18020,9 +17868,7 @@ export default function App() {
         const business = Array.isArray(data) ? data[0] : data;
 
         if (data.length > 1) {
-          console.log(`[BUSINESS] Usuario tiene ${data.length} negocios. Usando el más reciente (ID ${business.id}):`, business.name);
         } else {
-          console.log('[BUSINESS] Negocio cargado:', business.name);
         }
 
         setBusinessData(business);
@@ -18036,7 +17882,6 @@ export default function App() {
           setBusinessStatus('rejected');
         }
       } catch (error) {
-        console.error('[BUSINESS] Error loading user business:', error);
         setBusinessData(null);
         setBusinessStatus(null);
       }
@@ -18063,9 +17908,7 @@ export default function App() {
 
         const favoriteIds = (data || []).map(f => f.business_id);
         setUserFavorites(favoriteIds);
-        console.log('[FAVORITES] Loaded:', favoriteIds.length, 'favorites');
       } catch (error) {
-        console.error('[FAVORITES] Error loading favorites:', error);
       }
     };
 
@@ -18208,9 +18051,7 @@ export default function App() {
         });
 
         setDynamicNotifications(transformed);
-        console.log('[NOTIFICATIONS] Loaded:', transformed.length, 'notifications');
       } catch (error) {
-        console.error('[NOTIFICATIONS] Error loading notifications:', error);
       }
     };
 
@@ -18221,7 +18062,6 @@ export default function App() {
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('[REALTIME] Iniciando suscripción a notificaciones...');
 
     const notificationChannel = supabase
       .channel('user-notifications')
@@ -18234,7 +18074,6 @@ export default function App() {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('[REALTIME] Nueva notificación recibida:', payload.new);
 
           const { route, params } = getNotificationRoute(payload.new);
 
@@ -18277,12 +18116,10 @@ export default function App() {
         }
       )
       .subscribe((status) => {
-        console.log('[REALTIME] Estado de suscripción:', status);
       });
 
     // Cleanup: desuscribirse cuando el usuario cambie o el componente se desmonte
     return () => {
-      console.log('[REALTIME] Cerrando suscripción a notificaciones');
       notificationChannel.unsubscribe();
     };
   }, [user]);
@@ -18402,7 +18239,6 @@ export default function App() {
 
         setActiveJobs(transformedJobs);
       } catch (error) {
-        console.error('Error loading jobs:', error);
         showToast(ERROR_MESSAGES.generic, 'error');
       } finally {
         setLoadingJobs(false);
@@ -18480,7 +18316,6 @@ export default function App() {
 
         if (error) throw error;
 
-        console.log('[OWNER JOBS] Empleos del propietario cargados:', data?.length || 0);
 
         // Contar candidaturas y obtener contratados por empleo
         const jobIds = (data || []).map(job => job.id);
@@ -18543,7 +18378,6 @@ export default function App() {
 
         setUserJobOffers(transformedJobs);
       } catch (error) {
-        console.error('[OWNER JOBS] Error loading owner jobs:', error);
       }
     };
 
@@ -18567,7 +18401,6 @@ export default function App() {
 
         if (error) throw error;
 
-        console.log('[OWNER OFFERS] Ofertas del propietario cargadas:', data?.length || 0);
 
         // Transformar al formato esperado por el UI
         const transformedOffers = (data || []).map(offer => {
@@ -18624,7 +18457,6 @@ export default function App() {
 
         setUserOffers(transformedOffers);
       } catch (error) {
-        console.error('[OWNER OFFERS] Error loading owner offers:', error);
       }
     };
 
@@ -18664,10 +18496,8 @@ export default function App() {
 
         if (error) throw error;
 
-        console.log('[JOB APPLICATIONS] Candidaturas cargadas:', data?.length || 0);
         setJobApplications(data || []);
       } catch (error) {
-        console.error('[JOB APPLICATIONS] Error loading applications:', error);
       }
     };
 
@@ -18686,7 +18516,6 @@ export default function App() {
             table: 'job_applications'
           },
           (payload) => {
-            console.log('[REALTIME] Cambio en candidaturas:', payload);
             // Recargar candidaturas para actualizar contador
             loadJobApplications();
           }
@@ -18697,7 +18526,6 @@ export default function App() {
     return () => {
       if (subscription) {
         subscription.unsubscribe();
-        console.log('[REALTIME] Desuscrito de candidaturas');
       }
     };
   }, [businessData]);
@@ -18721,7 +18549,6 @@ export default function App() {
         if (businessesError) throw businessesError;
 
         if (!userBusinesses || userBusinesses.length === 0) {
-          console.log('[BUDGET REQUESTS] No businesses found for user');
           setIncomingBudgetRequests([]);
           return;
         }
@@ -18730,7 +18557,6 @@ export default function App() {
         const categories = [...new Set(userBusinesses.map(b => b.subcategory))];
         const businessIds = userBusinesses.map(b => b.id);
 
-        console.log('[BUDGET REQUESTS] Cargando presupuestos para categorías:', categories);
 
         // 3. Cargar presupuestos de TODAS esas categorías
         const { data, error } = await supabase
@@ -18745,7 +18571,6 @@ export default function App() {
 
         if (error) throw error;
 
-        console.log('[BUDGET REQUESTS] Solicitudes cargadas:', data?.length || 0);
 
         // 4. Transformar al formato esperado
         const transformedRequests = (data || []).map(request => {
@@ -18775,7 +18600,6 @@ export default function App() {
 
         setIncomingBudgetRequests(transformedRequests);
       } catch (error) {
-        console.error('[BUDGET REQUESTS] Error loading budget requests:', error);
       }
     };
 
@@ -18799,10 +18623,8 @@ export default function App() {
 
         if (error) throw error;
 
-        console.log('[USER APPLICATIONS] Candidaturas del usuario cargadas:', data?.length || 0);
         setUserJobApplications(data || []);
       } catch (error) {
-        console.error('[USER APPLICATIONS] Error loading user applications:', error);
       }
     };
 
@@ -18829,7 +18651,6 @@ export default function App() {
 
         if (error) throw error;
 
-        console.log('[USER BUDGET REQUESTS] Presupuestos del usuario cargados:', data?.length || 0);
 
         // Transformar al formato esperado por MyBudgetRequestsScreen
         const transformed = (data || []).map(request => ({
@@ -18854,7 +18675,6 @@ export default function App() {
 
         setUserBudgetRequests(transformed);
       } catch (error) {
-        console.error('[USER BUDGET REQUESTS] Error loading:', error);
       }
     };
 
@@ -18995,7 +18815,6 @@ export default function App() {
 
       if (error) throw error;
 
-      console.log('[OWNER JOBS] Empleo creado:', data);
 
       // Agregar al estado local con formato UI
       const newJob = {
@@ -19045,17 +18864,14 @@ export default function App() {
           }));
 
           await supabase.from('notifications').insert(notifications);
-          console.log('[OWNER JOBS] Notified', favoritesData.length, 'users who favorited the business');
         }
       } catch (notifError) {
-        console.error('[OWNER JOBS] Error sending notifications to favorites:', notifError);
         // No bloqueamos el flujo si falla la notificación
       }
 
       showToast(SUCCESS_MESSAGES.created, 'success');
       return data;
     } catch (error) {
-      console.error('[OWNER JOBS] Error creating job:', error);
       showToast('Error al publicar el empleo', 'error');
       throw error;
     }
@@ -19075,7 +18891,6 @@ export default function App() {
       setUserJobOffers(prev => prev.filter(j => j.id !== jobId));
       showToast(SUCCESS_MESSAGES.deleted, 'success');
     } catch (error) {
-      console.error('[OWNER JOBS] Error deleting job:', error);
       showToast('Error al eliminar el empleo', 'error');
     }
   };
@@ -19123,9 +18938,7 @@ export default function App() {
         event_type: eventType,
         metadata: metadata
       });
-      console.log(`[ANALYTICS] ${eventType} tracked for business ${businessId}`);
     } catch (error) {
-      console.error('[ANALYTICS] Error tracking event:', error);
       // No mostrar error al usuario, tracking es no crítico
     }
   };
@@ -19176,7 +18989,6 @@ export default function App() {
       throw new Error('Usuario no autenticado');
     }
 
-    console.log('[REGISTER] Datos a insertar:', tempBusinessData);
 
     try {
       // Preparar datos para insertar
@@ -19196,7 +19008,6 @@ export default function App() {
         updated_at: new Date().toISOString(),
       };
 
-      console.log('[REGISTER] Insertando en Supabase:', businessToInsert);
 
       // Crear negocio en Supabase
       const { data: newBusiness, error } = await supabase
@@ -19206,11 +19017,9 @@ export default function App() {
         .single();
 
       if (error) {
-        console.error('[REGISTER] Error de Supabase:', error);
         throw error;
       }
 
-      console.log('[REGISTER] Negocio creado exitosamente:', newBusiness);
 
       setBusinessStatus('pending');
       setBusinessData(newBusiness);
@@ -19218,7 +19027,6 @@ export default function App() {
 
       return newBusiness;
     } catch (error) {
-      console.error('[REGISTER] Error al crear negocio:', error);
       showToast('Error: ' + (error.message || 'No se pudo registrar el negocio'), 'error');
       throw error; // Re-lanzar para que BusinessVerificationScreen lo maneje
     }
@@ -19275,7 +19083,6 @@ export default function App() {
       showToast('Negocio eliminado permanentemente', 'info');
       navigate('profile');
     } catch (error) {
-      console.error('[DELETE BUSINESS]', error);
       showToast('Error al eliminar el negocio', 'error');
     }
   };
@@ -19339,7 +19146,6 @@ export default function App() {
 
       if (error) throw error;
 
-      console.log('[OWNER OFFERS] Oferta creada:', data);
 
       // Agregar al estado local con formato UI
       const newOffer = {
@@ -19382,7 +19188,6 @@ export default function App() {
       showToast(SUCCESS_MESSAGES.created, 'success');
       return data;
     } catch (error) {
-      console.error('[OWNER OFFERS] Error creating offer:', error);
       showToast('Error al publicar la oferta', 'error');
       throw error;
     }
@@ -19413,7 +19218,6 @@ export default function App() {
 
       showToast(newVisibility ? 'Oferta reactivada' : 'Oferta pausada', 'success');
     } catch (error) {
-      console.error('[OWNER OFFERS] Error toggling offer:', error);
       showToast('Error al cambiar estado de la oferta', 'error');
     }
   };
@@ -19450,7 +19254,6 @@ export default function App() {
 
       if (error) throw error;
 
-      console.log('[BUDGET QUOTE] Presupuesto enviado:', data);
 
       // 3. Actualizar estado del budget_request a 'quoted'
       const { error: updateError } = await supabase
@@ -19458,7 +19261,6 @@ export default function App() {
         .update({ status: 'quoted' })
         .eq('id', requestId);
 
-      if (updateError) console.error('[BUDGET QUOTE] Error updating status:', updateError);
 
       // 4. Crear notificación para el USUARIO que solicitó el presupuesto
       const { error: notifError } = await supabase
@@ -19477,7 +19279,6 @@ export default function App() {
           },
         });
 
-      if (notifError) console.error('[BUDGET QUOTE] Error creating notification:', notifError);
 
       // 5. Actualizar estado local
       setIncomingBudgetRequests(prev => prev.map(req =>
@@ -19500,7 +19301,6 @@ export default function App() {
 
       return data;
     } catch (error) {
-      console.error('[BUDGET QUOTE] Error sending quote:', error);
       showToast('Error al enviar el presupuesto', 'error');
       throw error;
     }
@@ -19514,7 +19314,6 @@ export default function App() {
     }
 
     try {
-      console.log('[ACCEPT QUOTE] Accepting quote:', { requestId, quoteId: quote.id, businessId: quote.businessId });
 
       // 1. Obtener TODOS los budget_quotes para este request
       const { data: allQuotes, error: quotesError } = await supabase
@@ -19523,12 +19322,10 @@ export default function App() {
         .eq('budget_request_id', requestId);
 
       if (quotesError) {
-        console.error('[ACCEPT QUOTE] Error fetching quotes:', quotesError);
       }
 
       // 2. Identificar quotes rechazados (todos menos el aceptado)
       const rejectedQuotes = (allQuotes || []).filter(q => q.id !== quote.id);
-      console.log('[ACCEPT QUOTE] Rejected quotes:', rejectedQuotes.length);
 
       // 3. Actualizar el estado del budget_request a 'accepted'
       const { error: updateError } = await supabase
@@ -19546,7 +19343,6 @@ export default function App() {
         .single();
 
       if (businessError) {
-        console.error('[ACCEPT QUOTE] Error fetching business:', businessError);
       }
 
       // 5. Crear notificación para el propietario del negocio ACEPTADO
@@ -19566,7 +19362,6 @@ export default function App() {
             },
           });
 
-        if (notifError) console.error('[ACCEPT QUOTE] Error creating notification:', notifError);
       }
 
       // 6. Notificar a los negocios NO seleccionados
@@ -19590,21 +19385,17 @@ export default function App() {
             .insert(rejectedNotifications);
 
           if (rejectedNotifError) {
-            console.error('[ACCEPT QUOTE] Error creating rejected notifications:', rejectedNotifError);
           } else {
-            console.log('[ACCEPT QUOTE] Notified', rejectedNotifications.length, 'rejected businesses');
           }
         }
       }
 
-      console.log('[ACCEPT QUOTE] Quote accepted successfully');
       const rejectedCount = rejectedQuotes.length;
       const message = rejectedCount > 0
         ? `¡Presupuesto de ${business?.name || 'negocio'} aceptado! ${rejectedCount} negocio${rejectedCount > 1 ? 's' : ''} notificado${rejectedCount > 1 ? 's' : ''}.`
         : `¡Presupuesto de ${business?.name || 'negocio'} aceptado!`;
       showToast(message, 'success');
     } catch (error) {
-      console.error('[ACCEPT QUOTE] Error accepting quote:', error);
       showToast('Error al aceptar el presupuesto', 'error');
     }
   };
@@ -19634,7 +19425,6 @@ export default function App() {
 
         if (error) throw error;
         showToast('Eliminado de favoritos', 'info');
-        console.log('[FAVORITES] Removed businessId:', businessId);
       } else {
         // Añadir a Supabase
         const { error } = await supabase
@@ -19643,10 +19433,8 @@ export default function App() {
 
         if (error) throw error;
         showToast('¡Añadido a favoritos!', 'success');
-        console.log('[FAVORITES] Added businessId:', businessId);
       }
     } catch (error) {
-      console.error('[FAVORITES] Error toggling favorite:', error);
       // Revert optimistic update on error
       setUserFavorites(prev =>
         isFav ? [...prev, businessId] : prev.filter(id => id !== businessId)
@@ -19661,7 +19449,6 @@ export default function App() {
   // Función para enviar solicitud de presupuesto
   const submitBudgetRequest = async (requestData) => {
     try {
-      console.log('[BUDGET] Guardando solicitud:', requestData);
 
       // Guardar en Supabase
       const { data, error } = await supabase
@@ -19681,7 +19468,6 @@ export default function App() {
 
       if (error) throw error;
 
-      console.log('[BUDGET] Solicitud guardada:', data);
 
       // Actualizar state local
       const newRequest = {
@@ -19703,7 +19489,6 @@ export default function App() {
 
       return data;
     } catch (error) {
-      console.error('[BUDGET] Error guardando solicitud:', error);
       showToast('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
       throw error;
     }

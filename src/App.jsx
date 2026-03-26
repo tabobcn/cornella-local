@@ -1908,7 +1908,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     setLoadingOffers(true);
     setLoadingNewBusinesses(true);
     setRefreshTrigger(prev => prev + 1);
-    await new Promise(resolve => setTimeout(resolve, 800));
   };
   const { pullDistance, isRefreshing, handlers } = usePullToRefresh(handleRefresh);
 
@@ -5945,6 +5944,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
         setBusiness(data);
       } catch (error) {
+        showToast('Error al cargar el negocio', 'error');
       } finally {
         setLoadingBusiness(false);
       }
@@ -5984,6 +5984,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           date: new Date(r.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
         })));
       } catch (error) {
+        showToast('Error al cargar las reseñas', 'error');
       } finally {
         setLoadingReviews(false);
       }
@@ -8626,7 +8627,7 @@ const UserReviewsScreen = ({ onNavigate, user }) => {
 };
 
 // Pantalla de Mis Candidaturas
-const UserJobsScreen = ({ onNavigate, user }) => {
+const UserJobsScreen = ({ onNavigate, user, showToast }) => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showInterviewDetails, setShowInterviewDetails] = useState(null);
@@ -8758,8 +8759,9 @@ const UserJobsScreen = ({ onNavigate, user }) => {
           ? { ...app, interviewConfirmed: 'accepted' }
           : app
       ));
-
+      showToast && showToast('Entrevista confirmada', 'success');
     } catch (error) {
+      showToast && showToast('Error al confirmar la entrevista', 'error');
     }
   };
 
@@ -8795,8 +8797,9 @@ const UserJobsScreen = ({ onNavigate, user }) => {
       setProposedDate('');
       setProposedTime('');
       setProposedMessage('');
-
+      showToast && showToast('Propuesta enviada', 'success');
     } catch (error) {
+      showToast && showToast('Error al enviar la propuesta', 'error');
     }
   };
 
@@ -18141,7 +18144,7 @@ export default function App() {
 
 
     const notificationChannel = supabase
-      .channel('user-notifications')
+      .channel('user-notifications-' + user.id)
       .on(
         'postgres_changes',
         {
@@ -19623,7 +19626,7 @@ export default function App() {
       case 'edit-profile':
         return <EditProfileScreen onNavigate={navigate} user={user} setUser={setUser} showToast={showToast} />;
       case 'user-jobs':
-        return <UserJobsScreen onNavigate={navigate} user={user} />;
+        return <UserJobsScreen onNavigate={navigate} user={user} showToast={showToast} />;
       case 'job-detail':
         return <JobDetailPage
           jobId={pageParams.id}

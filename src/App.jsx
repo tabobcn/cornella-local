@@ -7219,7 +7219,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
 };
 
 // Página de Detalle de Oferta de Empleo
-const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, activeJob, markJobAsHired, renewJob, deleteJob, getJobDaysRemaining, isBusinessOwner = false, user }) => {
+const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, activeJob, markJobAsHired, renewJob, deleteJob, getJobDaysRemaining, isBusinessOwner = false, user, userBusinessId = null }) => {
   const [job, setJob] = useState(activeJob || null);
   const [loading, setLoading] = useState(!activeJob);
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -7651,8 +7651,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
           )}
 
           {/* Botones SOLO para el propietario de ESTE empleo específico */}
-          {/* DESHABILITADO: Falta validar que el job.businessId coincida con el businessData.id del usuario */}
-          {false && isBusinessOwner && (
+          {isBusinessOwner && userBusinessId && job.business_id === userBusinessId && (
             <div className="flex gap-2 mb-3">
               {!job.hired && !isExpired && (
                 <button
@@ -7686,9 +7685,8 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
             </div>
           )}
 
-          {/* Botón de inscripción para candidatos */}
-          {/* Temporal: Mostrar siempre (falta validar que no sea el propietario de ESTE empleo) */}
-          {!job.hired && !isExpired && (
+          {/* Botón de inscripción para candidatos (oculto si eres el propietario de este empleo) */}
+          {!job.hired && !isExpired && !(isBusinessOwner && userBusinessId && job.business_id === userBusinessId) && (
             <button
               onClick={handleApply}
               className="w-full h-14 rounded-xl bg-primary text-white font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 shadow-lg shadow-primary/30"
@@ -17663,8 +17661,6 @@ class ErrorBoundary extends Component {
 // ==============================================
 
 // VAPID Public Key para Web Push Notifications
-// TODO: Reemplazar con tu clave pública después de generar las VAPID keys
-// Ejecutar: node supabase/generate-vapid-keys.js
 const VAPID_PUBLIC_KEY = 'BA_vRY5jNz2ro0yPN_-GXmTemr-oH4VzVodixY6ukjYigsm_8GFKFrWggD3VqGwMSAfEjxnZuhNbr04HZAL6Mw8';
 
 export default function App() {
@@ -18588,11 +18584,11 @@ export default function App() {
     let subscription;
     if (businessData?.id) {
       subscription = supabase
-        .channel('job-applications-business')
+        .channel('job-applications-' + businessData.id)
         .on(
           'postgres_changes',
           {
-            event: '*', // INSERT, UPDATE, DELETE
+            event: '*',
             schema: 'public',
             table: 'job_applications'
           },
@@ -19150,8 +19146,9 @@ export default function App() {
   const deleteBusiness = async () => {
     if (!businessData?.id) return;
     try {
-      await supabase.from('offers').delete().eq('business_id', businessData.id);
-      await supabase.from('jobs').delete().eq('business_id', businessData.id);
+      await supabase.from('offers').delete().eq('business_id', businessData.id); // cascade borra offer_redemptions
+      await supabase.from('jobs').delete().eq('business_id', businessData.id); // cascade borra job_applications
+      await supabase.from('reviews').delete().eq('business_id', businessData.id);
       await supabase.from('favorites').delete().eq('business_id', businessData.id);
       const { error } = await supabase
         .from('businesses')
@@ -19639,6 +19636,7 @@ export default function App() {
           deleteJob={deleteJob}
           getJobDaysRemaining={getJobDaysRemaining}
           isBusinessOwner={businessStatus === 'validated'}
+          userBusinessId={businessData?.id}
           user={user}
         />;
       case 'my-budget-requests':

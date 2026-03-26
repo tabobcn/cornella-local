@@ -1,5 +1,5 @@
 // CornellaLocal - Plataforma de comercio local
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, Component } from 'react';
 import { supabase } from './lib/supabase';
 import { getTagsForCategory } from './data/businessTags';
 import { getTagsBySubcategory, hasTagsForSubcategory } from './data/businessTagsByCategory';
@@ -958,7 +958,7 @@ const RateBusinessModal = ({ isOpen, onClose, business, onSubmitRating }) => {
 // =====================================================
 // MODAL DE REPORTAR NEGOCIO
 // =====================================================
-const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport }) => {
+const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport, showToast }) => {
   const [reportType, setReportType] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1022,7 +1022,7 @@ const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport }
       onClose();
 
       // Mostrar confirmación
-      alert('✅ Reporte enviado correctamente. Gracias por ayudarnos a mejorar Cornellà Local.');
+      showToast('Reporte enviado correctamente. ¡Gracias!', 'success');
     } catch (err) {
       setError('Error al enviar el reporte. Intenta de nuevo.');
     } finally {
@@ -1764,6 +1764,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [loadingOffers, setLoadingOffers] = useState(true);
   const [newBusinesses, setNewBusinesses] = useState([]);
   const [loadingNewBusinesses, setLoadingNewBusinesses] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // 🔍 Advanced filters state
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -1771,6 +1772,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   const [minRating, setMinRating] = useState(0); // 0-5
   const [priceRange, setPriceRange] = useState([0, 100]); // For offers
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [inputValue, setInputValue] = useState('');
+  const searchDebounceRef = useRef(null);
 
   // Cargar negocios desde Supabase
   useEffect(() => {
@@ -1792,7 +1795,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     };
 
     fetchBusinesses();
-  }, []);
+  }, [refreshTrigger]);
 
   // Cargar conteos de negocios por barrio desde Supabase
   useEffect(() => {
@@ -1836,7 +1839,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     };
 
     fetchFlashOffers();
-  }, []);
+  }, [refreshTrigger]);
 
   // Cargar negocios nuevos (últimos 6 aprobados) con contadores de favoritos
   useEffect(() => {
@@ -1888,7 +1891,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     };
 
     fetchNewBusinesses();
-  }, []);
+  }, [refreshTrigger]);
 
   const popularSearches = [
     { text: 'Restaurantes', icon: 'UtensilsCrossed' },
@@ -1899,9 +1902,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     { text: 'Café', icon: 'Coffee' },
   ];
 
-  // Pull to refresh
+  // Pull to refresh — recarga datos reales de Supabase
   const handleRefresh = async () => {
-    await new Promise(resolve => setTimeout(resolve, TIMING.autoSaveDelay)); // Simular carga
+    setLoadingBusinesses(true);
+    setLoadingOffers(true);
+    setLoadingNewBusinesses(true);
+    setRefreshTrigger(prev => prev + 1);
+    await new Promise(resolve => setTimeout(resolve, 800));
   };
   const { pullDistance, isRefreshing, handlers } = usePullToRefresh(handleRefresh);
 
@@ -1971,8 +1978,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     return `${minutes}m`;
   };
 
-  // Transformar ofertas de Supabase al formato esperado
-  const allFlashOffers = flashOffers.map(offer => {
+  // Transformar ofertas de Supabase al formato esperado (memoizado)
+  const allFlashOffers = useMemo(() => flashOffers.map(offer => {
     const timeLeft = calculateTimeLeft(offer.expires_at);
     const now = new Date();
     const expires = new Date(offer.expires_at);
@@ -1981,7 +1988,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     return {
       id: offer.id,
       title: offer.title,
-      image: offer.image || 'https://via.placeholder.com/400x300?text=Oferta',
+      image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
       discount: offer.discount_label || offer.discount_value + '%',
       discountType: offer.discount_type,
       timeLeft: timeLeft,
@@ -1991,7 +1998,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       businessName: offer.businesses?.name || 'Negocio',
       description: offer.description,
     };
-  });
+  }), [flashOffers]);
 
   // Filtrar negocios según la búsqueda y barrio
   const filteredBusinesses = searchQuery.trim() === '' && !selectedBarrio && !selectedCategory && minRating === 0 ? [] : businesses
@@ -2099,20 +2106,24 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       }
     });
 
-  // Filtrar categorías según la búsqueda
-  const filteredCategories = searchQuery.trim() === '' ? [] : categories.filter(category => {
+  // Filtrar categorías según la búsqueda (memoizado)
+  const filteredCategories = useMemo(() => searchQuery.trim() === '' ? [] : categories.filter(category => {
     const query = searchQuery.toLowerCase();
     return (
       category.name.toLowerCase().includes(query) ||
       (category.description && category.description.toLowerCase().includes(query)) ||
       (category.subcategories && category.subcategories.some(sub => sub.name.toLowerCase().includes(query)))
     );
-  });
+  }), [searchQuery]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
-    setSearchQuery(value);
+    setInputValue(value);
     setShowSearchResults(value.trim() !== '' || selectedBarrio !== null || isFocused);
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchQuery(value);
+    }, 250);
   };
 
   const saveRecentSearch = (term) => {
@@ -2128,6 +2139,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   };
 
   const handleSearchSubmit = (term) => {
+    setInputValue(term);
     setSearchQuery(term);
     saveRecentSearch(term);
     setShowSearchResults(true);
@@ -2135,6 +2147,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
   };
 
   const clearSearch = () => {
+    clearTimeout(searchDebounceRef.current);
+    setInputValue('');
     setSearchQuery('');
     setSelectedBarrio(null);
     setShowSearchResults(false);
@@ -2210,15 +2224,15 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             className="block w-full p-3 pl-10 pr-20 text-sm text-gray-900 border-none rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-primary placeholder-gray-400 transition-all"
             placeholder="Buscar comercios, servicios, ofertas..."
             type="text"
-            value={searchQuery}
+            value={inputValue}
             onChange={handleSearchChange}
             onFocus={() => {
               setIsFocused(true);
               setShowSearchResults(true);
             }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && searchQuery.trim()) {
-                saveRecentSearch(searchQuery.trim());
+              if (e.key === 'Enter' && inputValue.trim()) {
+                saveRecentSearch(inputValue.trim());
               }
             }}
           />
@@ -2412,7 +2426,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                       className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left"
                     >
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                        <img src={offer.image} alt={offer.title} className="w-full h-full object-cover" />
+                        <img src={offer.image} alt={offer.title} loading="lazy" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{offer.title}</p>
@@ -2443,7 +2457,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                       className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left"
                     >
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                        <img src={business.cover_photo || (business.images && business.images[0]) || ''} alt={business.name} className="w-full h-full object-cover" />
+                        <img src={business.cover_photo || (business.images && business.images[0]) || ''} alt={business.name} loading="lazy" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{business.name}</p>
@@ -2607,6 +2621,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     <img
                       src={business.cover_photo || business.images[0]}
                       alt={business.name}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   )}
@@ -3391,6 +3406,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName }) => {
 const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
   const [flashOffers, setFlashOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
+  const [displayCount, setDisplayCount] = useState(10);
 
   // Cargar ofertas flash desde Supabase
   useEffect(() => {
@@ -3437,8 +3453,8 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
     return `${minutes}m`;
   };
 
-  // Transformar ofertas de Supabase al formato esperado
-  const allFlashOffers = flashOffers.map(offer => {
+  // Transformar ofertas de Supabase al formato esperado (memoizado)
+  const allFlashOffers = useMemo(() => flashOffers.map(offer => {
     const timeLeft = calculateTimeLeft(offer.expires_at);
     const now = new Date();
     const expires = new Date(offer.expires_at);
@@ -3447,7 +3463,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
     return {
       id: offer.id,
       title: offer.title,
-      image: offer.image || 'https://via.placeholder.com/400x300?text=Oferta',
+      image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
       discount: offer.discount_label || offer.discount_value + '%',
       discountType: offer.discount_type,
       timeLeft: timeLeft,
@@ -3457,7 +3473,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
       businessName: offer.businesses?.name || 'Negocio',
       description: offer.description,
     };
-  });
+  }), [flashOffers]);
 
   const getTimeColor = (minutes) => {
     if (minutes <= 60) return 'text-red-500 bg-red-50';
@@ -3517,7 +3533,8 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
             color="orange"
           />
         ) : (
-          allFlashOffers.map((offer, index) => (
+          <>
+          {allFlashOffers.slice(0, displayCount).map((offer, index) => (
             <div
               key={offer.id}
               onClick={() => onNavigate('coupon', { id: offer.id })}
@@ -3529,6 +3546,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
                   <img
                     src={offer.image}
                     alt={offer.title}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                   {/* Position Badge */}
@@ -3584,7 +3602,17 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
                 </div>
               )}
             </div>
-          ))
+          ))}
+          {allFlashOffers.length > displayCount && (
+            <button
+              onClick={() => setDisplayCount(prev => prev + 10)}
+              className="w-full py-3 text-primary font-semibold text-sm border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+            >
+              <ChevronDown size={18} />
+              Ver más ofertas ({allFlashOffers.length - displayCount} restantes)
+            </button>
+          )}
+          </>
         )}
       </main>
     </div>
@@ -3596,6 +3624,7 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
   const [activeTab, setActiveTab] = useState(initialTab);
   const [offers, setOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
+  const [jobsDisplayCount, setJobsDisplayCount] = useState(10);
 
   // Cargar ofertas normales (no flash) desde Supabase
   useEffect(() => {
@@ -3626,7 +3655,7 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
             title: offer.title,
             business: offer.businesses?.name || 'Negocio',
             businessIcon: 'Store',
-            image: offer.image || 'https://via.placeholder.com/600x400?text=Oferta',
+            image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
             discount: offer.discount_label || `-${offer.discount_value}%`,
             expiresIn: `${daysLeft} día${daysLeft !== 1 ? 's' : ''}`,
             featured: true,
@@ -3766,7 +3795,7 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
                   <p className="text-slate-500 font-medium">No hay empleos disponibles</p>
                   <p className="text-slate-400 text-sm mt-1">Vuelve más tarde para ver nuevas ofertas</p>
                 </div>
-              ) : activeJobs.map(job => {
+              ) : activeJobs.slice(0, jobsDisplayCount).map(job => {
                 const daysRemaining = getJobDaysRemaining ? getJobDaysRemaining(job) : 60;
                 const isExpired = daysRemaining <= 0;
                 const isExpiringSoon = daysRemaining <= 7 && daysRemaining > 0;
@@ -3841,6 +3870,15 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
                   </button>
                 );
               })}
+              {activeJobs.length > jobsDisplayCount && (
+                <button
+                  onClick={() => setJobsDisplayCount(prev => prev + 10)}
+                  className="w-full py-3 text-primary font-semibold text-sm border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ChevronDown size={18} />
+                  Ver más empleos ({activeJobs.length - jobsDisplayCount} restantes)
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -4454,7 +4492,7 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
                   <div className="flex gap-3 mb-3">
                     <div className="w-16 h-16 rounded-lg bg-gray-200 shrink-0 overflow-hidden">
                       {business.cover_photo && (
-                        <img src={business.cover_photo} alt={business.name} className="w-full h-full object-cover" />
+                        <img src={business.cover_photo} alt={business.name} loading="lazy" className="w-full h-full object-cover" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -5120,7 +5158,7 @@ const BusinessAnalyticsScreen = ({ onNavigate, user, businessData }) => {
 };
 
 // ReportsScreen - Gestionar reportes/quejas
-const ReportsScreen = ({ onNavigate, user }) => {
+const ReportsScreen = ({ onNavigate, user, showToast }) => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
@@ -5168,10 +5206,10 @@ const ReportsScreen = ({ onNavigate, user }) => {
 
       if (error) throw error;
 
-      alert('✅ Reporte marcado como resuelto');
+      showToast('Reporte marcado como resuelto', 'success');
       loadReports();
     } catch (error) {
-      alert('❌ Error al resolver el reporte');
+      showToast('Error al resolver el reporte', 'error');
     }
   };
 
@@ -5188,10 +5226,10 @@ const ReportsScreen = ({ onNavigate, user }) => {
 
       if (error) throw error;
 
-      alert('Reporte desestimado');
+      showToast('Reporte desestimado', 'success');
       loadReports();
     } catch (error) {
-      alert('❌ Error al desestimar el reporte');
+      showToast('Error al desestimar el reporte', 'error');
     }
   };
 
@@ -5342,7 +5380,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
     setShowDeleteBusinessModal(false);
     setDeleteBusinessText('');
   };
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || 'https://via.placeholder.com/100');
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2394a3b8'/%3E%3Cellipse cx='50' cy='80' rx='28' ry='20' fill='%2394a3b8'/%3E%3C/svg%3E");
   const fileInputRef = useState(null);
 
   const handleAvatarClick = () => {
@@ -6078,7 +6116,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
   // Temporal: mapa placeholder
   const mapData = {
-    backgroundImage: 'https://via.placeholder.com/400x200?text=Mapa'
+    backgroundImage: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EMapa%3C/text%3E%3C/svg%3E"
   };
 
   // Función para formatear horarios desde Supabase opening_hours
@@ -6794,8 +6832,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         onClose={() => setShowReportModal(false)}
         business={business}
         user={user}
-        onSubmitReport={() => {
-        }}
+        onSubmitReport={() => {}}
+        showToast={showToast}
       />
 
       {/* Navbar */}
@@ -6957,7 +6995,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
     title: offer.title,
     description: offer.description || 'Oferta exclusiva para ti.',
     business: offer.businesses?.name || 'Negocio',
-    image: offer.image || 'https://via.placeholder.com/800x400?text=Oferta',
+    image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400'%3E%3Crect width='800' height='400' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
     validUntil: formattedExpiry,
     type: offer.is_flash ? 'Oferta Flash' : 'Oferta',
     code: 'CORNELLA' + offer.id.substring(0, 8).toUpperCase(),
@@ -6982,7 +7020,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
 
   // Placeholder para el mapa
   const mapData = {
-    backgroundImage: 'https://via.placeholder.com/400x200?text=Mapa'
+    backgroundImage: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EMapa%3C/text%3E%3C/svg%3E"
   };
 
   const handleShareWhatsApp = () => {
@@ -7419,7 +7457,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
 
   // Datos del mapa (placeholder)
   const mapData = {
-    backgroundImage: 'https://via.placeholder.com/400x200?text=Mapa+Cornella'
+    backgroundImage: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3ECornell%C3%A0%3C/text%3E%3C/svg%3E"
   };
 
   // Mostrar loading si está cargando
@@ -17578,6 +17616,49 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 };
 
 // ==============================================
+// ERROR BOUNDARY GLOBAL
+// ==============================================
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    // En producción aquí iría Sentry u otro tracker
+    // console.error('ErrorBoundary capturó:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="mx-auto min-h-screen w-full max-w-md flex flex-col items-center justify-center p-8 bg-gray-50">
+          <div className="w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center mb-6">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h1 className="text-xl font-bold text-slate-900 text-center mb-2">Algo salió mal</h1>
+          <p className="text-gray-500 text-sm text-center mb-8">
+            Ha ocurrido un error inesperado. Por favor recarga la página.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full h-12 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 transition-colors"
+          >
+            Recargar aplicación
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ==============================================
 // APP PRINCIPAL CON ROUTER
 // ==============================================
 
@@ -19493,58 +19574,6 @@ export default function App() {
       throw error;
     }
 
-    // Empresas ficticias por categoría
-    const empresasPorCategoria = {
-      albanil: ['Reformas García', 'Construcciones López', 'Obras Martín'],
-      carpintero: ['Carpintería Robles', 'Maderas Jiménez', 'Artesanos del Mueble'],
-      cerrajero: ['Cerrajería Express', 'Llaves 24h', 'Seguridad Total'],
-      climatizacion: ['Clima Confort', 'Frío y Calor SL', 'Aires del Sur'],
-      electricista: ['Electricidad Rayo', 'Instalaciones Pérez', 'Voltio Express'],
-      fontanero: ['Fontanería Martínez', 'Desatascos Rápidos', 'AquaService'],
-      jardineria: ['Jardines Verdes', 'Poda Profesional', 'EcoGarden'],
-      limpieza: ['Limpiezas Express', 'Brillo Total', 'CleanPro'],
-      mudanzas: ['Mudanzas Rápidas', 'TransPortes García', 'MoveFast'],
-      pintor: ['Pinturas Colorín', 'Decoraciones Ruiz', 'BrochaPro'],
-      reparacion: ['TechFix', 'Reparaciones Express', 'MóvilDoctor'],
-    };
-
-    const empresas = empresasPorCategoria[requestData.category] || ['Empresa Local 1', 'Empresa Local 2', 'Empresa Local 3'];
-
-    // Simular respuestas de varias empresas con diferentes tiempos
-    empresas.forEach((empresa, index) => {
-      const delay = (index + 1) * 4000 + Math.random() * 2000; // 4-6s, 8-10s, 12-14s
-      const precio = Math.floor(50 + Math.random() * 200); // Precio entre 50€ y 250€
-
-      setTimeout(() => {
-        // Añadir respuesta a la solicitud
-        setUserBudgetRequests(prev => prev.map(req => {
-          if (req.id === requestId) {
-            return {
-              ...req,
-              responses: [...req.responses, {
-                id: Date.now(),
-                businessName: empresa,
-                price: precio,
-                message: `Hola, he revisado tu solicitud. Mi presupuesto es de ${precio}€. Disponibilidad inmediata. Llámame para más detalles.`,
-                respondedAt: new Date().toISOString(),
-                phone: `6${Math.floor(10000000 + Math.random() * 90000000)}`,
-              }]
-            };
-          }
-          return req;
-        }));
-
-        // Notificar al usuario
-        addNotification({
-          type: 'budget-response',
-          title: '¡Nuevo presupuesto recibido!',
-          message: `${empresa} te ha enviado un presupuesto de ${precio}€`,
-          icon: 'FileText',
-          iconBg: 'bg-green-500',
-          actionRoute: 'my-budget-requests',
-        });
-      }, delay);
-    });
   };
 
   const renderPage = () => {
@@ -19574,7 +19603,7 @@ export default function App() {
       case 'business-analytics':
         return <BusinessAnalyticsScreen onNavigate={navigate} user={user} businessData={businessData} />;
       case 'admin-reports':
-        return <ReportsScreen onNavigate={navigate} user={user} />;
+        return <ReportsScreen onNavigate={navigate} user={user} showToast={showToast} />;
       case 'business':
         return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} showToast={showToast} />;
       case 'coupon':
@@ -19765,6 +19794,7 @@ export default function App() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-gray-100">
       <Toast
         message={toast.message}
@@ -19828,5 +19858,6 @@ export default function App() {
         {renderPage()}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

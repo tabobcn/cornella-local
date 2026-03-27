@@ -16960,17 +16960,30 @@ const RegisterScreen = ({ onNavigate }) => {
 
 // Pantalla de Recuperar Contraseña
 const ForgotPasswordScreen = ({ onNavigate, showToast }) => {
-  const handleSubmit = (e) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simular envío de email y volver a login
-    showToast('Se han enviado las instrucciones a tu email', 'success');
-    onNavigate('login');
+    if (!email.trim()) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: 'https://www.cornellalocal.es/reset-password',
+      });
+      if (error) throw error;
+      setSent(true);
+    } catch (error) {
+      showToast('Error al enviar el email. Comprueba la dirección.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="bg-gray-50 font-display antialiased text-slate-900">
       <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-gray-50 shadow-sm">
-        {/* Header */}
         <div className="flex items-center p-4 justify-between sticky top-0 z-10 bg-gray-50/90 backdrop-blur-md">
           <button
             onClick={() => onNavigate('login')}
@@ -16980,69 +16993,90 @@ const ForgotPasswordScreen = ({ onNavigate, showToast }) => {
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex flex-col flex-1 px-6 pb-8 pt-4">
-          {/* Illustration */}
           <div className="w-full flex justify-center py-6">
             <div className="relative flex items-center justify-center size-40 rounded-full bg-primary/10">
               <div className="absolute inset-0 rounded-full opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent"></div>
-              <RotateCcw className="text-primary" size={64} />
+              {sent ? <CheckCircle className="text-green-500" size={64} /> : <RotateCcw className="text-primary" size={64} />}
             </div>
           </div>
 
-          {/* Title */}
-          <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight text-center pb-3 pt-4">
-            ¿Has olvidado tu contraseña?
-          </h1>
+          {sent ? (
+            <>
+              <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight text-center pb-3 pt-4">
+                ¡Email enviado!
+              </h1>
+              <p className="text-gray-500 text-base font-normal leading-relaxed text-center px-2 mb-8">
+                Revisa tu bandeja de entrada en <span className="font-medium text-slate-700">{email}</span>. Si no lo ves, mira la carpeta de spam.
+              </p>
+              <button
+                onClick={() => onNavigate('login')}
+                className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary text-white hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 shadow-md shadow-primary/20"
+              >
+                <span className="text-base font-bold leading-normal tracking-wide">Volver al inicio</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight text-center pb-3 pt-4">
+                ¿Has olvidado tu contraseña?
+              </h1>
+              <p className="text-gray-500 text-base font-normal leading-relaxed text-center px-2 mb-8">
+                Introduce tu email y te enviaremos las instrucciones para restablecerla
+              </p>
 
-          {/* Description */}
-          <p className="text-gray-500 text-base font-normal leading-relaxed text-center px-2 mb-8">
-            Introduce tu email y te enviaremos las instrucciones para restablecerla
-          </p>
-
-          {/* Form */}
-          <form className="flex flex-col gap-6 w-full" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-2">
-              <label className="text-slate-900 text-sm font-medium leading-normal ml-1">
-                Correo electrónico
-              </label>
-              <div className="relative">
-                <input
-                  className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-400 px-4 text-base font-normal transition-all shadow-sm"
-                  placeholder="tu@email.com"
-                  type="email"
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <Mail size={20} />
+              <form className="flex flex-col gap-6 w-full" onSubmit={handleSubmit}>
+                <div className="flex flex-col gap-2">
+                  <label className="text-slate-900 text-sm font-medium leading-normal ml-1">
+                    Correo electrónico
+                  </label>
+                  <div className="relative">
+                    <input
+                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-400 px-4 text-base font-normal transition-all shadow-sm"
+                      placeholder="tu@email.com"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                      <Mail size={20} />
+                    </div>
+                  </div>
                 </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !email.trim()}
+                  className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary text-white hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 shadow-md shadow-primary/20 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span className="text-base font-bold leading-normal tracking-wide">Enviar instrucciones</span>
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-auto pt-8 pb-4 text-center">
+                <button
+                  onClick={() => onNavigate('login')}
+                  className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-2 mx-auto"
+                >
+                  <ArrowLeft size={16} />
+                  Volver al login
+                </button>
               </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary text-white hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 shadow-md shadow-primary/20 mt-2"
-            >
-              <span className="text-base font-bold leading-normal tracking-wide">Enviar instrucciones</span>
-            </button>
-          </form>
-
-          {/* Help */}
-          <div className="mt-auto pt-8 pb-4 text-center">
-            <button className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-2 mx-auto">
-              <HelpCircle size={16} />
-              ¿Necesitas ayuda?
-            </button>
-          </div>
+            </>
+          )}
         </div>
 
-        {/* Bottom spacer */}
         <div className="h-5 w-full bg-gray-50"></div>
       </div>
     </div>
   );
 };
-
 // Pantalla de Bienvenida para Propietarios
 const OwnerWelcomeScreen = ({ onNavigate }) => (
   <div className="bg-white font-display text-slate-900 overflow-x-hidden antialiased">

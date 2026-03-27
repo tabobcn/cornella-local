@@ -5580,13 +5580,6 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 </div>
               </div>
             </div>
-            {/* Botón de demo para simular validación */}
-            <button
-              onClick={validateBusiness}
-              className="mt-4 w-full h-10 bg-amber-200 text-amber-800 font-medium rounded-lg hover:bg-amber-300 transition-colors text-sm"
-            >
-              ⚡ Simular validación (Demo)
-            </button>
           </div>
         )}
 

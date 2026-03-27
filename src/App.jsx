@@ -17077,6 +17077,114 @@ const ForgotPasswordScreen = ({ onNavigate, showToast }) => {
     </div>
   );
 };
+// Pantalla de Restablecer Contraseña (tras clic en email de recuperación)
+const ResetPasswordScreen = ({ onNavigate, showToast }) => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      showToast('La contraseña debe tener al menos 6 caracteres', 'warning');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showToast('Las contraseñas no coinciden', 'warning');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setDone(true);
+      setTimeout(() => onNavigate('login'), 2500);
+    } catch (error) {
+      showToast('Error al actualizar la contraseña. El enlace puede haber expirado.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-gray-50 font-display antialiased text-slate-900">
+      <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-gray-50 shadow-sm">
+        <div className="flex flex-col flex-1 px-6 pb-8 pt-16">
+          <div className="w-full flex justify-center py-6">
+            <div className="relative flex items-center justify-center size-40 rounded-full bg-primary/10">
+              <div className="absolute inset-0 rounded-full opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent"></div>
+              {done ? <CheckCircle className="text-green-500" size={64} /> : <KeyRound className="text-primary" size={64} />}
+            </div>
+          </div>
+
+          {done ? (
+            <>
+              <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight text-center pb-3 pt-4">¡Contraseña actualizada!</h1>
+              <p className="text-gray-500 text-base text-center px-2">Redirigiendo al inicio de sesión...</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight text-center pb-3 pt-4">Nueva contraseña</h1>
+              <p className="text-gray-500 text-base font-normal leading-relaxed text-center px-2 mb-8">
+                Elige una contraseña segura de al menos 6 caracteres
+              </p>
+
+              <form className="flex flex-col gap-5 w-full" onSubmit={handleSubmit}>
+                <div className="flex flex-col gap-2">
+                  <label className="text-slate-900 text-sm font-medium leading-normal ml-1">Nueva contraseña</label>
+                  <div className="relative">
+                    <input
+                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-400 px-4 pr-12 text-base font-normal transition-all shadow-sm"
+                      type={showPass ? 'text' : 'password'}
+                      placeholder="Mínimo 6 caracteres"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="new-password"
+                    />
+                    <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-slate-900 text-sm font-medium leading-normal ml-1">Confirmar contraseña</label>
+                  <div className="relative">
+                    <input
+                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-400 px-4 text-base font-normal transition-all shadow-sm"
+                      type={showPass ? 'text' : 'password'}
+                      placeholder="Repite la contraseña"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !password || !confirmPassword}
+                  className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary text-white hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 shadow-md shadow-primary/20 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span className="text-base font-bold leading-normal tracking-wide">Actualizar contraseña</span>
+                  )}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Pantalla de Bienvenida para Propietarios
 const OwnerWelcomeScreen = ({ onNavigate }) => (
   <div className="bg-white font-display text-slate-900 overflow-x-hidden antialiased">
@@ -17792,6 +17900,10 @@ export default function App() {
           clearTimeout(authTimeout);
           setLoadingAuth(false);
         }
+      } else if (event === 'PASSWORD_RECOVERY') {
+        clearTimeout(authTimeout);
+        setLoadingAuth(false);
+        setCurrentPage('reset-password');
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('login');
@@ -19645,6 +19757,8 @@ export default function App() {
         return <RegisterScreen onNavigate={navigate} />;
       case 'forgot-password':
         return <ForgotPasswordScreen onNavigate={navigate} showToast={showToast} />;
+      case 'reset-password':
+        return <ResetPasswordScreen onNavigate={navigate} showToast={showToast} />;
       case 'owner-welcome':
         navigate('business-data');
         return null;

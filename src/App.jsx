@@ -1850,7 +1850,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           .select('*')
           .eq('verification_status', 'approved')
           .eq('is_published', true)
-          .order('created_at', { ascending: false })
+          .order('verified_at', { ascending: false, nullsFirst: false })
           .limit(6);
 
         if (error) throw error;
@@ -4550,6 +4550,7 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
         .update({
           verification_status: 'approved',
           is_verified: true,
+          is_published: true,
           verified_at: new Date().toISOString(),
           verified_by: user.id
         })
@@ -4562,8 +4563,8 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
       await supabase.from('notifications').insert({
         user_id: selectedBusiness.owner_id,
         type: 'business_approved',
-        title: '¡Tu negocio ha sido aprobado! 🎉',
-        message: `"${selectedBusiness.name}" ha sido verificado. Ya puedes completar tu perfil y publicarlo en Cornellà Local.`,
+        title: '¡Tu negocio ya está en Cornellà Local! 🎉',
+        message: `"${selectedBusiness.name}" ha sido verificado y ya aparece en la app. Accede a tu panel para añadir ofertas y empleos.`,
         data: { business_id: selectedBusiness.id },
         is_read: false,
       });
@@ -18980,6 +18981,7 @@ export default function App() {
             title: offer.title,
             description: offer.description,
             discount,
+            image: offer.image || null,
             originalPrice: offer.original_price,
             discountedPrice: offer.discounted_price,
             discountType: offer.discount_type,
@@ -19674,6 +19676,7 @@ export default function App() {
           discount_label: offerData.discountLabel || null,
           original_price: offerData.originalPrice || null,
           discounted_price: offerData.discountedPrice || null,
+          image: offerData.image || null,
           is_flash: offerData.isFlash || false,
           starts_at: startsAt.toISOString(),
           expires_at: expiresAt.toISOString(),

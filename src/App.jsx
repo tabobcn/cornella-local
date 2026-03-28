@@ -2812,9 +2812,10 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 };
 
 // Página de Solicitud de Presupuesto
-const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
+const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) => {
   const [paso, setPaso] = useState(1);
   const [enviado, setEnviado] = useState(false);
+  const [adminNotified, setAdminNotified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingBudgetPhoto, setUploadingBudgetPhoto] = useState(false);
   const [formData, setFormData] = useState({
@@ -2872,6 +2873,24 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
 
   const categoriaSeleccionada = categorias.find(c => c.id === formData.category);
 
+  const notifyAdmin = async () => {
+    setLoading(true);
+    try {
+      await supabase.from('support_requests').insert({
+        name: user?.full_name || 'Usuario',
+        email: user?.email || 'sin-email@cornellalocal.es',
+        subject: `[SIN EMPRESAS] Categoría: ${categoriaSeleccionada?.name || formData.category}`,
+        message: `Un usuario ha solicitado presupuesto de '${categoriaSeleccionada?.name || formData.category}' pero no hay empresas en esa categoría. Por favor intenta encontrar proveedores para esta categoría en Cornelà.`,
+        status: 'pending',
+      });
+      setAdminNotified(true);
+    } catch {
+      showToast?.('Error al enviar la notificación', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const canPaso1 = formData.category !== null;
   const canPaso2 = formData.description.trim() !== '' && formData.description.trim().length >= LIMITS.budgetRequest.descriptionMinLength;
 
@@ -2881,20 +2900,21 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
   const canPaso3 = formData.urgency !== null && addressValidation.isValid && phoneValidation.isValid;
 
   // Pantalla de éxito
-  if (enviado && categoriaSeleccionada) {
+  if ((enviado || adminNotified) && categoriaSeleccionada) {
     return (
       <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-green-500 flex flex-col items-center justify-center p-6">
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6">
           <CheckCircle2 className="text-green-500" size={48} />
         </div>
-        <h2 className="text-white text-2xl font-bold mb-4">¡Solicitud Enviada!</h2>
+        <h2 className="text-white text-2xl font-bold mb-4">{adminNotified ? '¡Administrador avisado!' : '¡Solicitud Enviada!'}</h2>
         <p className="text-white/90 text-center mb-4">
-          Tu solicitud de <span className="font-bold">{categoriaSeleccionada.name}</span> ha sido registrada correctamente
+          {adminNotified
+            ? <>Él buscará empresas de <span className="font-bold">{categoriaSeleccionada.name}</span> en Cornellà y te contactará cuando haya disponibles</>
+            : <>Tu solicitud de <span className="font-bold">{categoriaSeleccionada.name}</span> ha sido enviada a {categoriaSeleccionada.businessCount} empresa{categoriaSeleccionada.businessCount !== 1 ? 's' : ''}</>
+          }
         </p>
         <p className="text-white/70 text-sm text-center mb-8">
-          {categoriaSeleccionada.businessCount > 0
-            ? `${categoriaSeleccionada.businessCount} empresa${categoriaSeleccionada.businessCount > 1 ? 's' : ''} de Cornellà recibirán tu solicitud y podrán enviarte su presupuesto`
-            : 'En cuanto haya empresas disponibles en esta categoría recibirás presupuestos'}
+          {adminNotified ? 'Mientras tanto puedes explorar otras categorías' : 'Las empresas podrán enviarte su presupuesto directamente'}
         </p>
         <button
           onClick={() => onNavigate('my-budget-requests')}
@@ -2976,7 +2996,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
                     <Icon name={cat.icon} size={20} className={formData.category === cat.id ? 'text-primary' : 'text-gray-500'} />
                   </div>
                   <span className="text-xs font-bold text-slate-900 text-center">{cat.name}</span>
-                  <span className="text-[10px] text-primary font-medium mt-1">{cat.businessCount} empresas</span>
+                  <span className={"text-[10px] font-medium mt-1 " + (cat.businessCount === 0 ? "text-gray-400" : "text-primary")}>{cat.businessCount === 0 ? "Sin empresas" : `${cat.businessCount} empresa${cat.businessCount !== 1 ? "s" : ""}`}</span>
                 </button>
               ))}
             </div>
@@ -2992,7 +3012,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
               </div>
               <div>
                 <h4 className="font-bold text-slate-900">{categoriaSeleccionada?.name}</h4>
-                <p className="text-sm text-gray-500">{categoriaSeleccionada?.businessCount} empresas disponibles</p>
+                <p className="text-sm text-gray-500">{categoriaSeleccionada?.businessCount > 0 ? `${categoriaSeleccionada.businessCount} empresa${categoriaSeleccionada.businessCount !== 1 ? 's' : ''} disponibles` : 'Sin empresas aún'}</p>
               </div>
             </div>
 
@@ -3144,65 +3164,85 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
 
       {/* Botón fijo */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-4">
-        {paso === 3 && categoriaSeleccionada && canPaso3 && (
-          <p className="text-xs text-center text-gray-500 mb-3">
-            {categoriaSeleccionada.businessCount > 0
-              ? <>Se enviará a <span className="font-bold text-primary">{categoriaSeleccionada.businessCount} empresa{categoriaSeleccionada.businessCount > 1 ? 's' : ''}</span></>
-              : <span className="text-amber-600">Aún no hay empresas en esta categoría, pero se guardará tu solicitud</span>}
-          </p>
-        )}
-        <button
-          onClick={async () => {
-            if (paso === 1 && canPaso1) {
-              setPaso(2);
-            } else if (paso === 2 && canPaso2) {
-              setPaso(3);
-            } else if (paso === 3 && canPaso3 && !enviado && !loading) {
-              try {
-                setLoading(true);
-                if (onSubmitRequest) {
-                  await onSubmitRequest({
-                    category: categoriaSeleccionada.id,
-                    categoryName: categoriaSeleccionada.name,
-                    categoryIcon: categoriaSeleccionada.icon,
-                    description: formData.description,
-                    photos: formData.photos,
-                    urgency: formData.urgency,
-                    address: formData.address,
-                    phone: formData.phone,
-                    businessCount: categoriaSeleccionada.businessCount,
-                    createdAt: new Date().toISOString(),
-                    status: 'pending',
-                  });
+        {paso === 3 && categoriaSeleccionada && categoriaSeleccionada.businessCount === 0 ? (
+          <div className="space-y-3">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+              <p className="text-sm font-semibold text-amber-800">No hay empresas en esta categoría</p>
+              <p className="text-xs text-amber-600 mt-1">Podemos avisar al administrador para que busque proveedores</p>
+            </div>
+            <button
+              onClick={notifyAdmin}
+              disabled={loading || !canPaso3}
+              className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 bg-amber-500 text-white disabled:opacity-60"
+            >
+              {loading ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : null}
+              {loading ? 'Enviando...' : 'Avisar al administrador'}
+            </button>
+            <button onClick={() => setPaso(1)} className="w-full h-10 text-sm text-gray-500 hover:text-gray-700">
+              Elegir otra categoría
+            </button>
+          </div>
+        ) : (
+          <>
+            {paso === 3 && categoriaSeleccionada && canPaso3 && (
+              <p className="text-xs text-center text-gray-500 mb-3">
+                Se enviará a <span className="font-bold text-primary">{categoriaSeleccionada.businessCount} empresa{categoriaSeleccionada.businessCount !== 1 ? 's' : ''}</span>
+              </p>
+            )}
+            <button
+              onClick={async () => {
+                if (paso === 1 && canPaso1) {
+                  setPaso(2);
+                } else if (paso === 2 && canPaso2) {
+                  setPaso(3);
+                } else if (paso === 3 && canPaso3 && !enviado && !loading) {
+                  try {
+                    setLoading(true);
+                    if (onSubmitRequest) {
+                      await onSubmitRequest({
+                        category: categoriaSeleccionada.id,
+                        categoryName: categoriaSeleccionada.name,
+                        categoryIcon: categoriaSeleccionada.icon,
+                        description: formData.description,
+                        photos: formData.photos,
+                        urgency: formData.urgency,
+                        address: formData.address,
+                        phone: formData.phone,
+                        businessCount: categoriaSeleccionada.businessCount,
+                        createdAt: new Date().toISOString(),
+                        status: 'pending',
+                      });
+                    }
+                    setEnviado(true);
+                  } catch (error) {
+                    showToast?.('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
+                  } finally {
+                    setLoading(false);
+                  }
                 }
-                setEnviado(true);
-              } catch (error) {
-                showToast?.('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
-              } finally {
-                setLoading(false);
+              }}
+              disabled={
+                (paso === 1 && !canPaso1) ||
+                (paso === 2 && !canPaso2) ||
+                (paso === 3 && !canPaso3) ||
+                loading
               }
-            }
-          }}
-          disabled={
-            (paso === 1 && !canPaso1) ||
-            (paso === 2 && !canPaso2) ||
-            (paso === 3 && !canPaso3) ||
-            loading
-          }
-          className={`w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 ${
-            ((paso === 1 ? canPaso1 : paso === 2 ? canPaso2 : canPaso3) && !loading)
-              ? 'bg-primary text-white'
-              : 'bg-gray-200 text-gray-400'
-          }`}
-        >
-          {loading ? (
-            <>Enviando...</>
-          ) : paso === 3 ? (
-            <>Enviar a {categoriaSeleccionada?.businessCount || 0} empresas <Send size={18} /></>
-          ) : (
-            <>Siguiente <ArrowRight size={18} /></>
-          )}
-        </button>
+              className={`w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 ${
+                ((paso === 1 ? canPaso1 : paso === 2 ? canPaso2 : canPaso3) && !loading)
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-200 text-gray-400'
+              }`}
+            >
+              {loading ? (
+                <>Enviando...</>
+              ) : paso === 3 ? (
+                <>Enviar a {categoriaSeleccionada?.businessCount || 0} empresa{categoriaSeleccionada?.businessCount !== 1 ? 's' : ''} <Send size={18} /></>
+              ) : (
+                <>Siguiente <ArrowRight size={18} /></>
+              )}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -19822,7 +19862,7 @@ export default function App() {
       case 'home':
         return <HomePage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} userOffers={userOffers} notifications={dynamicNotifications} params={pageParams} />;
       case 'budget-request':
-        return <BudgetRequestScreen onNavigate={navigate} onSubmitRequest={submitBudgetRequest} showToast={showToast} onAddNotification={addNotification} />;
+        return <BudgetRequestScreen onNavigate={navigate} onSubmitRequest={submitBudgetRequest} showToast={showToast} onAddNotification={addNotification} user={user} />;
       case 'direct-budget':
         return <DirectBudgetScreen onNavigate={navigate} businessId={pageParams.businessId} businessName={pageParams.businessName} user={user} showToast={showToast} />;
       case 'flash-offers':

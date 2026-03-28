@@ -19238,20 +19238,32 @@ export default function App() {
       }
 
       try {
-        const { data, error } = await supabase
+        // 1. Cargar solicitudes + cotizaciones (sin JOIN anidado a businesses)
+        const { data: requests, error } = await supabase
           .from('budget_requests')
-          .select(`
-            *,
-            budget_quotes(id, price, description, business_id, businesses(id, name))
-          `)
+          .select('*, budget_quotes(id, price, description, business_id)')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
 
+        // 2. Recoger todos los business_ids de las cotizaciones
+        const businessIds = [...new Set(
+          (requests || []).flatMap(r => (r.budget_quotes || []).map(q => q.business_id)).filter(Boolean)
+        )];
 
-        // Transformar al formato esperado por MyBudgetRequestsScreen
-        const transformed = (data || []).map(request => ({
+        // 3. Cargar nombres de negocios en una sola query separada
+        let businessNames = {};
+        if (businessIds.length > 0) {
+          const { data: businesses } = await supabase
+            .from('businesses')
+            .select('id, name')
+            .in('id', businessIds);
+          (businesses || []).forEach(b => { businessNames[b.id] = b.name; });
+        }
+
+        // 4. Transformar al formato esperado por MyBudgetRequestsScreen
+        const transformed = (requests || []).map(request => ({
           id: request.id,
           category: request.category,
           description: request.description,
@@ -19261,11 +19273,10 @@ export default function App() {
           photos: request.photos || [],
           status: request.status,
           createdAt: request.created_at,
-          // Transformar las cotizaciones recibidas
           responses: (request.budget_quotes || []).map(quote => ({
             id: quote.id,
             businessId: quote.business_id,
-            businessName: quote.businesses?.name || 'Negocio',
+            businessName: businessNames[quote.business_id] || 'Negocio',
             price: quote.price,
             message: quote.description,
           })),
@@ -19277,7 +19288,7 @@ export default function App() {
     };
 
     loadUserBudgetRequests();
-  }, [user]);
+  }, [user?.id]);
 
   // Toast notifications
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' });

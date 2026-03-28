@@ -4040,6 +4040,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
 const AdminUsersScreen = ({ onNavigate }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -4053,18 +4054,43 @@ const AdminUsersScreen = ({ onNavigate }) => {
     load();
   }, []);
 
+  const filtered = users.filter(u => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+  });
+
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
-      <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
-        <button onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
-          <ArrowLeft size={24} />
-        </button>
-        <h2 className="text-slate-900 text-lg font-bold flex-1 text-center pr-10">Usuarios</h2>
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
+        <div className="flex items-center px-4 py-4">
+          <button onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+            <ArrowLeft size={24} />
+          </button>
+          <div className="flex-1 text-center pr-10">
+            <h2 className="text-slate-900 text-lg font-bold">Usuarios</h2>
+            {!loading && <p className="text-xs text-gray-400">{users.length} registrados</p>}
+          </div>
+        </div>
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar por nombre o email..."
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+            />
+          </div>
+        </div>
       </header>
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-2">
         {loading ? (
           <div className="text-center text-gray-400 py-10">Cargando...</div>
-        ) : users.map(u => (
+        ) : filtered.length === 0 ? (
+          <div className="text-center text-gray-400 py-10">Sin resultados</div>
+        ) : filtered.map(u => (
           <div key={u.id} className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
               {(u.full_name || u.email || '?')[0].toUpperCase()}
@@ -4088,6 +4114,7 @@ const AdminUsersScreen = ({ onNavigate }) => {
 const AdminSupportScreen = ({ onNavigate }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('pending');
 
   useEffect(() => {
     const load = async () => {
@@ -4106,42 +4133,102 @@ const AdminSupportScreen = ({ onNavigate }) => {
     setMessages(prev => prev.map(m => m.id === id ? { ...m, status: 'resolved' } : m));
   };
 
+  const isNoBusinessMsg = (m) => m.subject?.startsWith('[SIN EMPRESAS]');
+
+  const filtered = messages.filter(m => {
+    if (filter === 'pending') return m.status !== 'resolved' && !isNoBusinessMsg(m);
+    if (filter === 'no-business') return isNoBusinessMsg(m) && m.status !== 'resolved';
+    if (filter === 'resolved') return m.status === 'resolved';
+    return true;
+  });
+
+  const pendingCount = messages.filter(m => m.status !== 'resolved' && !isNoBusinessMsg(m)).length;
+  const noBusinessCount = messages.filter(m => isNoBusinessMsg(m) && m.status !== 'resolved').length;
+
+  const tabs = [
+    { id: 'pending', label: 'Soporte', count: pendingCount },
+    { id: 'no-business', label: 'Sin empresas', count: noBusinessCount },
+    { id: 'resolved', label: 'Resueltos', count: messages.filter(m => m.status === 'resolved').length },
+    { id: 'all', label: 'Todos', count: messages.length },
+  ];
+
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
-      <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
-        <button onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
-          <ArrowLeft size={24} />
-        </button>
-        <h2 className="text-slate-900 text-lg font-bold flex-1 text-center pr-10">Mensajes de Soporte</h2>
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
+        <div className="flex items-center px-4 py-4">
+          <button onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+            <ArrowLeft size={24} />
+          </button>
+          <div className="flex-1 text-center pr-10">
+            <h2 className="text-slate-900 text-lg font-bold">Soporte</h2>
+            {!loading && (pendingCount + noBusinessCount) > 0 && (
+              <p className="text-xs text-amber-600 font-medium">{pendingCount + noBusinessCount} sin resolver</p>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto no-scrollbar">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                filter === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 rounded-full ${
+                  filter === tab.id ? 'bg-white/25 text-white' :
+                  tab.id === 'no-business' ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </header>
       <div className="p-4 space-y-3">
         {loading ? (
           <div className="text-center text-gray-400 py-10">Cargando...</div>
-        ) : messages.length === 0 ? (
-          <div className="text-center text-gray-400 py-10">No hay mensajes</div>
-        ) : messages.map(m => (
-          <div key={m.id} className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${m.status === 'resolved' ? 'border-green-400 opacity-60' : 'border-amber-400'}`}>
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div>
-                <p className="font-semibold text-slate-800 text-sm">{m.name}</p>
-                <p className="text-xs text-gray-400">{m.email}</p>
+        ) : filtered.length === 0 ? (
+          <div className="text-center text-gray-400 py-10">No hay mensajes en este filtro</div>
+        ) : filtered.map(m => {
+          const isNoBiz = isNoBusinessMsg(m);
+          return (
+            <div key={m.id} className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${
+              m.status === 'resolved' ? 'border-green-400 opacity-60' : isNoBiz ? 'border-orange-400' : 'border-blue-400'
+            }`}>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-slate-800 text-sm">{m.name}</p>
+                    {isNoBiz && <span className="text-[10px] bg-orange-100 text-orange-600 font-bold px-1.5 py-0.5 rounded-full">SIN EMPRESAS</span>}
+                  </div>
+                  <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
+                  m.status === 'resolved' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
+                }`}>
+                  {m.status === 'resolved' ? 'Resuelto' : 'Pendiente'}
+                </span>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${m.status === 'resolved' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
-                {m.status === 'resolved' ? 'Resuelto' : 'Pendiente'}
-              </span>
+              {isNoBiz
+                ? <p className="text-xs font-semibold text-orange-600 mb-1">{m.subject?.replace('[SIN EMPRESAS] ', '')}</p>
+                : m.subject && <p className="text-xs font-semibold text-primary mb-1">{m.subject}</p>
+              }
+              <p className="text-sm text-gray-600 leading-relaxed mb-3">{m.message}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-300">{new Date(m.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                {m.status !== 'resolved' && (
+                  <button onClick={() => markResolved(m.id)} className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 transition-colors">
+                    Marcar resuelto
+                  </button>
+                )}
+              </div>
             </div>
-            {m.subject && <p className="text-xs font-semibold text-primary mb-1">{m.subject}</p>}
-            <p className="text-sm text-gray-600 leading-relaxed mb-3">{m.message}</p>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-300">{new Date(m.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-              {m.status !== 'resolved' && (
-                <button onClick={() => markResolved(m.id)} className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 transition-colors">
-                  Marcar resuelto
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -4152,6 +4239,7 @@ const AdminDashboard = ({ onNavigate, user }) => {
   const [stats, setStats] = useState({
     pendingBusinesses: 0,
     pendingReports: 0,
+    pendingSupport: 0,
     totalUsers: 0,
     totalBusinesses: 0,
     activeOffers: 0,
@@ -4196,9 +4284,16 @@ const AdminDashboard = ({ onNavigate, user }) => {
           .select('*', { count: 'exact', head: true })
           .eq('status', 'active');
 
+        // Soporte pendiente
+        const { count: pendingSupp } = await supabase
+          .from('support_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
         setStats({
           pendingBusinesses: pendingBiz || 0,
           pendingReports: pendingRep || 0,
+          pendingSupport: pendingSupp || 0,
           totalUsers: totalUsr || 0,
           totalBusinesses: totalBiz || 0,
           activeOffers: activeOff || 0,
@@ -4243,9 +4338,10 @@ const AdminDashboard = ({ onNavigate, user }) => {
     {
       id: 'support',
       title: 'Soporte',
-      description: 'Mensajes recibidos',
+      description: stats.pendingSupport > 0 ? `${stats.pendingSupport} sin resolver` : 'Sin mensajes nuevos',
       icon: MessageCircle,
       color: 'purple',
+      badge: stats.pendingSupport,
       route: 'admin-support'
     },
   ];

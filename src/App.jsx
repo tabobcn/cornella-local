@@ -3248,15 +3248,38 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
   );
 };
 
-// Pantalla de Presupuesto Directo (a una empresa específica)
-const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showToast }) => {
+// Pantalla de Presupuesto Directo (desde la página de un negocio)
+const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showToast, onSubmitRequest }) => {
   const [formData, setFormData] = useState({
     description: '',
     photos: [],
     urgency: 'this-week',
+    address: '',
+    phone: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [uploadingDPhoto, setUploadingDPhoto] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState(null); // { subcategory, categoryCount }
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      const { data: biz } = await supabase
+        .from('businesses')
+        .select('subcategory, category_id')
+        .eq('id', businessId)
+        .single();
+      if (!biz) return;
+      const { count } = await supabase
+        .from('businesses')
+        .select('*', { count: 'exact', head: true })
+        .eq('subcategory', biz.subcategory)
+        .eq('verification_status', 'approved')
+        .eq('is_published', true);
+      setBusinessInfo({ subcategory: biz.subcategory, categoryCount: count || 1 });
+    };
+    if (businessId) fetchInfo();
+  }, [businessId]);
 
   const urgencyOptions = [
     { id: 'urgent', label: 'Urgente', description: 'Lo antes posible', icon: 'Zap', color: 'red' },
@@ -3279,18 +3302,36 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
     finally { setUploadingDPhoto(false); }
   };
 
-  const handleRemovePhoto = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      photos: prev.photos.filter((_, i) => i !== index)
-    }));
-  };
+  const canSubmit = formData.description.trim().length >= 10
+    && formData.address.trim().length >= 5
+    && formData.phone.trim().length >= 9;
 
-  const handleSubmit = () => {
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    if (!canSubmit || loading) return;
+    setLoading(true);
+    try {
+      if (onSubmitRequest) {
+        await onSubmitRequest({
+          category: businessInfo?.subcategory || 'general',
+          categoryName: businessInfo?.subcategory || businessName,
+          categoryIcon: 'Store',
+          description: formData.description,
+          photos: formData.photos,
+          urgency: formData.urgency,
+          address: formData.address,
+          phone: formData.phone,
+          businessCount: businessInfo?.categoryCount || 1,
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+        });
+      }
+      setSubmitted(true);
+    } catch {
+      showToast?.('Error al enviar la solicitud', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const canSubmit = formData.description.trim().length >= 10;
 
   if (submitted) {
     return (
@@ -3300,18 +3341,19 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
             <CheckCircle2 className="text-green-500" size={48} />
           </div>
           <h1 className="text-white text-2xl font-bold mb-3">¡Solicitud Enviada!</h1>
-          <p className="text-white/90 text-base mb-2">
-            Tu presupuesto ha sido enviado a
+          <p className="text-white/90 text-base mb-4">
+            Tu solicitud ha sido enviada a{' '}
+            <span className="font-bold">{businessInfo?.categoryCount || 1} empresa{businessInfo?.categoryCount !== 1 ? 's' : ''}</span>{' '}
+            de {businessInfo?.subcategory || businessName}
           </p>
-          <p className="text-white font-bold text-lg mb-4">{businessName}</p>
           <div className="bg-white/20 rounded-2xl p-4 mb-8">
             <div className="flex items-center gap-2 text-white">
               <Clock size={20} />
-              <span className="font-medium">Tienen 3 días para responder</span>
+              <span className="font-medium">Cada empresa puede responderte con su precio</span>
             </div>
           </div>
           <p className="text-white/80 text-sm mb-8">
-            Recibirás una notificación cuando la empresa responda con su presupuesto
+            Recibirás una notificación por cada presupuesto que llegue. Acepta el que más te convenga.
           </p>
           <button
             onClick={() => onNavigate('my-budget-requests')}
@@ -3332,7 +3374,6 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
-      {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
           <button
@@ -3347,44 +3388,47 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
         </div>
       </header>
 
-      {/* Content */}
-      <div className="px-4 py-6 pb-32">
-        {/* Business Info */}
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
-              <Store className="text-white" size={24} />
-            </div>
-            <div>
-              <p className="text-sm text-orange-600 font-medium">Enviando a:</p>
-              <p className="text-lg font-bold text-slate-900">{businessName}</p>
-            </div>
+      <div className="px-4 py-6 pb-32 space-y-6">
+        {/* Info banner */}
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-start gap-3">
+          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+            <Store className="text-primary" size={20} />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-900">
+              {businessInfo
+                ? `${businessInfo.categoryCount} empresa${businessInfo.categoryCount !== 1 ? 's' : ''} de ${businessInfo.subcategory}`
+                : businessName}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Todas las empresas de esta categoría recibirán tu solicitud y podrán enviarte su precio
+            </p>
           </div>
         </div>
 
         {/* Description */}
-        <div className="space-y-3 mb-6">
-          <label className="text-base font-bold text-slate-900">
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-2">
             Describe qué necesitas <span className="text-red-500">*</span>
           </label>
           <textarea
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Ej: Necesito pintar el salón y dos habitaciones. Las paredes están en buen estado, solo necesitan una mano de pintura..."
+            placeholder="Ej: Necesito pintar el salón y dos habitaciones. Las paredes están en buen estado..."
             className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
-          <p className="text-xs text-gray-400">Mínimo 10 caracteres ({formData.description.length}/10)</p>
+          <p className="text-xs text-gray-400 mt-1">Mínimo 10 caracteres ({formData.description.length})</p>
         </div>
 
         {/* Photos */}
-        <div className="space-y-3 mb-6">
-          <label className="text-base font-bold text-slate-900">Fotos (opcional)</label>
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-2">Fotos (opcional)</label>
           <div className="flex gap-3">
             {formData.photos.map((photo, index) => (
               <div key={index} className="relative w-20 h-20 rounded-xl overflow-hidden">
                 <img src={photo} alt="" className="w-full h-full object-cover" />
                 <button
-                  onClick={() => handleRemovePhoto(index)}
+                  onClick={() => setFormData(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }))}
                   className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
                 >
                   <X className="text-white" size={12} />
@@ -3402,26 +3446,22 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
         </div>
 
         {/* Urgency */}
-        <div className="space-y-3 mb-6">
-          <label className="text-base font-bold text-slate-900">¿Cuándo lo necesitas?</label>
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-2">¿Cuándo lo necesitas?</label>
           <div className="space-y-2">
             {urgencyOptions.map(option => (
               <button
                 key={option.id}
                 onClick={() => setFormData(prev => ({ ...prev, urgency: option.id }))}
                 className={`w-full p-4 rounded-xl border-2 flex items-center gap-3 transition-all ${
-                  formData.urgency === option.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                  formData.urgency === option.id ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white hover:border-gray-300'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  option.color === 'red' ? 'bg-red-100' :
-                  option.color === 'amber' ? 'bg-amber-100' : 'bg-green-100'
+                  option.color === 'red' ? 'bg-red-100' : option.color === 'amber' ? 'bg-amber-100' : 'bg-green-100'
                 }`}>
                   <Icon name={option.icon} size={20} className={
-                    option.color === 'red' ? 'text-red-500' :
-                    option.color === 'amber' ? 'text-amber-500' : 'text-green-500'
+                    option.color === 'red' ? 'text-red-500' : option.color === 'amber' ? 'text-amber-500' : 'text-green-500'
                   } />
                 </div>
                 <div className="flex-1 text-left">
@@ -3438,28 +3478,51 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
           </div>
         </div>
 
-        {/* Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-          <Info className="text-blue-500 shrink-0 mt-0.5" size={18} />
-          <p className="text-sm text-blue-700">
-            La empresa tendrá <strong>3 días</strong> para enviarte un presupuesto. Recibirás una notificación cuando respondan.
-          </p>
+        {/* Address */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-2">
+            Dirección del servicio <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.address}
+            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+            placeholder="C/ Mayor 45, Cornellà de Llobregat"
+            className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-2">
+            Teléfono de contacto <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+            placeholder="612 345 678"
+            className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
 
-      {/* Submit Button */}
+      {/* Submit */}
       <div className="fixed bottom-0 left-0 w-full max-w-md mx-auto bg-white border-t border-gray-100 p-4 pb-8 z-20" style={{ left: '50%', transform: 'translateX(-50%)' }}>
+        {businessInfo && (
+          <p className="text-xs text-center text-gray-500 mb-3">
+            Se enviará a <span className="font-bold text-primary">{businessInfo.categoryCount} empresa{businessInfo.categoryCount !== 1 ? 's' : ''}</span>
+          </p>
+        )}
         <button
           onClick={handleSubmit}
-          disabled={!canSubmit}
+          disabled={!canSubmit || loading}
           className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-            canSubmit
-              ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 hover:bg-orange-600 active:scale-[0.98]'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            canSubmit && !loading ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary-dark active:scale-[0.98]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
-          <Send size={20} />
-          Enviar Solicitud
+          {loading ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Send size={20} />}
+          {loading ? 'Enviando...' : `Enviar solicitud`}
         </button>
       </div>
     </div>
@@ -19960,7 +20023,7 @@ export default function App() {
       case 'budget-request':
         return <BudgetRequestScreen onNavigate={navigate} onSubmitRequest={submitBudgetRequest} showToast={showToast} onAddNotification={addNotification} user={user} />;
       case 'direct-budget':
-        return <DirectBudgetScreen onNavigate={navigate} businessId={pageParams.businessId} businessName={pageParams.businessName} user={user} showToast={showToast} />;
+        return <DirectBudgetScreen onNavigate={navigate} businessId={pageParams.businessId} businessName={pageParams.businessName} user={user} showToast={showToast} onSubmitRequest={submitBudgetRequest} />;
       case 'flash-offers':
         return <FlashOffersScreen onNavigate={navigate} userOffers={userOffers} />;
       case 'offers':

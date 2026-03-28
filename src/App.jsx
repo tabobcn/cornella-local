@@ -16523,6 +16523,7 @@ const BusinessStatsScreen = ({
   incomingBudgetRequests = []
 }) => {
   const [realFavorites, setRealFavorites] = useState(null);
+  const [period, setPeriod] = useState(30); // días: 7, 30, 0 (todo)
 
   useEffect(() => {
     if (!businessData?.id) return;
@@ -16533,35 +16534,51 @@ const BusinessStatsScreen = ({
       .then(({ count }) => setRealFavorites(count || 0));
   }, [businessData?.id]);
 
-  // 📊 Estadísticas reales desde props
+  // Filtrado por período
+  const cutoff = useMemo(() => {
+    if (period === 0) return new Date(0);
+    const d = new Date();
+    d.setDate(d.getDate() - period);
+    return d;
+  }, [period]);
+
+  const filteredApplications = useMemo(() =>
+    jobApplications.filter(a => new Date(a.created_at) >= cutoff),
+    [jobApplications, cutoff]
+  );
+  const filteredBudgets = useMemo(() =>
+    incomingBudgetRequests.filter(b => new Date(b.createdAt) >= cutoff),
+    [incomingBudgetRequests, cutoff]
+  );
+
+  // Totales
   const totalOffers = userOffers.length;
   const activeOffers = userOffers.filter(o => o.status === 'active' && o.isVisible).length;
   const totalJobs = userJobOffers.length;
   const activeJobs = userJobOffers.filter(j => j.status === 'active').length;
-  const totalApplications = jobApplications.length;
-  const pendingApplications = jobApplications.filter(a => a.status === 'pending').length;
-  const totalBudgetRequests = incomingBudgetRequests.length;
-  const newBudgetRequests = incomingBudgetRequests.filter(r => r.status === 'new').length;
   const totalRedemptions = userOffers.reduce((sum, o) => sum + (o.redemptions || 0), 0);
-
-  // 📈 Analytics: vistas y clics
   const businessViews = businessData?.view_count || 0;
   const businessClicks = businessData?.click_count || 0;
-  const totalOfferViews = userOffers.reduce((sum, offer) => sum + (offer.view_count || 0), 0);
-  const totalJobViews = userJobOffers.reduce((sum, job) => sum + (job.view_count || 0), 0);
+  const totalOfferViews = userOffers.reduce((sum, o) => sum + (o.view_count || 0), 0);
+  const totalJobViews = userJobOffers.reduce((sum, j) => sum + (j.view_count || 0), 0);
   const totalViews = businessViews + totalOfferViews + totalJobViews;
 
-  const stats = {
-    applications: { total: totalApplications, pending: pendingApplications },
-    offers: { total: totalOffers, active: activeOffers },
-    jobs: { total: totalJobs, active: activeJobs },
-    budgets: { total: totalBudgetRequests, new: newBudgetRequests },
-    favorites: { total: realFavorites },
-    redemptions: { total: totalRedemptions },
-    analytics: { businessViews, businessClicks, offerViews: totalOfferViews, jobViews: totalJobViews, totalViews },
-  };
+  // Filtrados por período
+  const periodApplications = filteredApplications.length;
+  const pendingApplications = filteredApplications.filter(a => a.status === 'pending').length;
+  const periodBudgets = filteredBudgets.length;
+  const newBudgets = filteredBudgets.filter(r => r.status === 'new').length;
+  const repliedBudgets = filteredBudgets.filter(r => r.myQuote).length;
+  const budgetResponseRate = periodBudgets > 0 ? Math.round((repliedBudgets / periodBudgets) * 100) : 0;
 
-  // Candidaturas reales de los últimos 7 días (agrupadas por día)
+  // Candidaturas por empleo (para tabla de rendimiento)
+  const appsByJob = useMemo(() => {
+    const map = {};
+    jobApplications.forEach(a => { map[a.job_id] = (map[a.job_id] || 0) + 1; });
+    return map;
+  }, [jobApplications]);
+
+  // Gráfico últimos 7 días (candidaturas reales por día)
   const weeklyData = useMemo(() => {
     const dayLabels = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
     return Array.from({ length: 7 }, (_, i) => {
@@ -16571,262 +16588,246 @@ const BusinessStatsScreen = ({
       const nextDay = new Date(d);
       nextDay.setDate(d.getDate() + 1);
       const count = jobApplications.filter(app => {
-        const appDate = new Date(app.appliedAt || app.createdAt);
+        const appDate = new Date(app.created_at);
         return appDate >= d && appDate < nextDay;
       }).length;
       return { day: dayLabels[d.getDay()], count };
     });
   }, [jobApplications]);
-
   const maxCount = Math.max(...weeklyData.map(d => d.count), 1);
+
+  // Embudo: vistas negocio → clics → candidaturas+presupuestos+canjes
+  const funnelConversions = totalViews > 0 ? Math.round((businessClicks / businessViews) * 100) || 0 : 0;
+  const funnelActions = periodApplications + periodBudgets + totalRedemptions;
+  const funnelActionRate = businessClicks > 0 ? Math.round((funnelActions / businessClicks) * 100) || 0 : 0;
+
+  const periodLabel = period === 7 ? 'últimos 7 días' : period === 30 ? 'últimos 30 días' : 'histórico';
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50 pb-8">
       {/* Header */}
-      <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
+      <header className="sticky top-0 z-30 bg-gradient-to-r from-primary to-blue-600 px-4 pt-12 pb-5 shadow-lg">
         <button
-          onClick={() => onNavigate('profile')}
-          className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+          onClick={() => onNavigate('owner-dashboard')}
+          className="mb-3 flex items-center gap-2 text-white/80 hover:text-white transition-colors"
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Panel</span>
         </button>
-        <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">
-          Estadísticas
-        </h2>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+            <BarChart3 className="text-white" size={22} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">Estadísticas</h1>
+            <p className="text-sm text-white/80">{businessData?.name}</p>
+          </div>
+        </div>
+        {/* Selector de período */}
+        <div className="flex gap-2">
+          {[{ v: 7, l: '7 días' }, { v: 30, l: '30 días' }, { v: 0, l: 'Todo' }].map(({ v, l }) => (
+            <button
+              key={v}
+              onClick={() => setPeriod(v)}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                period === v ? 'bg-white text-primary shadow' : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
       </header>
 
-      {/* Content */}
-      <div className="px-4 py-6 space-y-6">
-        {/* Resumen general */}
-        <div className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-5 text-white">
-          <h3 className="text-blue-100 text-sm font-medium mb-1">Actividad Total</h3>
-          <div className="flex items-end gap-2">
-            <span className="text-4xl font-bold">{stats.applications.total}</span>
-            <span className="text-blue-200 text-sm mb-1">candidaturas recibidas</span>
-          </div>
-          {stats.applications.pending > 0 && (
-            <div className="mt-3 flex items-center gap-2">
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-400/20 text-green-100">
-                <Users size={14} />
-                {stats.applications.pending} pendientes
-              </div>
-            </div>
-          )}
-        </div>
+      <div className="px-4 py-6 space-y-5">
 
-        {/* Métricas principales */}
+        {/* KPIs principales — filtrados por período */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
-                <Tag size={20} />
+          {[
+            { icon: <Users size={20} />, color: 'bg-primary/10 text-primary', value: periodApplications, label: 'Candidaturas', sub: pendingApplications > 0 ? `${pendingApplications} pendientes` : null, subColor: 'text-amber-600' },
+            { icon: <FileText size={20} />, color: 'bg-purple-100 text-purple-600', value: periodBudgets, label: 'Presupuestos', sub: newBudgets > 0 ? `${newBudgets} nuevos` : null, subColor: 'text-green-600' },
+            { icon: <Eye size={20} />, color: 'bg-green-100 text-green-600', value: businessViews, label: 'Vistas negocio', sub: `${totalViews} total`, subColor: 'text-gray-400' },
+            { icon: <MousePointerClick size={20} />, color: 'bg-cyan-100 text-cyan-600', value: businessClicks, label: 'Clics', sub: `tel · web · mapa`, subColor: 'text-gray-400' },
+            { icon: <Heart size={20} />, color: 'bg-red-100 text-red-500', value: realFavorites === null ? '…' : realFavorites, label: 'En favoritos', sub: null },
+            { icon: <Ticket size={20} />, color: 'bg-amber-100 text-amber-600', value: totalRedemptions, label: 'Canjes validados', sub: null },
+          ].map((item, i) => (
+            <div key={i} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 ${item.color}`}>
+                {item.icon}
               </div>
-              <span className={`text-xs font-bold ${stats.offers.active > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                {stats.offers.active}/{stats.offers.total}
-              </span>
+              <p className="text-2xl font-bold text-slate-900">{item.value}</p>
+              <p className="text-xs text-gray-500">{item.label}</p>
+              {item.sub && <p className={`text-[11px] font-medium mt-0.5 ${item.subColor}`}>{item.sub}</p>}
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.offers.total}</p>
-            <p className="text-xs text-gray-500">Ofertas publicadas</p>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                <Briefcase size={20} />
-              </div>
-              <span className={`text-xs font-bold ${stats.jobs.active > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                {stats.jobs.active}/{stats.jobs.total}
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.jobs.total}</p>
-            <p className="text-xs text-gray-500">Empleos publicados</p>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
-                <FileText size={20} />
-              </div>
-              <span className={`text-xs font-bold ${stats.budgets.new > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                {stats.budgets.new} nuevos
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.budgets.total}</p>
-            <p className="text-xs text-gray-500">Presupuestos</p>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
-                <Heart size={20} />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">
-              {realFavorites === null ? '...' : realFavorites}
-            </p>
-            <p className="text-xs text-gray-500">En favoritos</p>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
-                <Ticket size={20} />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.redemptions.total}</p>
-            <p className="text-xs text-gray-500">Canjes validados</p>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                <Eye size={20} />
-              </div>
-              <span className="text-xs font-bold text-green-600">
-                +{stats.analytics.totalViews}
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.analytics.businessViews}</p>
-            <p className="text-xs text-gray-500">Vistas al negocio</p>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center text-cyan-600">
-                <MousePointerClick size={20} />
-              </div>
-              <span className="text-xs font-bold text-cyan-600">
-                total
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.analytics.businessClicks}</p>
-            <p className="text-xs text-gray-500">Clics (tel/web/mapa)</p>
-          </div>
-
+          ))}
         </div>
 
-        {/* Desglose de vistas */}
-        {stats.analytics.totalViews > 0 && (
+        {/* Embudo de conversión */}
+        {totalViews > 0 && (
           <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Eye size={18} className="text-primary" />
-              Desglose de Vistas
+              <TrendingUp size={17} className="text-primary" />
+              Embudo de conversión
             </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Store size={16} className="text-green-600" />
+            <div className="space-y-2">
+              {[
+                { label: 'Vistas al negocio', value: businessViews, pct: 100, color: 'bg-primary' },
+                { label: 'Clics (tel/web/mapa)', value: businessClicks, pct: businessViews > 0 ? Math.min(100, Math.round((businessClicks / businessViews) * 100)) : 0, color: 'bg-cyan-400' },
+                { label: `Acciones (${periodLabel})`, value: funnelActions, pct: businessClicks > 0 ? Math.min(100, Math.round((funnelActions / businessClicks) * 100)) : 0, color: 'bg-green-400' },
+              ].map((row, i) => (
+                <div key={i}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-600">{row.label}</span>
+                    <span className="text-xs font-bold text-slate-900">{row.value} <span className="text-gray-400 font-normal">({row.pct}%)</span></span>
                   </div>
-                  <span className="text-sm text-gray-700">Página del negocio</span>
-                </div>
-                <span className="text-lg font-bold text-slate-900">{stats.analytics.businessViews}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Tag size={16} className="text-orange-600" />
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className={`${row.color} h-2 rounded-full transition-all`} style={{ width: `${row.pct}%` }} />
                   </div>
-                  <span className="text-sm text-gray-700">Tus ofertas</span>
-                </div>
-                <span className="text-lg font-bold text-slate-900">{stats.analytics.offerViews}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Briefcase size={16} className="text-blue-600" />
-                  </div>
-                  <span className="text-sm text-gray-700">Tus empleos</span>
-                </div>
-                <span className="text-lg font-bold text-slate-900">{stats.analytics.jobViews}</span>
-              </div>
-
-              <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-900">Total combinado</span>
-                <span className="text-xl font-bold text-primary">{stats.analytics.totalViews}</span>
-              </div>
-            </div>
-
-            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
-              <p className="text-xs text-green-800">
-                <span className="font-bold">💡 Consejo:</span> Las vistas indican cuántas veces los usuarios han visitado tu negocio, ofertas y empleos. ¡Más vistas = más oportunidades!
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Gráfico semanal - Candidaturas */}
-        {stats.applications.total > 0 && (
-          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900 mb-4">Candidaturas últimos 7 días</h3>
-            <div className="flex items-end justify-between gap-2 h-32">
-              {weeklyData.map((day, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-full flex flex-col justify-end h-full">
-                    <div
-                      className="w-full bg-primary rounded-t transition-all"
-                      style={{ height: `${Math.max((day.count / maxCount) * 100, 5)}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-medium text-gray-500">{day.day}</span>
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-center mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-primary rounded" />
-                <span className="text-xs text-gray-500">Candidaturas recibidas</span>
+            <p className="text-[11px] text-gray-400 mt-3">Acciones = candidaturas + presupuestos + canjes</p>
+          </div>
+        )}
+
+        {/* Desglose vistas */}
+        {totalViews > 0 && (
+          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Eye size={17} className="text-primary" />
+              Desglose de vistas
+            </h3>
+            {[
+              { icon: <Store size={15} className="text-green-600" />, bg: 'bg-green-100', label: 'Página del negocio', value: businessViews },
+              { icon: <Tag size={15} className="text-orange-600" />, bg: 'bg-orange-100', label: 'Tus ofertas', value: totalOfferViews },
+              { icon: <Briefcase size={15} className="text-blue-600" />, bg: 'bg-blue-100', label: 'Tus empleos', value: totalJobViews },
+            ].map((row, i) => (
+              <div key={i} className={`flex items-center justify-between ${i < 2 ? 'mb-3' : ''}`}>
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 ${row.bg} rounded-lg flex items-center justify-center`}>{row.icon}</div>
+                  <span className="text-sm text-gray-700">{row.label}</span>
+                </div>
+                <span className="font-bold text-slate-900">{row.value}</span>
               </div>
+            ))}
+            <div className="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-sm font-bold text-slate-900">Total</span>
+              <span className="text-lg font-bold text-primary">{totalViews}</span>
             </div>
           </div>
         )}
 
-        {/* Canjes por oferta */}
-        {userOffers.some(o => o.redemptions > 0 || o.maxUses) && (
+        {/* Gráfico candidaturas últimos 7 días */}
+        {jobApplications.length > 0 && (
+          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-4">Candidaturas últimos 7 días</h3>
+            <div className="flex items-end justify-between gap-1.5 h-28">
+              {weeklyData.map((day, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                  {day.count > 0 && (
+                    <span className="text-[10px] font-bold text-primary">{day.count}</span>
+                  )}
+                  <div className="w-full flex flex-col justify-end" style={{ height: '80px' }}>
+                    <div
+                      className="w-full bg-primary rounded-t transition-all"
+                      style={{ height: `${Math.max((day.count / maxCount) * 100, day.count > 0 ? 8 : 4)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-gray-500">{day.day}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Rendimiento de ofertas */}
+        {userOffers.length > 0 && (
           <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Ticket size={18} className="text-amber-500" />
-              Canjes por oferta
+              <Tag size={17} className="text-orange-500" />
+              Rendimiento de ofertas
             </h3>
             <div className="space-y-3">
-              {userOffers.filter(o => o.redemptions > 0 || o.maxUses).map(offer => (
+              {[...userOffers].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).map(offer => (
                 <div key={offer.id} className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${offer.status === 'active' && offer.isVisible ? 'bg-green-400' : 'bg-gray-300'}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">{offer.title}</p>
+                    <p className="text-sm font-medium text-slate-800 truncate">{offer.title}</p>
                     {offer.maxUses && (
-                      <div className="mt-1 w-full bg-gray-100 rounded-full h-1.5">
-                        <div
-                          className="bg-amber-400 h-1.5 rounded-full transition-all"
-                          style={{ width: `${Math.min((offer.redemptions / offer.maxUses) * 100, 100)}%` }}
-                        />
+                      <div className="mt-1 w-full bg-gray-100 rounded-full h-1">
+                        <div className="bg-amber-400 h-1 rounded-full" style={{ width: `${Math.min((offer.redemptions / offer.maxUses) * 100, 100)}%` }} />
                       </div>
                     )}
                   </div>
-                  <span className="text-sm font-bold text-slate-900 shrink-0">
-                    {offer.redemptions}{offer.maxUses ? `/${offer.maxUses}` : ''}
-                  </span>
+                  <div className="flex items-center gap-3 shrink-0 text-xs text-gray-500">
+                    <span className="flex items-center gap-1"><Eye size={12} /> {offer.view_count || 0}</span>
+                    <span className="flex items-center gap-1"><Ticket size={12} /> {offer.redemptions || 0}{offer.maxUses ? `/${offer.maxUses}` : ''}</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Tips */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 shrink-0">
-              <Lightbulb size={20} />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-amber-800 mb-1">Consejo</h4>
-              <p className="text-xs text-amber-700">
-                Publica ofertas flash los viernes y sábados para maximizar las visitas. ¡Son los días con más tráfico!
-              </p>
+        {/* Rendimiento de empleos */}
+        {userJobOffers.length > 0 && (
+          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Briefcase size={17} className="text-blue-500" />
+              Rendimiento de empleos
+            </h3>
+            <div className="space-y-3">
+              {[...userJobOffers].sort((a, b) => (appsByJob[b.id] || 0) - (appsByJob[a.id] || 0)).map(job => (
+                <div key={job.id} className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${job.status === 'active' ? 'bg-green-400' : 'bg-gray-300'}`} />
+                  <p className="text-sm font-medium text-slate-800 flex-1 truncate">{job.title}</p>
+                  <div className="flex items-center gap-3 shrink-0 text-xs text-gray-500">
+                    <span className="flex items-center gap-1"><Eye size={12} /> {job.view_count || 0}</span>
+                    <span className="flex items-center gap-1 text-primary font-medium"><Users size={12} /> {appsByJob[job.id] || 0}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Tasa de respuesta a presupuestos */}
+        {periodBudgets > 0 && (
+          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <PiggyBank size={17} className="text-purple-500" />
+              Presupuestos ({periodLabel})
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="relative w-20 h-20 shrink-0">
+                <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" strokeWidth="3" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#a855f7" strokeWidth="3"
+                    strokeDasharray={`${budgetResponseRate} ${100 - budgetResponseRate}`}
+                    strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-bold text-slate-900">{budgetResponseRate}%</span>
+                </div>
+              </div>
+              <div className="space-y-2 flex-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Recibidos</span>
+                  <span className="font-bold text-slate-900">{periodBudgets}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Respondidos</span>
+                  <span className="font-bold text-purple-600">{repliedBudgets}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Sin responder</span>
+                  <span className="font-bold text-gray-400">{periodBudgets - repliedBudgets}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

@@ -208,6 +208,17 @@ self.addEventListener('push', (event) => {
         options.vibrate = [400, 200, 400];
         options.requireInteraction = true;
       }
+      if (data.type === 'budget_accepted') {
+        options.vibrate = [300, 100, 300, 100, 300];
+        options.requireInteraction = true;
+      }
+      if (data.type === 'new_offer_favorite' || data.type === 'new_job_favorite') {
+        options.vibrate = [200, 100, 200];
+      }
+      if (data.type === 'budget_response') {
+        options.vibrate = [200, 100, 200];
+        options.requireInteraction = true;
+      }
     }
   } catch (e) {
     console.log('[SW] No se pudo parsear el payload push, usando valores por defecto');

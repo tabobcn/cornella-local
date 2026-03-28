@@ -1904,6 +1904,17 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     { text: 'Café', icon: 'Coffee' },
   ];
 
+  // Actualizar favoriteCount en listing cuando el usuario da/quita favorito
+  const handleToggleFavoriteInList = (businessId) => {
+    const isCurrentlyFav = isFavorite && isFavorite(businessId);
+    setBusinesses(prev => prev.map(b =>
+      b.id === businessId
+        ? { ...b, favoriteCount: Math.max(0, (b.favoriteCount || 0) + (isCurrentlyFav ? -1 : 1)) }
+        : b
+    ));
+    if (toggleFavorite) toggleFavorite(businessId);
+  };
+
   // Pull to refresh — recarga datos reales de Supabase
   const handleRefresh = async () => {
     setLoadingBusinesses(true);
@@ -2654,7 +2665,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleFavorite && toggleFavorite(business.id);
+                      handleToggleFavoriteInList(business.id);
                     }}
                     className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-lg"
                   >
@@ -3809,6 +3820,10 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
   const [loadingOffers, setLoadingOffers] = useState(true);
   const [firedIds, setFiredIds] = useState(new Set());
   const [jobsDisplayCount, setJobsDisplayCount] = useState(10);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleRefresh = async () => { setRefreshTrigger(prev => prev + 1); };
+  const { pullDistance, isRefreshing, handlers } = usePullToRefresh(handleRefresh);
 
   // Cargar ofertas normales + fires del usuario
   useEffect(() => {
@@ -3860,7 +3875,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
       }
     };
     load();
-  }, [user?.id]);
+  }, [user?.id, refreshTrigger]);
 
   // Toggle fuego con optimistic update
   const toggleFire = async (e, offerId) => {
@@ -3890,7 +3905,8 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
   const restOffers = useMemo(() => offers.filter(o => !destacadasIds.has(o.id)), [offers, destacadasIds]);
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-white font-body text-slate-900 flex flex-col">
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-white font-body text-slate-900 flex flex-col" {...handlers}>
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
       {/* Header */}
       <div className="z-30 bg-white/95 backdrop-blur-md border-b border-slate-100">
         <div className="flex items-center px-4 py-4 justify-between">
@@ -10654,7 +10670,7 @@ const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onA
   };
 
   const handleContactWhatsApp = (phone, customerName) => {
-    const text = `Hola ${customerName}, soy de ${businessData?.name || 'tu negocio local'}. Te contacto por tu solicitud de presupuesto en Cornellà Local.`;
+    const text = `Hola, soy de ${businessData?.name || 'tu negocio local'}, te contacto por tu presupuesto en Cornellà Local.`;
     window.open(`https://wa.me/34${phone}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -10885,23 +10901,30 @@ const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onA
               </div>
             )}
 
-            {/* Contact buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleContactWhatsApp(selectedRequest.phone, selectedRequest.customerName)}
-                className="flex-1 h-12 bg-green-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-green-600"
-              >
-                <MessageCircle size={20} />
-                WhatsApp
-              </button>
-              <button
-                onClick={() => window.open(`tel:+34${selectedRequest.phone}`, '_self')}
-                className="flex-1 h-12 bg-primary text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700"
-              >
-                <Phone size={20} />
-                Llamar
-              </button>
-            </div>
+            {/* Contact buttons - solo visibles cuando el cliente ha aceptado este presupuesto */}
+            {selectedRequest.status === 'accepted' ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleContactWhatsApp(selectedRequest.phone, selectedRequest.customerName)}
+                  className="flex-1 h-12 bg-green-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-green-600"
+                >
+                  <MessageCircle size={20} />
+                  WhatsApp
+                </button>
+                <button
+                  onClick={() => window.open(`tel:+34${selectedRequest.phone}`, '_self')}
+                  className="flex-1 h-12 bg-primary text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700"
+                >
+                  <Phone size={20} />
+                  Llamar
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                <Lock size={16} className="text-amber-600 shrink-0" />
+                <p className="text-xs text-amber-700">El teléfono del cliente se mostrará cuando acepte tu presupuesto.</p>
+              </div>
+            )}
 
             {/* Reply form - only for new requests */}
             {selectedRequest.status === 'new' && (
@@ -15661,7 +15684,7 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
   const now = new Date();
   const endDate = formData.isFlash
     ? new Date(now.getTime() + 8 * 60 * 60 * 1000)
-    : new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    : new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
 
   const formatDate = (date) => {
     return date.toLocaleDateString('es-ES', {
@@ -15674,7 +15697,7 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
   };
 
   const formatTimeRemaining = () => {
-    return formData.isFlash ? '8 horas' : '3 días';
+    return formData.isFlash ? '8 horas' : '5 días';
   };
 
   const handleChange = (field, value) => {
@@ -15721,7 +15744,7 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
         createdAt: now.toISOString(),
         endsAt: endDate.toISOString(),
         status: 'active',
-        timeLeft: formData.isFlash ? '8h' : '3 días',
+        timeLeft: formData.isFlash ? '8h' : '5 días',
       };
 
       if (onCreateOffer) {
@@ -15734,6 +15757,7 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
 
   const isFormValid = () => {
     if (!formData.title.trim()) return false;
+    if (!formData.image) return false;
     if (formData.discountType === 'percentage') {
       return formData.discountPercent && formData.originalPrice;
     }
@@ -15955,7 +15979,7 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
         {/* Imagen */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Imagen (opcional)
+            Imagen <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             {formData.image ? (
@@ -16076,7 +16100,7 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
                   )}
                   <span className="text-xs text-amber-600 flex items-center gap-1">
                     <Clock size={12} />
-                    {formData.isFlash ? '8h' : '3 días'}
+                    {formData.isFlash ? '8h' : '5 días'}
                   </span>
                 </div>
               </div>
@@ -18281,6 +18305,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [pageParams, setPageParams] = useState({});
   const currentPageRef = useRef('login'); // Ref para acceder a currentPage desde closures de auth
+  const userRef = useRef(null); // Ref para acceder a user desde handlers de eventos (sin stale closure)
 
   // Estado del usuario autenticado
   const [user, setUser] = useState(null);
@@ -19693,14 +19718,34 @@ export default function App() {
     }, 150);
   };
 
+  // Mantener userRef sincronizado para usarlo en handlers de eventos sin stale closures
+  useEffect(() => { userRef.current = user; }, [user]);
+
   // Manejar botón atrás del navegador/móvil
   useEffect(() => {
+    const AUTH_PAGES = ['login', 'register', 'forgot-password', 'reset-password'];
+    const MAIN_TABS = ['home', 'map', 'offers', 'favorites', 'profile'];
+
     const handlePopState = (event) => {
       if (event.state && event.state.page) {
+        const targetPage = event.state.page;
+
+        // Si hay usuario logueado y la página target es de auth → bloquear
+        if (AUTH_PAGES.includes(targetPage) && userRef.current) {
+          window.history.pushState({ page: 'home', params: {} }, '', '#home');
+          return;
+        }
+
+        // Si la página target es un tab principal y hay usuario → no navegar (ya estamos en raíz)
+        if (MAIN_TABS.includes(targetPage) && userRef.current) {
+          window.history.replaceState({ page: targetPage, params: {} }, '', `#${targetPage}`);
+          return;
+        }
+
         // Navegar a la página anterior sin añadir al historial
-        navigate(event.state.page, event.state.params || {}, false);
+        navigate(targetPage, event.state.params || {}, false);
       }
-      // Si no hay estado (file pickers nativos en iOS/Android pueden disparar popstate sin estado), ignorar
+      // Si no hay estado (file pickers nativos en iOS/Android), ignorar
     };
 
     // Añadir estado inicial al historial
@@ -19900,7 +19945,7 @@ export default function App() {
         isFlash: data.is_flash,
         code: data.code,
         conditions: data.conditions,
-        timeLeft: offerData.isFlash ? 'menos de 8h' : '3 días',
+        timeLeft: offerData.isFlash ? 'menos de 8h' : '5 días',
         expiresSoon: offerData.isFlash,
         createdAt: data.created_at,
         status: 'active',

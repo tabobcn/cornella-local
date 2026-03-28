@@ -6180,11 +6180,18 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     });
   }, [businessId]);
 
-  // Cargar reseñas desde Supabase
+  // Cargar reseñas desde Supabase + Realtime (cualquier usuario ve cambios al instante)
   useEffect(() => {
-    const fetchReviews = async () => {
-      if (!businessId) return;
+    if (!businessId) return;
 
+    const mapReview = (r) => ({
+      ...r,
+      user: r.user_id === user?.id ? 'Tú' : 'Usuario',
+      avatar: r.user_id === user?.id ? 'Tú' : 'U',
+      date: new Date(r.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+    });
+
+    const fetchReviews = async () => {
       setLoadingReviews(true);
       try {
         const { data, error } = await supabase
@@ -6192,15 +6199,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           .select('*')
           .eq('business_id', businessId)
           .order('created_at', { ascending: false });
-
         if (error) throw error;
-
-        setReviews((data || []).map(r => ({
-          ...r,
-          user: r.user_id === user?.id ? 'Tú' : 'Usuario',
-          avatar: r.user_id === user?.id ? 'Tú' : 'U',
-          date: new Date(r.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
-        })));
+        setReviews((data || []).map(mapReview));
       } catch (error) {
         showToast('Error al cargar las reseñas', 'error');
       } finally {
@@ -6209,6 +6209,41 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     };
 
     fetchReviews();
+
+    // Realtime: nueva reseña, edición o borrado → actualizar sin recargar página
+    const channel = supabase
+      .channel(`reviews-business-${businessId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'reviews',
+        filter: `business_id=eq.${businessId}`,
+      }, (payload) => {
+        setReviews(prev => {
+          // Evitar duplicado si la reseña la añadió el usuario actual (ya en estado)
+          if (prev.find(r => r.id === payload.new.id)) return prev;
+          return [mapReview(payload.new), ...prev];
+        });
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'reviews',
+        filter: `business_id=eq.${businessId}`,
+      }, (payload) => {
+        setReviews(prev => prev.map(r => r.id === payload.new.id ? mapReview(payload.new) : r));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'reviews',
+        filter: `business_id=eq.${businessId}`,
+      }, (payload) => {
+        setReviews(prev => prev.filter(r => r.id !== payload.old.id));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [businessId]);
 
   // Validar si usuario puede reseñar
@@ -6247,11 +6282,11 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     checkCanReview();
   }, [user, businessId]);
 
-  // Cargar contador de favoritos desde Supabase
+  // Cargar contador de favoritos desde Supabase + Realtime
   useEffect(() => {
-    const fetchFavoriteCount = async () => {
-      if (!businessId) return;
+    if (!businessId) return;
 
+    const fetchFavoriteCount = async () => {
       setLoadingFavorites(true);
       try {
         const { count, error } = await supabase
@@ -6270,7 +6305,17 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     };
 
     fetchFavoriteCount();
-  }, [businessId, userFavorites]); // Se recarga cuando cambian los favoritos del usuario
+
+    const channel = supabase
+      .channel(`favorites-business-${businessId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'favorites', filter: `business_id=eq.${businessId}` },
+        () => { setFavoriteCount(prev => prev + 1); })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'favorites', filter: `business_id=eq.${businessId}` },
+        () => { setFavoriteCount(prev => Math.max(0, prev - 1)); })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [businessId]);
 
   // Handler para incrementar clics
   const handleClick = async (type) => {

@@ -1599,47 +1599,45 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
 };
 
 // Hook para countdown real
-const useCountdown = (initialTime) => {
-  // Parsear el tiempo inicial (formato: "HH:MM:SS" o "Xh")
-  const parseTime = (timeStr) => {
-    if (!timeStr) return 0;
-    if (timeStr.includes(':')) {
-      const parts = timeStr.split(':').map(Number);
-      return (parts[0] * 3600 + parts[1] * 60 + (parts[2] || 0)) * 1000;
-    }
-    if (timeStr.includes('h')) {
-      return parseInt(timeStr) * 3600 * 1000;
-    }
-    return 3600 * 1000; // Default 1 hora
-  };
+const useCountdown = (expiresAt) => {
+  // Calcular ms restantes desde el timestamp real de expiración
+  const getRemaining = () => Math.max(0, new Date(expiresAt) - new Date());
 
-  const [timeLeft, setTimeLeft] = useState(parseTime(initialTime));
+  const [timeLeft, setTimeLeft] = useState(getRemaining);
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
+    const remaining = getRemaining();
+    if (remaining <= 0) return;
+    setTimeLeft(remaining);
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => Math.max(0, prev - 1000));
+      const r = getRemaining();
+      setTimeLeft(r);
+      if (r <= 0) clearInterval(timer);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [expiresAt]);
 
-  // Formatear tiempo restante
+  // Formatear tiempo restante en HH:MM:SS
   const formatTime = (ms) => {
-    if (ms <= 0) return 'Expirado';
-    const hours = Math.floor(ms / (1000 * 60 * 60));
-    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    if (ms <= 0) return '00:00:00';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   return { timeLeft: formatTime(timeLeft), isExpired: timeLeft <= 0 };
 };
 
 // Tarjeta de oferta flash
-const FlashOfferCard = ({ offer, onClick }) => {
-  const { timeLeft, isExpired } = useCountdown(offer.timeLeft);
+const FlashOfferCard = ({ offer, onClick, onExpire }) => {
+  const { timeLeft, isExpired } = useCountdown(offer.expiresAt);
+
+  useEffect(() => {
+    if (isExpired && onExpire) onExpire(offer.id);
+  }, [isExpired]);
 
   const handleShareWhatsApp = (e) => {
     e.stopPropagation();
@@ -1990,6 +1988,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
       discount: offer.discount_label || offer.discount_value + '%',
       discountType: offer.discount_type,
+      expiresAt: offer.expires_at,
       timeLeft: timeLeft,
       timeMinutes: diffMinutes,
       originalPrice: offer.original_price || 0,
@@ -2531,6 +2530,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
               key={offer.id}
               offer={offer}
               onClick={() => onNavigate('coupon', { id: offer.id })}
+              onExpire={(id) => setFlashOffers(prev => prev.filter(o => o.id !== id))}
             />
           ))}
         </div>
@@ -18430,7 +18430,7 @@ export default function App() {
     };
 
     loadUserBusiness();
-  }, [user]);
+  }, [user?.id]);
 
   // Cargar favoritos del usuario desde Supabase
   useEffect(() => {
@@ -19610,18 +19610,23 @@ export default function App() {
   const deleteBusiness = async () => {
     if (!businessData?.id) return;
     try {
-      await supabase.from('offers').delete().eq('business_id', businessData.id); // cascade borra offer_redemptions
-      await supabase.from('jobs').delete().eq('business_id', businessData.id); // cascade borra job_applications
+      // Borrar datos relacionados (ignorar errores individuales para continuar con el negocio)
+      await supabase.from('offers').delete().eq('business_id', businessData.id);
+      await supabase.from('jobs').delete().eq('business_id', businessData.id);
       await supabase.from('reviews').delete().eq('business_id', businessData.id);
       await supabase.from('favorites').delete().eq('business_id', businessData.id);
+      await supabase.from('notifications').delete().eq('data->business_id', businessData.id);
       const { error } = await supabase
         .from('businesses')
         .delete()
         .eq('id', businessData.id)
         .eq('owner_id', user?.id);
       if (error) throw error;
+      // Limpiar todo el estado relacionado al negocio
       setBusinessData(null);
       setBusinessStatus(null);
+      setUserOffers([]);
+      setUserJobOffers([]);
       showToast('Negocio eliminado permanentemente', 'info');
       navigate('profile');
     } catch (error) {

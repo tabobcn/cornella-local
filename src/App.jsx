@@ -2812,10 +2812,11 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 };
 
 // Página de Solicitud de Presupuesto
-const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
+const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
   const [paso, setPaso] = useState(1);
   const [enviado, setEnviado] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingBudgetPhoto, setUploadingBudgetPhoto] = useState(false);
   const [formData, setFormData] = useState({
     category: null,
     description: '',
@@ -3035,13 +3036,25 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
                   </div>
                 ))}
                 {formData.photos.length < LIMITS.budgetRequest.maxPhotos && (
-                  <button
-                    onClick={() => setFormData(prev => ({ ...prev, photos: [...prev.photos, `https://picsum.photos/200/200?random=${Date.now()}`] }))}
-                    className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400"
-                  >
-                    <Plus size={24} />
-                    <span className="text-[10px]">Añadir</span>
-                  </button>
+                  <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:border-primary hover:text-primary transition-colors">
+                    {uploadingBudgetPhoto ? <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Plus size={24} />}
+                    <span className="text-[10px]">{uploadingBudgetPhoto ? '...' : 'Añadir'}</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || uploadingBudgetPhoto) return;
+                      if (file.size > 5 * 1024 * 1024) { showToast?.('La imagen no puede superar 5MB', 'error'); return; }
+                      setUploadingBudgetPhoto(true);
+                      try {
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `budget-requests/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+                        const { error } = await supabase.storage.from('business-photos').upload(fileName, file, { cacheControl: '3600', upsert: false });
+                        if (error) throw error;
+                        const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
+                        setFormData(prev => ({ ...prev, photos: [...prev.photos, publicUrl] }));
+                      } catch { showToast?.('Error al subir la foto', 'error'); }
+                      finally { setUploadingBudgetPhoto(false); }
+                    }} />
+                  </label>
                 )}
               </div>
             </div>
@@ -3191,13 +3204,14 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest }) => {
 };
 
 // Pantalla de Presupuesto Directo (a una empresa específica)
-const DirectBudgetScreen = ({ onNavigate, businessId, businessName }) => {
+const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showToast }) => {
   const [formData, setFormData] = useState({
     description: '',
     photos: [],
     urgency: 'this-week',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [uploadingDPhoto, setUploadingDPhoto] = useState(false);
 
   const urgencyOptions = [
     { id: 'urgent', label: 'Urgente', description: 'Lo antes posible', icon: 'Zap', color: 'red' },
@@ -3205,11 +3219,19 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName }) => {
     { id: 'next-week', label: 'Sin prisa', description: 'Cuando pueda', icon: 'Clock', color: 'green' },
   ];
 
-  const handleAddPhoto = () => {
-    if (formData.photos.length < LIMITS.budgetRequest.maxPhotos) {
-      const newPhoto = `https://picsum.photos/200/200?random=${Date.now()}`;
-      setFormData(prev => ({ ...prev, photos: [...prev.photos, newPhoto] }));
-    }
+  const handleAddPhoto = async (file) => {
+    if (!file || uploadingDPhoto || formData.photos.length >= LIMITS.budgetRequest.maxPhotos) return;
+    if (file.size > 5 * 1024 * 1024) { showToast?.('La imagen no puede superar 5MB', 'error'); return; }
+    setUploadingDPhoto(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `budget-requests/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const { error } = await supabase.storage.from('business-photos').upload(fileName, file, { cacheControl: '3600', upsert: false });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
+      setFormData(prev => ({ ...prev, photos: [...prev.photos, publicUrl] }));
+    } catch { showToast?.('Error al subir la foto', 'error'); }
+    finally { setUploadingDPhoto(false); }
   };
 
   const handleRemovePhoto = (index) => {
@@ -3325,13 +3347,11 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName }) => {
               </div>
             ))}
             {formData.photos.length < 3 && (
-              <button
-                onClick={handleAddPhoto}
-                className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:border-primary hover:bg-primary/5 transition-colors"
-              >
-                <Camera className="text-gray-400" size={20} />
-                <span className="text-[10px] text-gray-400">Añadir</span>
-              </button>
+              <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
+                {uploadingDPhoto ? <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Camera className="text-gray-400" size={20} />}
+                <span className="text-[10px] text-gray-400">{uploadingDPhoto ? '...' : 'Añadir'}</span>
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAddPhoto(e.target.files?.[0])} />
+              </label>
             )}
           </div>
         </div>
@@ -17296,6 +17316,31 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
   const [email, setEmail] = useState(user?.email || '');
   const [birthDate, setBirthDate] = useState(user?.birth_date || '');
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarUpload = async (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('La imagen no puede superar 5MB', 'error'); return; }
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) { showToast('Solo se permiten imágenes JPG, PNG o WEBP', 'error'); return; }
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatars/${user.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('business-photos')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
+      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+      setUser(prev => ({ ...prev, avatar_url: publicUrl }));
+      showToast('Foto de perfil actualizada', 'success');
+    } catch (err) {
+      showToast('Error al subir la foto', 'error');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!fullName.trim()) { showToast('El nombre no puede estar vacío', 'error'); return; }
@@ -17343,12 +17388,22 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
       </header>
 
       <main className="flex-1 px-4 pt-6 pb-8 space-y-4">
-        {/* Info foto */}
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-3">
-          <div className="bg-blue-100 p-2 rounded-lg text-blue-600 shrink-0">
-            <Camera size={20} />
+        {/* Avatar upload */}
+        <div className="flex flex-col items-center gap-3 py-2">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white text-3xl font-bold">{(user?.full_name || user?.email || 'U')[0].toUpperCase()}</span>
+              )}
+            </div>
+            <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-dark transition-colors shadow-md">
+              {uploadingAvatar ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Camera className="text-white" size={16} />}
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarUpload(e.target.files?.[0])} disabled={uploadingAvatar} />
+            </label>
           </div>
-          <p className="text-sm text-blue-700">Para cambiar la foto de perfil, ve a la pantalla de <span className="font-semibold">Perfil</span>.</p>
+          <p className="text-xs text-gray-400">Toca la cámara para cambiar tu foto</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
@@ -19764,7 +19819,7 @@ export default function App() {
       case 'budget-request':
         return <BudgetRequestScreen onNavigate={navigate} onSubmitRequest={submitBudgetRequest} showToast={showToast} onAddNotification={addNotification} />;
       case 'direct-budget':
-        return <DirectBudgetScreen onNavigate={navigate} businessId={pageParams.businessId} businessName={pageParams.businessName} />;
+        return <DirectBudgetScreen onNavigate={navigate} businessId={pageParams.businessId} businessName={pageParams.businessName} user={user} showToast={showToast} />;
       case 'flash-offers':
         return <FlashOffersScreen onNavigate={navigate} userOffers={userOffers} />;
       case 'offers':

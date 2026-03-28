@@ -7310,9 +7310,15 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
         p_business_id: offer.businesses?.id,
       });
       if (error) throw error;
+      if (data?.error === 'max_uses_reached') {
+        // La oferta se agotó justo ahora (race condition) — actualizar UI
+        showToast?.('Esta oferta ya está agotada', 'error');
+        return;
+      }
       setRedemptionCode(data.code);
       setRedemptionStatus(data.status);
     } catch (err) {
+      showToast?.('No se pudo obtener el código. Inténtalo de nuevo.', 'error');
     } finally {
       setRedemptionLoading(false);
     }
@@ -16516,7 +16522,18 @@ const BusinessStatsScreen = ({
   jobApplications = [],
   incomingBudgetRequests = []
 }) => {
-  // 📊 Calcular estadísticas REALES desde Supabase
+  const [realFavorites, setRealFavorites] = useState(null);
+
+  useEffect(() => {
+    if (!businessData?.id) return;
+    supabase
+      .from('favorites')
+      .select('*', { count: 'exact', head: true })
+      .eq('business_id', businessData.id)
+      .then(({ count }) => setRealFavorites(count || 0));
+  }, [businessData?.id]);
+
+  // 📊 Estadísticas reales desde props
   const totalOffers = userOffers.length;
   const activeOffers = userOffers.filter(o => o.status === 'active' && o.isVisible).length;
   const totalJobs = userJobOffers.length;
@@ -16525,49 +16542,41 @@ const BusinessStatsScreen = ({
   const pendingApplications = jobApplications.filter(a => a.status === 'pending').length;
   const totalBudgetRequests = incomingBudgetRequests.length;
   const newBudgetRequests = incomingBudgetRequests.filter(r => r.status === 'new').length;
+  const totalRedemptions = userOffers.reduce((sum, o) => sum + (o.redemptions || 0), 0);
 
   // 📈 Analytics: vistas y clics
   const businessViews = businessData?.view_count || 0;
   const businessClicks = businessData?.click_count || 0;
-
-  // Sumar vistas de todas las ofertas
   const totalOfferViews = userOffers.reduce((sum, offer) => sum + (offer.view_count || 0), 0);
-
-  // Sumar vistas de todos los empleos
   const totalJobViews = userJobOffers.reduce((sum, job) => sum + (job.view_count || 0), 0);
-
-  // Total de vistas combinadas
   const totalViews = businessViews + totalOfferViews + totalJobViews;
-
-  // Simular favoritos estimados (no tenemos tracking aún)
-  const estimatedFavorites = Math.max(totalOffers + totalJobs, 1) * 2;
 
   const stats = {
     applications: { total: totalApplications, pending: pendingApplications },
     offers: { total: totalOffers, active: activeOffers },
     jobs: { total: totalJobs, active: activeJobs },
     budgets: { total: totalBudgetRequests, new: newBudgetRequests },
-    favorites: { total: estimatedFavorites },
-    analytics: {
-      businessViews,
-      businessClicks,
-      offerViews: totalOfferViews,
-      jobViews: totalJobViews,
-      totalViews,
-    },
+    favorites: { total: realFavorites },
+    redemptions: { total: totalRedemptions },
+    analytics: { businessViews, businessClicks, offerViews: totalOfferViews, jobViews: totalJobViews, totalViews },
   };
 
-  // Datos semanales de candidaturas (simulados basados en total)
-  const avgPerDay = totalApplications > 0 ? Math.max(1, Math.floor(totalApplications / 7)) : 0;
-  const weeklyData = [
-    { day: 'L', count: avgPerDay + Math.floor(Math.random() * 2) },
-    { day: 'M', count: avgPerDay + Math.floor(Math.random() * 2) },
-    { day: 'X', count: avgPerDay + Math.floor(Math.random() * 2) },
-    { day: 'J', count: avgPerDay + Math.floor(Math.random() * 2) },
-    { day: 'V', count: Math.max(avgPerDay, Math.floor(avgPerDay * 1.2)) },
-    { day: 'S', count: Math.floor(avgPerDay * 0.5) },
-    { day: 'D', count: Math.floor(avgPerDay * 0.3) },
-  ];
+  // Candidaturas reales de los últimos 7 días (agrupadas por día)
+  const weeklyData = useMemo(() => {
+    const dayLabels = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      d.setHours(0, 0, 0, 0);
+      const nextDay = new Date(d);
+      nextDay.setDate(d.getDate() + 1);
+      const count = jobApplications.filter(app => {
+        const appDate = new Date(app.appliedAt || app.createdAt);
+        return appDate >= d && appDate < nextDay;
+      }).length;
+      return { day: dayLabels[d.getDay()], count };
+    });
+  }, [jobApplications]);
 
   const maxCount = Math.max(...weeklyData.map(d => d.count), 1);
 
@@ -16651,10 +16660,21 @@ const BusinessStatsScreen = ({
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
                 <Heart size={20} />
               </div>
-              <span className="text-xs font-bold text-gray-400">~estimado</span>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.favorites.total}</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {realFavorites === null ? '...' : realFavorites}
+            </p>
             <p className="text-xs text-gray-500">En favoritos</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
+                <Ticket size={20} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.redemptions.total}</p>
+            <p className="text-xs text-gray-500">Canjes validados</p>
           </div>
 
           <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
@@ -16740,7 +16760,7 @@ const BusinessStatsScreen = ({
         {/* Gráfico semanal - Candidaturas */}
         {stats.applications.total > 0 && (
           <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900 mb-4">Candidaturas esta semana</h3>
+            <h3 className="text-sm font-bold text-slate-900 mb-4">Candidaturas últimos 7 días</h3>
             <div className="flex items-end justify-between gap-2 h-32">
               {weeklyData.map((day, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
@@ -16760,9 +16780,36 @@ const BusinessStatsScreen = ({
                 <span className="text-xs text-gray-500">Candidaturas recibidas</span>
               </div>
             </div>
-            <p className="text-center text-xs text-gray-400 mt-2">
-              *Distribución estimada basada en datos totales
-            </p>
+          </div>
+        )}
+
+        {/* Canjes por oferta */}
+        {userOffers.some(o => o.redemptions > 0 || o.maxUses) && (
+          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Ticket size={18} className="text-amber-500" />
+              Canjes por oferta
+            </h3>
+            <div className="space-y-3">
+              {userOffers.filter(o => o.redemptions > 0 || o.maxUses).map(offer => (
+                <div key={offer.id} className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900 truncate">{offer.title}</p>
+                    {offer.maxUses && (
+                      <div className="mt-1 w-full bg-gray-100 rounded-full h-1.5">
+                        <div
+                          className="bg-amber-400 h-1.5 rounded-full transition-all"
+                          style={{ width: `${Math.min((offer.redemptions / offer.maxUses) * 100, 100)}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-slate-900 shrink-0">
+                    {offer.redemptions}{offer.maxUses ? `/${offer.maxUses}` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

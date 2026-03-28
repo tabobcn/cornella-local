@@ -13370,7 +13370,8 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
 
   const uploadFile = async (file, businessId, label) => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${businessId}/${label}-${Date.now()}.${fileExt}`;
+    // Carpeta = user.id (UUID) para cumplir la política RLS del bucket
+    const fileName = `${user.id}/${businessId}-${label}-${Date.now()}.${fileExt}`;
 
     const { error } = await supabase.storage
       .from('verification-documents')
@@ -13391,14 +13392,22 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
     setIsSubmitting(true);
     setUploadProgress('Creando negocio...');
 
+    let newBusiness = null;
     try {
       // 1. Crear el negocio en Supabase
-      let newBusiness = null;
       if (onRegisterBusiness) {
         newBusiness = await onRegisterBusiness();
       }
+    } catch (error) {
+      setIsSubmitting(false);
+      setUploadProgress('');
+      setErrors({ general: `Error al crear el negocio: ${error.message || 'Inténtalo de nuevo'}` });
+      return;
+    }
 
-      const businessId = newBusiness?.id;
+    const businessId = newBusiness?.id;
+
+    try {
       const documents = [];
 
       // 2. Subir licencia
@@ -13426,9 +13435,9 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
 
       onNavigate('registration-success');
     } catch (error) {
-      setIsSubmitting(false);
-      setUploadProgress('');
-      setErrors({ general: 'Error al registrar el negocio. Intenta de nuevo.' });
+      // El negocio YA está creado, solo fallaron los documentos
+      // Navegar igualmente para no perder el registro
+      onNavigate('registration-success');
     }
   };
 

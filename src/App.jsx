@@ -13664,6 +13664,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
   const [error, setError] = useState('');
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(null);
   const [verificationDocuments, setVerificationDocuments] = useState(businessData?.verification_documents || []);
   const fileInputRef = useRef(null);
 
@@ -13870,13 +13871,39 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
     }));
   };
 
-  const addPhoto = () => {
-    if (formData.photos.length < 5) {
-      const newPhoto = `https://picsum.photos/400/300?random=${Date.now()}`;
-      setFormData(prev => ({
-        ...prev,
-        photos: [...prev.photos, newPhoto]
-      }));
+  const uploadPhotoToStorage = async (file, type, index = null) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('La imagen no puede superar 5MB', 'error'); return; }
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) { showToast('Solo se permiten imágenes JPG, PNG o WEBP', 'error'); return; }
+    setUploadingPhoto(type === 'cover' ? 'cover' : index);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const ownerId = businessData?.owner_id || user?.id || 'unknown';
+      const fileName = `${ownerId}/${type}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('business-photos')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
+      if (type === 'cover') {
+        handleChange('coverPhoto', publicUrl);
+      } else {
+        setFormData(prev => {
+          const newPhotos = [...prev.photos];
+          if (index !== null && index < newPhotos.length) {
+            newPhotos[index] = publicUrl;
+          } else {
+            newPhotos.push(publicUrl);
+          }
+          return { ...prev, photos: newPhotos };
+        });
+      }
+      showToast('Foto subida correctamente', 'success');
+    } catch (err) {
+      showToast('Error al subir la foto', 'error');
+    } finally {
+      setUploadingPhoto(null);
     }
   };
 
@@ -14307,13 +14334,11 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
                     <Store className="text-white/50" size={64} />
                   </div>
                 )}
-                <button
-                  onClick={() => handleChange('coverPhoto', `https://picsum.photos/800/400?random=${Date.now()}`)}
-                  className="absolute bottom-3 right-3 bg-black/60 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:bg-black/80 transition-colors"
-                >
-                  <Camera size={14} />
-                  Editar portada
-                </button>
+                <label className="absolute bottom-3 right-3 bg-black/60 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:bg-black/80 transition-colors cursor-pointer">
+                  {uploadingPhoto === 'cover' ? <div className="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin" /> : <Camera size={14} />}
+                  {uploadingPhoto === 'cover' ? 'Subiendo...' : 'Editar portada'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadPhotoToStorage(e.target.files?.[0], 'cover')} />
+                </label>
               </div>
             </div>
 
@@ -14690,16 +14715,14 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={() => handleChange('coverPhoto', `https://picsum.photos/800/600?random=${Date.now()}`)}
-                        className="w-full h-full flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
-                      >
+                      <label className="w-full h-full flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Plus className="text-primary" size={24} />
+                          {uploadingPhoto === 'cover' ? <div className="w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin" /> : <Plus className="text-primary" size={24} />}
                         </div>
-                        <span className="text-sm font-medium text-gray-600">Añadir Foto</span>
+                        <span className="text-sm font-medium text-gray-600">{uploadingPhoto === 'cover' ? 'Subiendo...' : 'Añadir Foto'}</span>
                         <span className="text-xs text-gray-400">Portada</span>
-                      </button>
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadPhotoToStorage(e.target.files?.[0], 'cover')} />
+                      </label>
                     )}
                   </div>
                 </div>
@@ -14722,12 +14745,10 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
                           </button>
                         </>
                       ) : (
-                        <button
-                          onClick={addPhoto}
-                          className="w-full h-full flex items-center justify-center hover:bg-gray-50 transition-colors"
-                        >
-                          <Plus className="text-gray-400" size={20} />
-                        </button>
+                        <label className="w-full h-full flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
+                          {uploadingPhoto === index ? <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Plus className="text-gray-400" size={20} />}
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadPhotoToStorage(e.target.files?.[0], 'gallery', index)} />
+                        </label>
                       )}
                     </div>
                   </div>
@@ -15239,6 +15260,29 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
     image: null,
   });
   const [isPublishing, setIsPublishing] = useState(false);
+  const [uploadingOfferImage, setUploadingOfferImage] = useState(false);
+
+  const uploadOfferImage = async (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return;
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) return;
+    setUploadingOfferImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `offers/${businessData?.id || 'unknown'}-${Date.now()}.${fileExt}`;
+      const { error } = await supabase.storage
+        .from('business-photos')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
+      handleChange('image', publicUrl);
+    } catch (err) {
+      // silent fail - image is optional
+    } finally {
+      setUploadingOfferImage(false);
+    }
+  };
 
   // Calcular precio con descuento
   const calculateDiscountedPrice = () => {
@@ -15568,13 +15612,11 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => handleChange('image', `https://picsum.photos/600/400?random=${Date.now()}`)}
-                className="w-full h-28 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-colors"
-              >
-                <Image className="text-gray-400" size={24} />
-                <span className="text-sm text-gray-500">Subir imagen</span>
-              </button>
+              <label className="w-full h-28 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
+                {uploadingOfferImage ? <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Image className="text-gray-400" size={24} />}
+                <span className="text-sm text-gray-500">{uploadingOfferImage ? 'Subiendo...' : 'Subir imagen'}</span>
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadOfferImage(e.target.files?.[0])} />
+              </label>
             )}
           </div>
         </div>

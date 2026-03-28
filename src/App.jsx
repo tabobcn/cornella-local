@@ -1751,8 +1751,12 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     }
   }, [params.filterTag]);
   const [recentSearches, setRecentSearches] = useState(() => {
-    const saved = localStorage.getItem('recentSearches');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('recentSearches');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
   const [isFocused, setIsFocused] = useState(false);
   const [businesses, setBusinesses] = useState([]);
@@ -19165,7 +19169,8 @@ export default function App() {
           `)
           .in('category', allCategoryVariants)
           .in('status', ['pending', 'quoted'])
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
 
         if (error) throw error;
 
@@ -20106,9 +20111,7 @@ export default function App() {
 
       return data;
     } catch (error) {
-      // Mostrar error concreto para facilitar el diagnóstico
-      const msg = error?.message || 'Error desconocido';
-      showToast(`Error al enviar: ${msg}`, 'error');
+      showToast('No se pudo enviar la solicitud. Inténtalo de nuevo.', 'error');
       throw error;
     }
 

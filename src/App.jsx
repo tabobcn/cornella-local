@@ -2889,10 +2889,12 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
         </div>
         <h2 className="text-white text-2xl font-bold mb-4">¡Solicitud Enviada!</h2>
         <p className="text-white/90 text-center mb-4">
-          Tu solicitud de <span className="font-bold">{categoriaSeleccionada.name}</span> ha sido enviada a {categoriaSeleccionada.businessCount} empresas de Cornellà
+          Tu solicitud de <span className="font-bold">{categoriaSeleccionada.name}</span> ha sido registrada correctamente
         </p>
         <p className="text-white/70 text-sm text-center mb-8">
-          Las empresas recibirán tu solicitud y podrán enviarte su presupuesto
+          {categoriaSeleccionada.businessCount > 0
+            ? `${categoriaSeleccionada.businessCount} empresa${categoriaSeleccionada.businessCount > 1 ? 's' : ''} de Cornellà recibirán tu solicitud y podrán enviarte su presupuesto`
+            : 'En cuanto haya empresas disponibles en esta categoría recibirás presupuestos'}
         </p>
         <button
           onClick={() => onNavigate('my-budget-requests')}
@@ -3144,7 +3146,9 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-4">
         {paso === 3 && categoriaSeleccionada && canPaso3 && (
           <p className="text-xs text-center text-gray-500 mb-3">
-            Se enviará a <span className="font-bold text-primary">{categoriaSeleccionada.businessCount} empresas</span>
+            {categoriaSeleccionada.businessCount > 0
+              ? <>Se enviará a <span className="font-bold text-primary">{categoriaSeleccionada.businessCount} empresa{categoriaSeleccionada.businessCount > 1 ? 's' : ''}</span></>
+              : <span className="text-amber-600">Aún no hay empresas en esta categoría, pero se guardará tu solicitud</span>}
           </p>
         )}
         <button
@@ -3173,6 +3177,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast }) => {
                 }
                 setEnviado(true);
               } catch (error) {
+                showToast?.('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
               } finally {
                 setLoading(false);
               }

@@ -19097,18 +19097,28 @@ export default function App() {
         }
 
         // 2. Obtener todas las subcategorías de los negocios del usuario
-        const categories = [...new Set(userBusinesses.map(b => b.subcategory))];
+        const subcategoryNames = [...new Set(userBusinesses.map(b => b.subcategory).filter(Boolean))];
         const businessIds = userBusinesses.map(b => b.id);
 
+        // También incluir los IDs de categoría en minúsculas (compatibilidad con presupuestos legacy)
+        // Mapa de nombre → id: { 'Fontanero': 'fontanero', 'Electricista': 'electricista', ... }
+        const serviceNameToId = {
+          'Albañil y reformas': 'albanil', 'Carpintero': 'carpintero', 'Cerrajero': 'cerrajero',
+          'Climatización': 'climatizacion', 'Electricista': 'electricista', 'Fontanero': 'fontanero',
+          'Jardinería': 'jardineria', 'Limpieza': 'limpieza', 'Mudanzas': 'mudanzas',
+          'Pintor': 'pintor', 'Reparación móviles/PC': 'reparacion',
+        };
+        const legacyIds = subcategoryNames.map(n => serviceNameToId[n]).filter(Boolean);
+        const allCategoryVariants = [...new Set([...subcategoryNames, ...legacyIds])];
 
-        // 3. Cargar presupuestos de TODAS esas categorías
+        // 3. Cargar presupuestos de TODAS esas categorías (nombres + IDs legacy)
         const { data, error } = await supabase
           .from('budget_requests')
           .select(`
             *,
             budget_quotes(id, price, description, business_id)
           `)
-          .in('category', categories)
+          .in('category', allCategoryVariants)
           .in('status', ['pending', 'quoted'])
           .order('created_at', { ascending: false });
 
@@ -19147,7 +19157,7 @@ export default function App() {
     };
 
     loadBudgetRequests();
-  }, [user]);
+  }, [user?.id]);
 
   // Cargar candidaturas del usuario (como candidato)
   useEffect(() => {
@@ -19999,11 +20009,14 @@ export default function App() {
     try {
 
       // Guardar en Supabase
+      // Usar el nombre de categoría (no el ID) para que coincida con businesses.subcategory en la RLS
+      const categoryToStore = requestData.categoryName || requestData.category;
+
       const { data, error } = await supabase
         .from('budget_requests')
         .insert({
           user_id: user?.id,
-          category: requestData.category,
+          category: categoryToStore,
           description: requestData.description,
           photos: requestData.photos || [],
           urgency: requestData.urgency,
@@ -20037,7 +20050,9 @@ export default function App() {
 
       return data;
     } catch (error) {
-      showToast('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
+      // Mostrar error concreto para facilitar el diagnóstico
+      const msg = error?.message || 'Error desconocido';
+      showToast(`Error al enviar: ${msg}`, 'error');
       throw error;
     }
 

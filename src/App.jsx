@@ -13901,7 +13901,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
       }
       showToast('Foto subida correctamente', 'success');
     } catch (err) {
-      showToast('Error al subir la foto', 'error');
+      showToast(`Error al subir: ${err.message || 'sin permisos'}`, 'error');
     } finally {
       setUploadingPhoto(null);
     }

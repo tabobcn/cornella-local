@@ -3750,23 +3750,74 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
   );
 };
 
+// Tarjeta de oferta con botón de fuego
+const OfferCard = ({ offer, isFired, onFire, onNavigate }) => (
+  <div
+    onClick={() => onNavigate('coupon', { id: offer.id })}
+    className="group bg-white rounded-2xl shadow-soft overflow-hidden transform transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer border border-gray-100"
+  >
+    <div className="h-40 relative overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+        style={{ backgroundImage: `url("${offer.image}")` }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+      <div className="absolute top-3 left-3 bg-white text-slate-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+        {offer.discount}
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); const url = `${window.location.origin}${window.location.pathname}?oferta=${offer.id}`; window.open(`https://wa.me/?text=${encodeURIComponent(`¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n👉 ${url}`)}`, '_blank'); }}
+        className="absolute top-3 right-3 w-9 h-9 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg"
+      >
+        <MessageCircle size={16} />
+      </button>
+      <div className="absolute bottom-3 left-3 right-3">
+        <p className="text-white/90 text-xs font-medium mb-1 flex items-center gap-1">
+          <Icon name="Store" size={14} /> {offer.business}
+        </p>
+        <h4 className="text-white text-lg font-bold leading-tight">{offer.title}</h4>
+      </div>
+    </div>
+    <div className="p-4 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        {/* Botón fuego */}
+        <button
+          onClick={(e) => onFire(e, offer.id)}
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-bold transition-all ${
+            isFired
+              ? 'bg-orange-100 text-orange-500 scale-105'
+              : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-400'
+          }`}
+        >
+          🔥 <span>{offer.fireCount > 0 ? offer.fireCount : ''}</span>
+        </button>
+        {offer.expiresIn && (
+          <span className="text-slate-400 text-xs">{offer.expiresIn}</span>
+        )}
+      </div>
+      <button className="bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors shadow-lg shadow-primary/20 shrink-0">
+        Ver Cupón
+      </button>
+    </div>
+  </div>
+);
+
 // Página de Ofertas
-const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', activeJobs = [], loadingJobs = false, getJobDaysRemaining, isBusinessOwner = false, notifications = [] }) => {
+const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'offers', activeJobs = [], loadingJobs = false, getJobDaysRemaining, isBusinessOwner = false, notifications = [] }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [offers, setOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
+  const [firedIds, setFiredIds] = useState(new Set());
   const [jobsDisplayCount, setJobsDisplayCount] = useState(10);
 
-  // Cargar ofertas normales (no flash) desde Supabase
+  // Cargar ofertas normales + fires del usuario
   useEffect(() => {
-    const fetchOffers = async () => {
+    const load = async () => {
+      setLoadingOffers(true);
       try {
         const { data, error } = await supabase
           .from('offers')
-          .select(`
-            *,
-            businesses!inner(id, name)
-          `)
+          .select('*, businesses!inner(id, name)')
           .eq('is_flash', false)
           .eq('status', 'active')
           .eq('is_visible', true)
@@ -3775,36 +3826,68 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
 
         if (error) throw error;
 
-        // Transformar al formato esperado
-        const transformedOffers = data.map(offer => {
-          const expiresAt = new Date(offer.expires_at);
-          const now = new Date();
-          const daysLeft = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
-
+        const transformed = (data || []).map(offer => {
+          const daysLeft = Math.ceil((new Date(offer.expires_at) - new Date()) / 86400000);
           return {
             id: offer.id,
             title: offer.title,
             business: offer.businesses?.name || 'Negocio',
+            businessId: offer.businesses?.id,
             businessIcon: 'Store',
             image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
             discount: offer.discount_label || `-${offer.discount_value}%`,
             expiresIn: `${daysLeft} día${daysLeft !== 1 ? 's' : ''}`,
-            featured: true,
             description: offer.description,
+            fireCount: offer.fire_count || 0,
           };
         });
 
-        setOffers(transformedOffers);
+        setOffers(transformed);
+
+        // Cargar qué ofertas ha dado fuego el usuario
+        if (user?.id && transformed.length > 0) {
+          const ids = transformed.map(o => o.id);
+          const { data: fires } = await supabase
+            .from('offer_fires')
+            .select('offer_id')
+            .eq('user_id', user.id)
+            .in('offer_id', ids);
+          setFiredIds(new Set((fires || []).map(f => f.offer_id)));
+        }
       } catch (error) {
       } finally {
         setLoadingOffers(false);
       }
     };
+    load();
+  }, [user?.id]);
 
-    fetchOffers();
-  }, []);
+  // Toggle fuego con optimistic update
+  const toggleFire = async (e, offerId) => {
+    e.stopPropagation();
+    if (!user?.id) { onNavigate('login'); return; }
+    const wasFired = firedIds.has(offerId);
+    // Optimistic
+    setFiredIds(prev => { const s = new Set(prev); wasFired ? s.delete(offerId) : s.add(offerId); return s; });
+    setOffers(prev => prev.map(o => o.id === offerId ? { ...o, fireCount: Math.max(0, o.fireCount + (wasFired ? -1 : 1)) } : o));
+    // Server
+    const { data, error } = await supabase.rpc('toggle_offer_fire', { p_offer_id: offerId });
+    if (error) {
+      // Revertir
+      setFiredIds(prev => { const s = new Set(prev); wasFired ? s.add(offerId) : s.delete(offerId); return s; });
+      setOffers(prev => prev.map(o => o.id === offerId ? { ...o, fireCount: Math.max(0, o.fireCount + (wasFired ? 1 : -1)) } : o));
+    } else if (data?.fire_count !== undefined) {
+      setOffers(prev => prev.map(o => o.id === offerId ? { ...o, fireCount: data.fire_count } : o));
+    }
+  };
 
-  const allOffers = offers;
+  // Destacadas: top 3 con al menos 1 fuego, ordenadas por fuegos
+  const destacadas = useMemo(() =>
+    [...offers].filter(o => o.fireCount > 0).sort((a, b) => b.fireCount - a.fireCount).slice(0, 3),
+    [offers]
+  );
+  const destacadasIds = useMemo(() => new Set(destacadas.map(o => o.id)), [destacadas]);
+  const restOffers = useMemo(() => offers.filter(o => !destacadasIds.has(o.id)), [offers, destacadasIds]);
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-white font-body text-slate-900 flex flex-col">
@@ -3851,65 +3934,50 @@ const OffersPage = ({ onNavigate, userOffers = [], initialTab = 'offers', active
       {/* Content */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 no-scrollbar">
         {activeTab === 'offers' ? (
-          <div className="w-full">
-            <div className="px-4 pt-6 pb-3">
-              <h3 className="text-slate-900 text-lg font-bold">Destacados esta semana</h3>
-            </div>
-            <div className="px-4 space-y-4 pb-6">
-              {/* Todas las ofertas con mismo diseño */}
-              {loadingOffers ? (
-                <OfferListSkeleton count={4} />
-              ) : (
-                allOffers.map(offer => (
-                  <div
-                    key={offer.id}
-                    onClick={() => onNavigate('coupon', { id: offer.id })}
-                    className="group bg-white rounded-2xl shadow-soft overflow-hidden transform transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer border border-gray-100"
-                  >
-                    <div className="h-40 relative overflow-hidden">
-                      <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                        style={{ backgroundImage: `url("${offer.image}")` }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                      <div className="absolute top-3 left-3 bg-white text-slate-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
-                        {offer.discount}
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const ofertaUrl = `${window.location.origin}${window.location.pathname}?oferta=${offer.id}`;
-                          const text = `¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n👉 Ver oferta: ${ofertaUrl}`;
-                          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                        }}
-                        className="absolute top-3 right-3 w-9 h-9 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg"
-                      >
-                        <MessageCircle size={16} />
-                      </button>
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <p className="text-white/90 text-xs font-medium mb-1 flex items-center gap-1">
-                          <Icon name={offer.businessIcon || 'Store'} size={14} /> {offer.business}
-                        </p>
-                        <h4 className="text-white text-lg font-bold leading-tight">{offer.title}</h4>
-                      </div>
+          <div className="w-full pb-6">
+            {loadingOffers ? (
+              <div className="px-4 pt-6 space-y-4"><OfferListSkeleton count={4} /></div>
+            ) : offers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                <Tag size={48} className="text-slate-300 mb-3" />
+                <p className="text-slate-500 font-medium">No hay ofertas disponibles</p>
+                <p className="text-slate-400 text-sm mt-1">Vuelve más tarde para ver nuevas ofertas</p>
+              </div>
+            ) : (
+              <>
+                {/* Sección Destacadas */}
+                {destacadas.length > 0 && (
+                  <div className="mb-2">
+                    <div className="px-4 pt-6 pb-3 flex items-center gap-2">
+                      <span className="text-lg">🔥</span>
+                      <h3 className="text-slate-900 text-lg font-bold">Destacadas</h3>
+                      <span className="text-xs text-orange-500 font-semibold bg-orange-50 px-2 py-0.5 rounded-full">Top {destacadas.length}</span>
                     </div>
-                    <div className="p-4 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        {offer.expiresIn && (
-                          <span className="text-slate-500 text-xs font-medium">Expira en {offer.expiresIn}</span>
-                        )}
-                        {offer.savings && <span className="text-primary font-bold text-sm">Ahorras {offer.savings}</span>}
-                        {offer.availableToday && <span className="text-slate-900 font-bold text-sm">Disponible hoy</span>}
-                        {offer.validToday && <span className="text-green-600 font-bold text-sm">Válido hoy</span>}
-                      </div>
-                      <button className="bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors shadow-lg shadow-primary/20">
-                        Ver Cupón
-                      </button>
+                    <div className="px-4 space-y-4">
+                      {destacadas.map(offer => (
+                        <OfferCard key={offer.id} offer={offer} isFired={firedIds.has(offer.id)} onFire={toggleFire} onNavigate={onNavigate} />
+                      ))}
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                )}
+
+                {/* Sección Todas las ofertas */}
+                {restOffers.length > 0 && (
+                  <div>
+                    <div className="px-4 pt-5 pb-3">
+                      <h3 className="text-slate-900 text-lg font-bold">
+                        {destacadas.length > 0 ? 'Todas las ofertas' : 'Ofertas disponibles'}
+                      </h3>
+                    </div>
+                    <div className="px-4 space-y-4">
+                      {restOffers.map(offer => (
+                        <OfferCard key={offer.id} offer={offer} isFired={firedIds.has(offer.id)} onFire={toggleFire} onNavigate={onNavigate} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         ) : (
           <div className="w-full">
@@ -19785,7 +19853,7 @@ export default function App() {
       if (offerData.isFlash) {
         expiresAt.setHours(expiresAt.getHours() + 8); // Flash = 8 horas
       } else {
-        expiresAt.setDate(expiresAt.getDate() + 3); // Normal = 3 días
+        expiresAt.setDate(expiresAt.getDate() + 5); // Normal = 5 días
       }
 
       const { data, error } = await supabase
@@ -20176,7 +20244,7 @@ export default function App() {
       case 'flash-offers':
         return <FlashOffersScreen onNavigate={navigate} userOffers={userOffers} />;
       case 'offers':
-        return <OffersPage onNavigate={navigate} userOffers={userOffers} initialTab={pageParams.tab || 'offers'} activeJobs={getVisibleJobs()} loadingJobs={loadingJobs} getJobDaysRemaining={getJobDaysRemaining} isBusinessOwner={businessStatus === 'validated'} notifications={dynamicNotifications} />;
+        return <OffersPage onNavigate={navigate} user={user} userOffers={userOffers} initialTab={pageParams.tab || 'offers'} activeJobs={getVisibleJobs()} loadingJobs={loadingJobs} getJobDaysRemaining={getJobDaysRemaining} isBusinessOwner={businessStatus === 'validated'} notifications={dynamicNotifications} />;
       case 'favorites':
         return <FavoritesPage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} />;
       case 'profile':

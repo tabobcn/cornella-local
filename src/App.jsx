@@ -18114,6 +18114,7 @@ const VAPID_PUBLIC_KEY = 'BA_vRY5jNz2ro0yPN_-GXmTemr-oH4VzVodixY6ukjYigsm_8GFKFr
 export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [pageParams, setPageParams] = useState({});
+  const currentPageRef = useRef('login'); // Ref para acceder a currentPage desde closures de auth
 
   // Estado del usuario autenticado
   const [user, setUser] = useState(null);
@@ -18122,6 +18123,9 @@ export default function App() {
   // Estado para Push Notifications
   const [pushSupported, setPushSupported] = useState(false);
   const [pushPermission, setPushPermission] = useState('default');
+
+  // Mantener ref sincronizada con currentPage (para usar en closures de auth sin dependencias)
+  useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
 
   // Persistir sesión con Supabase Auth
   useEffect(() => {
@@ -18183,11 +18187,17 @@ export default function App() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
 
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        // Páginas de autenticación (sin usuario logueado)
+        const authOnlyPages = ['login', 'register', 'forgot-password', 'reset-password'];
         // Siempre cancelar timeout y desbloquear carga (en finally para garantizarlo)
         try {
           if (session) {
             await loadOrCreateProfile(session);
-            setCurrentPage('home');
+            // Solo navegar a home si estamos en una página de autenticación
+            // Evita interrumpir al usuario si está navegando dentro de la app
+            if (authOnlyPages.includes(currentPageRef.current)) {
+              setCurrentPage('home');
+            }
           } else if (event === 'INITIAL_SESSION') {
             // INITIAL_SESSION sin sesión = no hay usuario logueado
             setCurrentPage('login');
@@ -18202,7 +18212,9 @@ export default function App() {
               full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
               avatar_url: session.user.user_metadata?.avatar_url || null,
             });
-            setCurrentPage('home');
+            if (authOnlyPages.includes(currentPageRef.current)) {
+              setCurrentPage('home');
+            }
           } else {
             setCurrentPage('login');
           }
@@ -19498,10 +19510,8 @@ export default function App() {
       if (event.state && event.state.page) {
         // Navegar a la página anterior sin añadir al historial
         navigate(event.state.page, event.state.params || {}, false);
-      } else {
-        // Si no hay estado, ir a home
-        navigate('home', {}, false);
       }
+      // Si no hay estado (file pickers nativos en iOS/Android pueden disparar popstate sin estado), ignorar
     };
 
     // Añadir estado inicial al historial

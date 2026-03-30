@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-04-01)
+## ESTADO DEL PROYECTO (Actualizado: 2026-04-02)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -144,6 +144,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Sistema de ban** — admin puede banear usuarios; si el usuario baneado intenta acceder → signOut automático + toast de error
 - [x] **Delete usuario con ban previo** — handleDelete hace `is_banned=true` primero, luego delete; si delete falla por FK el usuario queda baneado y no puede entrar
 - [x] **RLS admin en profiles** — políticas DELETE+UPDATE para admins en tabla `profiles` (script: `admin-profiles-policies.sql`)
+- [x] **RLS admin en businesses** — políticas DELETE para admins en `businesses` + 8 tablas relacionadas (offers, jobs, reviews, favorites, job_applications, offer_redemptions, offer_fires, notifications); sin esto el delete era silencioso y el negocio reaparecía al recargar
+- [x] **Admin delete negocio en cascada** — borra offer_redemptions, offer_fires, job_applications, offers, jobs, reviews, favorites, notifications antes de borrar el negocio (FK constraints)
 
 #### Sistema de Redención de Ofertas
 - [x] **Código único por usuario+oferta** — formato `CL-XXXX`, generado en BD con RPC `get_or_create_redemption`
@@ -168,6 +170,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Botón atrás en tabs principales** — no navega a login si usuario logueado; no sale de la app
 - [x] **SettingsScreen limpia** — sin modo oscuro, sin selector de idioma, sin anuncios personalizados
 - [x] Términos y condiciones + Política de privacidad — back button navega a `settings`
+
+#### Calidad de Código (auditoría 2026-04-02)
+- [x] **`.limit()` en todas las queries grandes** — businesses (150), flash offers (50), reviews (100), jobs (100), neighborhood counts (500); evita descargar toda la BD
+- [x] **`[user?.id]` en lugar de `[user]`** en 8 useEffects — evita re-renders y re-suscripciones innecesarias cuando cambia cualquier prop del objeto user (loadReviews, loadMyApplications, loadUserFavorites, loadUserNotifications, canal realtime, loadUserApplications, checkCanReview, userRef)
+- [x] **Optional chaining** añadido en `handleShareWhatsApp` (`business?.name/id/rating/address/category`) y `checkCanReview` (`user?.id`)
+- [x] **Mensajes de error genéricos** — `error.message` de Supabase ya no se expone al usuario en aprobar negocio ni en crear negocio; mensajes en español
+- [x] **`console.error` en todos los catch** — notificación admin, uploads de fotos, solicitud de soporte, carga de negocios admin, loadUserBudgetRequests, loadOwnerJobs, loadOwnerOffers, loadJobApplications, loadUserNotifications
 
 ---
 
@@ -215,7 +224,7 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 ## Archivos Clave del Proyecto
 
 ### Código Principal
-- **`src/App.jsx`** (~20,400 líneas): Toda la aplicación
+- **`src/App.jsx`** (~20,900 líneas): Toda la aplicación
   - ~30-600: Componentes reutilizables (Icon, Toast, EmptyState, skeletons, PullToRefreshIndicator...)
   - ~600-3,800: Pantallas de usuario (Home, Businesses, Offers, Jobs, Budgets...)
   - ~3,800-6,200: OffersPage (con fuegos 🔥), CouponDetailPage, BusinessDetailPage inicio
@@ -252,6 +261,7 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   fix-profiles-rls.sql                 — Políticas RLS para profiles
   add-is-banned.sql                    — Columna is_banned en profiles + índice
   admin-profiles-policies.sql          — RLS UPDATE+DELETE para admins en profiles
+  admin-delete-businesses.sql          — RLS DELETE para admins en businesses + tablas relacionadas
 
 ⚠️ EJECUTAR SI HAY PROBLEMAS:
   fix-profiles-rls.sql                 — Si hay timeout en login (políticas SELECT/UPDATE en profiles)
@@ -310,9 +320,9 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
 **Back Button (móvil/PWA)**:
 ```javascript
-// userRef evita stale closures — se sincroniza con useEffect([user])
+// userRef evita stale closures — se sincroniza con useEffect([user?.id])
 const userRef = useRef(null);
-useEffect(() => { userRef.current = user; }, [user]);
+useEffect(() => { userRef.current = user; }, [user?.id]);
 
 // En handlePopState: bloquear navegación a auth si hay usuario logueado
 const AUTH_PAGES = ['login', 'register', 'forgot-password', 'reset-password'];
@@ -375,12 +385,17 @@ Custom colors en `tailwind.config.js`:
 - NUNCA usar `alert()` → siempre `showToast()`
 - NUNCA JOIN `profiles:user_id(...)` en Supabase queries → da PGRST200. Usar `select('*')` y cargar separado
 - NUNCA seleccionar columnas que no existen en la tabla → da 400 Bad Request (ej. `subcategory` no existe en `businesses`). En pantallas admin usar `select('*')` para evitar este error
+- NUNCA dejar queries de Supabase sin `.limit()` en tablas que pueden crecer (businesses, offers, jobs, reviews, notifications) — usar límites razonables (50–500)
+- NUNCA exponer `error.message` de Supabase al usuario — usar mensajes genéricos en español + `console.error` para debugging
+- NUNCA usar `[user]` como dependencia de useEffect si solo se usa `user.id` dentro — usar `[user?.id]` para evitar re-renders innecesarios y re-suscripciones de canales realtime
+- NUNCA dejar `catch {}` vacíos — siempre `console.error` mínimo; si afecta al usuario, también `showToast`
 - En tabla `businesses` el propietario se identifica con `owner_id` (NO `user_id`)
 - `showToast` debe pasarse como prop explícitamente a cada componente que lo necesite (no es global)
 - Para OAuth, NO esperar query a profiles para navegar — usar `session.user.user_metadata` directamente
 - `businesses.id` es **INTEGER**; `offers.id`, `budget_requests.id`, `budget_quotes.id` son **UUID**
 - `budget_quotes` tiene columna `budget_request_id` (NO `request_id`) — error frecuente en triggers
 - `handleToggleFavoriteInList` en `HomePage` actualiza `businesses` state local + llama prop `toggleFavorite`
+- **RLS DELETE silenciosa**: si falta política RLS para admin en una tabla, Supabase no devuelve error pero no borra nada — el registro reaparece al recargar. Siempre verificar que existan políticas RLS para cada operación
 
 ---
 

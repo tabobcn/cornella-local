@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-02-18 noche)
+## ESTADO DEL PROYECTO (Actualizado: 2026-03-31)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -19,6 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Auth flow con `onAuthStateChange` + `INITIAL_SESSION` + `SIGNED_IN`
 - [x] Datos de usuario reales en perfil (full_name, email, avatar_url)
 - [x] **EditProfileScreen** — editar nombre, email (con confirmación), fecha de nacimiento (`birth_date`)
+- [x] **Botón atrás no cierra sesión** — en pantallas principales (home/mapa/ofertas/favoritos/perfil) el back del móvil no navega a login; `userRef` evita stale closures en el handler de `popstate`
 
 #### Negocios
 - [x] Listado de negocios desde Supabase con categorías, tags, barrio
@@ -50,10 +51,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] BusinessOwnerDashboard con estadísticas reales (empleos, ofertas, candidaturas, presupuestos)
 - [x] Gestión completa de ofertas (crear %, 2x1, gratis; pausar; reactivar; eliminar)
 - [x] **Límite 1 oferta cada 7 días** — validado en `createOffer()` antes de insertar
+- [x] **Duración oferta normal = 5 días** (era 3 días) — actualizado en cálculo, texto y vista previa
+- [x] **Foto obligatoria al crear oferta** — `isFormValid()` exige imagen; label muestra asterisco rojo
 - [x] Gestión completa de empleos (crear, eliminar, renovar)
 - [x] Presupuestos entrantes con respuesta y cotización
 - [x] Panel de candidatos (filtros, cambio de estado, contratar + auto-rechazar resto con delay 1.5s)
-- [x] BusinessStatsScreen — estadísticas detalladas del negocio
+- [x] **BusinessStatsScreen avanzada** — selector de período (7/30/90 días), embudo de conversión, gráfica semanal real, tabla de rendimiento de ofertas y empleos, tasa de respuesta en presupuestos con círculo visual
 - [x] **ValidateCodeScreen** — propietario valida código del cliente (`CL-XXXX`), confirma descuento o muestra error
 
 #### Sistema de Presupuestos
@@ -62,12 +65,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **acceptBudgetQuote()** — acepta uno y auto-rechaza los demás con notificación
 - [x] "Mis Presupuestos" carga desde Supabase con cotizaciones
 - [x] Presupuesto aceptado no aparece duplicado
+- [x] **Privacidad del teléfono** — número del cliente oculto para el negocio hasta que el usuario acepte su presupuesto; candado amarillo con mensaje explicativo
+- [x] **Mensaje WhatsApp del negocio** — "Hola, soy de [nombre negocio], te contacto por tu presupuesto en Cornellà Local" (sin nombre del cliente)
 
 #### Sistema de Favoritos
 - [x] toggleFavorite() persiste en tabla `favorites` (Supabase)
 - [x] Favoritos se cargan al login y persisten al refrescar
 - [x] Optimistic updates con rollback en error
 - [x] FavoritesPage carga negocios dinámicamente desde Supabase
+- [x] **Contador favoriteCount actualiza al instante** — al dar/quitar favorito en el listado, el corazón y el número se actualizan inmediatamente via `handleToggleFavoriteInList`
+- [x] **BusinessDetailPage realtime** — suscripción a `postgres_changes` en tabla `favorites` para contar seguidores en tiempo real
 
 #### Sistema de Notificaciones In-App
 - [x] Triggers PostgreSQL auto-notifican al crear oferta/empleo a usuarios que favoritearon
@@ -85,12 +92,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] `requestPushPermission()` — solicita permisos y guarda suscripción en `push_subscriptions`
 - [x] VAPID_PUBLIC_KEY configurada con clave real
 - [x] NotificationPermissionModal — modal bonito (no confirm nativo)
-- [x] Service Worker: listener para navegar al click en notificación
+- [x] Service Worker: listener para navegar al click en notificación; vibración diferenciada por tipo
 - [x] **Edge Function `send-push`** — cifrado RFC 8291 nativo Deno (sin npm:web-push), VAPID JWT ES256
 - [x] Fix cifrado: CEK/nonce HKDF info sin byte `[1]` extra (bug resuelto, push llega con texto real)
 - [x] Auto-request a los 3 segundos del primer login (solo si no se ha preguntado antes)
-- [x] **Triggers push en BD**: `trigger_push_favorite_new_offer`, `trigger_push_new_budget_request`, `trigger_push_budget_response`, `trigger_push_new_job_application`, `trigger_push_application_status_change`
+- [x] **7 triggers push activos en BD**:
+  - `trigger_push_favorite_new_offer` — nueva oferta de negocio favorito
+  - `trigger_push_favorite_new_job` — nuevo empleo de negocio favorito ✨
+  - `trigger_push_new_budget_request` — nueva solicitud de presupuesto al negocio
+  - `trigger_push_budget_response` — negocio responde presupuesto al usuario (fix: era `NEW.request_id`) ✨
+  - `trigger_push_budget_result` — presupuesto aceptado/rechazado → push al negocio ✨
+  - `trigger_push_new_job_application` — candidatura nueva al propietario
+  - `trigger_push_application_status_change` — cambio de estado de candidatura al candidato
 - [x] **Columnas view_count/click_count**: en `businesses`, `jobs`, `offers` (+ `last_viewed_at`)
+
+#### Sistema de Ofertas con Fuegos 🔥
+- [x] **Botón 🔥 en cada oferta** — toggle optimista con rollback, persiste en tabla `offer_fires`
+- [x] **Sección "Destacadas"** — top 3 ofertas con más fuegos (≥1) aparecen arriba destacadas
+- [x] **Resto de ofertas** — ordenadas por fecha de creación debajo de destacadas
+- [x] **RPC `toggle_offer_fire`** — función atómica en BD que incrementa/decrementa `fire_count`
+- [x] **Pull-to-refresh en OffersPage** — tirar hacia abajo recarga ofertas desde Supabase sin ir al inicio
 
 #### Sistema de Candidaturas
 - [x] Formulario de aplicación en JobDetailPage
@@ -106,75 +127,66 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **Eliminar reseña** persiste en Supabase
 - [x] **Filtro de contenido** — `moderateContent()`: insultos, spam, teléfonos, emails, mayúsculas
 - [x] **Rating persiste en Supabase** — tras publicar reseña recalcula media + review_count y actualiza tabla `businesses`
-- [x] **review_count en todas las vistas** — BusinessCard, DetailPage header, SubcategoryDetailPage, WhatsApp share usan `review_count || reviews || 0`
-- [x] **Review count con paréntesis** — formato `(N)` en BusinessCard en lugar de `· N`
+- [x] **review_count en todas las vistas** — BusinessCard, DetailPage header, SubcategoryDetailPage, WhatsApp share
 - [x] **Admin sin restricciones en reseñas** — bypass en frontend (`user.is_admin`) y en RPC `can_user_review`
-- [x] **`is_admin` en query de profiles** — `select('id, full_name, avatar_url, is_admin, birth_date')` para que esté disponible
-- [x] **Flujo de reseñas corregido** — estrella muestra últimas 10 reseñas; botón "Valorar" abre formulario directo (conectado a Supabase, mín. 10 caracteres)
-- [x] **Reseñas mapeadas correctamente** — campos Supabase (`user_id`, `created_at`) mapeados a display (`user`, `avatar`, `date`) al cargar y al crear
-- [x] **Sort de reseñas** — usa `created_at` (antes usaba `timestamp` inexistente)
-- [x] **Bloqueo visible al propietario** — toast inmediato al pulsar "Valorar" o "Escribir reseña", sin acceso al formulario
-- [x] `showToast` pasado como prop a `BusinessDetailPage` (era `undefined` y daba error)
-- [x] **Propietario no puede reseñar su negocio** — validado en frontend (`owner_id`) y en RPC `can_user_review`
+- [x] **Propietario no puede reseñar su negocio** — validado en frontend (`owner_id`) y en RPC
 
 #### Panel de Administración
 - [x] AdminDashboard con estadísticas globales
 - [x] BusinessApprovalScreen — aprobar/rechazar con motivo + ver documentos + ver apelación
 - [x] ReportsScreen para gestionar reportes
 - [x] BusinessAnalyticsScreen — analítica de negocios
-- [x] **AdminUsersScreen** — lista de usuarios registrados con fecha y badge Admin
+- [x] **AdminUsersScreen** — lista de usuarios con fecha, badge Admin, acciones banear/desbanear/eliminar
+- [x] **AdminAllBusinessesScreen** — lista completa de negocios con filtros (todos/aprobados/pendientes/rechazados), búsqueda y botón eliminar; accesible desde el contador de negocios en el dashboard
 - [x] **AdminSupportScreen** — bandeja de mensajes de soporte (pendiente/resuelto)
 - [x] **Formulario de contacto funcional** — guarda en tabla `support_requests` (Supabase), visible en panel admin
 - [x] Solo visible para usuarios con `is_admin = true`
+- [x] **Sistema de ban** — admin puede banear usuarios; si el usuario baneado intenta acceder → signOut automático + toast de error
 
 #### Sistema de Redención de Ofertas
 - [x] **Código único por usuario+oferta** — formato `CL-XXXX`, generado en BD con RPC `get_or_create_redemption`
+- [x] **Límite de usos real** — RPC comprueba `max_uses` antes de generar código; muestra "Oferta agotada" si lleno
 - [x] **CouponDetailPage rediseñada** — boarding pass azul con código en grande (reemplaza QR falso)
-- [x] **3 estados visuales**: sin código (botón "Obtener mi código") / código activo (código en grande) / ya canjeado (tick verde)
+- [x] **3 estados visuales**: sin código / código activo / ya canjeado (tick verde)
 - [x] **ValidateCodeScreen** — propietario escribe el código del cliente, valida via RPC `validate_redemption_code`
 - [x] **redemption_count real** — columna en tabla `offers`, se incrementa al validar, mostrado en dashboard propietario
-- [x] **offer_id es UUID** en tabla `offer_redemptions` (businesses.id es INTEGER, offers.id es UUID)
-- [x] SQL ejecutado: `supabase/setup-offer-redemptions.sql`
-- [x] **Probado end-to-end** — código generado, mostrado al propietario, validado ✅, cliente identificado correctamente
 
 #### Contadores y Deep Links
 - [x] BudgetRequestScreen muestra conteo real de negocios por subcategoría (desde Supabase)
-- [x] **CategoryDetailPage** carga counts de subcategorías dinámicamente desde Supabase (no hardcodeados)
-- [x] mockData.js: `userReviews = []` — reseñas cargadas desde Supabase en `UserReviewsScreen`
-- [x] **Contador de barrios** — `neighborhoodCounts` query directa a Supabase (cubre nombre e ID de barrio)
-- [x] **Filtro de barrios** — compara `neighborhood` contra ID y nombre del barrio (cubre ambos formatos en BD)
+- [x] **CategoryDetailPage** carga counts de subcategorías dinámicamente desde Supabase
+- [x] **Contador de barrios** — `neighborhoodCounts` query directa a Supabase
+- [x] **Filtro de barrios** — compara `neighborhood` contra ID y nombre del barrio
 - [x] **Countdown HH:MM:SS** — hook `useCountdown` en ofertas flash (actualización cada segundo)
 - [x] **Deep links** — `?negocio=ID`, `?oferta=ID`, `?empleo=ID` abren directamente la pantalla correcta
-- [x] **Share de negocios** — URL con deep link `?negocio=ID` (sin undefined)
+- [x] **Share de negocios** — URL con deep link `?negocio=ID`
 
-#### Pantalla de Ajustes
-- [x] **SettingsScreen limpia** — sin modo oscuro, sin selector de idioma, sin anuncios personalizados, sin botón test push
-- [x] "Editar perfil" → navega a `EditProfileScreen` (nombre, email, fecha de nacimiento)
-- [x] Contacto y soporte — solo email `soporte@cornellalocal.es` (sin teléfono)
-- [x] Términos y condiciones — back button navega a `settings` correctamente
-- [x] Política de privacidad — sección sobre eliminación de documentos de verificación
+#### UX / Navegación
+- [x] Pull-to-refresh en HomePage (recarga datos reales de Supabase)
+- [x] Pull-to-refresh en OffersPage (recarga ofertas sin ir al inicio)
+- [x] **Botón atrás en tabs principales** — no navega a login si usuario logueado; no sale de la app
+- [x] **SettingsScreen limpia** — sin modo oscuro, sin selector de idioma, sin anuncios personalizados
+- [x] Términos y condiciones + Política de privacidad — back button navega a `settings`
 
 ---
 
-## 🔜 Pendientes
+## 🔜 Pendientes / Ideas Futuras
+
+### Mejoras confirmadas para próximas sesiones
+- [ ] **Notificaciones por email** — para presupuestos y candidaturas (Supabase Edge Functions + Resend/SendGrid)
+- [ ] **Sistema de mensajería** — chat entre usuarios y negocios
+- [ ] **Búsqueda mejorada** — filtros avanzados (precio, distancia, valoración mínima)
+- [ ] **Estadísticas admin globales** — gráficas en panel de administración
+
+### Ideas debatidas (no implementar sin confirmación)
+- [ ] Notificaciones por email automáticas (triggers PostgreSQL → Edge Function → proveedor email)
 
 ### Secrets en Supabase → Edge Functions → Secrets (ya configurados)
 - `VAPID_PUBLIC_KEY` = `BA_vRY5jNz2ro0yPN_-GXmTemr-oH4VzVodixY6ukjYigsm_8GFKFrWggD3VqGwMSAfEjxnZuhNbr04HZAL6Mw8`
 - `VAPID_PRIVATE_KEY` = `MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgwSTsogtf6XTi5C1BL3VNoMLLewmSP3nXSSh2lskYZoihRANCAAQP70WOYzc9q6NMjzf_hl5k3pq_qB-Fc1aHYsWOrpI2IoLJv_BhSha1oIA91ahsDEgHxI8Z2boTW69OB2QC-jMP`
 - `VAPID_SUBJECT` = `mailto:noreply@cornellalocal.es`
 
-### TODOs menores en código (no críticos)
-- Pantallas admin futuras: stats globales avanzadas
-
 ### Nota Push Notifications
-Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
-
-### Mejoras futuras
-- [ ] **Notificaciones por email** — para presupuestos y candidaturas (Supabase Edge Functions)
-- [ ] **Búsqueda mejorada** — filtros avanzados (precio, distancia, valoración)
-- [x] **Dominio propio** — CornellaLocal.es activo (DNS delegado a Vercel ns1/ns2.vercel-dns.com, Supabase Auth URLs actualizadas)
-- [ ] **Sistema de mensajería** — chat entre usuarios y negocios
-- [ ] **Estadísticas avanzadas** — gráficas en dashboard del propietario
+Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 
 ---
 
@@ -190,18 +202,24 @@ Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
 | **Candidaturas** | Al contratar uno → resto se auto-rechaza automáticamente |
 | **Presupuestos** | Al aceptar uno → resto se notifica como "no seleccionado" |
 | **OAuth** | Perfil creado desde `session.user.user_metadata` (no espera query profiles) |
+| **Ofertas** | Duración normal = 5 días; flash = 8 horas; límite 1 oferta cada 7 días |
+| **Teléfono presupuesto** | Oculto para ambas partes hasta que el usuario acepte una cotización |
+| **Fotos en oferta** | Obligatorio subir imagen para poder publicar |
+| **Ban de usuarios** | Admin banea desde AdminUsersScreen → `is_banned=true` en profiles → próximo login hace signOut automático |
 
 ---
 
 ## Archivos Clave del Proyecto
 
 ### Código Principal
-- **`src/App.jsx`** (~19,500 líneas): Toda la aplicación
-  - ~30-600: Componentes reutilizables (Icon, Toast, EmptyState, skeletons...)
-  - ~600-5,700: Pantallas de usuario (Home, Businesses, Offers, Jobs, Budgets...)
-  - ~5,700-10,500: BusinessDetailPage, ReseñasSection, AdminScreens...
-  - ~10,500-14,000: EditBusinessScreen (registro/edición en 4 pasos)
-  - ~14,000-19,500: App principal (state, useEffects, navigation, render)
+- **`src/App.jsx`** (~20,400 líneas): Toda la aplicación
+  - ~30-600: Componentes reutilizables (Icon, Toast, EmptyState, skeletons, PullToRefreshIndicator...)
+  - ~600-3,800: Pantallas de usuario (Home, Businesses, Offers, Jobs, Budgets...)
+  - ~3,800-6,200: OffersPage (con fuegos 🔥), CouponDetailPage, BusinessDetailPage inicio
+  - ~6,200-10,500: BusinessDetailPage, ReseñasSection, IncomingBudgetRequestsScreen...
+  - ~10,500-14,000: AdminScreens, EditBusinessScreen (registro/edición en 4 pasos)
+  - ~14,000-16,200: CreateOfferScreen, ValidateCodeScreen
+  - ~16,200-20,400: App principal (state, useEffects, navigation, render)
 
 ### Utilidades
 - `src/constants.js` — LIMITS, TIMING, ERROR_MESSAGES, SUCCESS_MESSAGES, REGEX_PATTERNS
@@ -210,24 +228,39 @@ Push solo funciona en HTTPS. Ya deployado en Vercel = funciona en producción.
 - `src/components/LoadingSkeletons.jsx` — 13 skeletons específicos
 - `src/components/ConfirmModal.jsx` — DeleteConfirmModal, DeactivateConfirmModal, CancelConfirmModal
 
-### Scripts SQL Importantes
-- `supabase/setup-notifications-complete.sql` — ⭐ Triggers notificaciones (ejecutar en Supabase)
-- `supabase/setup-job-applications-complete.sql` — ⭐ Sistema candidaturas (ejecutar en Supabase)
-- `supabase/fix-profiles-rls.sql` — Políticas RLS para profiles (ejecutar si hay timeout en login)
-- `supabase/setup-push-notifications.sql` — Push notifications tabla + triggers (✅ ejecutado)
-- `supabase/add-view-counters.sql` — view_count/click_count columns + RPC (✅ ejecutado)
-- `supabase/add-missing-business-columns.sql` — cover_photo, special_closures
-- `supabase/setup-admin-system-complete.sql` — Panel de administración
-- `supabase/setup-verification-documents.sql` — Documentos de verificación
-- `supabase/add-business-appeal.sql` — Sistema de apelación
-- `supabase/add-is-published.sql` — Campo is_published en businesses
-- `supabase/setup-reviews-controls.sql` — edit_count en reviews + RPC can_user_review actualizada (✅ ejecutado)
-- `supabase/add-birth-date.sql` — Campo birth_date en profiles (✅ ejecutado)
-- `supabase/cleanup-test-data.sql` — Borra negocio 81 (rechazado) + todas las reseñas de prueba
-- `supabase/setup-support-requests.sql` — Tabla support_requests con RLS (insert público, select/update admin) (✅ ejecutado)
+### Scripts SQL — Estado de Ejecución
+```
+✅ EJECUTADOS (no volver a ejecutar):
+  setup-push-notifications.sql         — Tabla push_subscriptions + 5 triggers originales
+  setup-push-missing-triggers.sql      — Fix budget_response + 2 nuevos triggers (job, budget result)
+  fix-budget-quote-trigger.sql         — Fix notify_budget_response email (NEW.budget_request_id)
+  fix-budget-trigger.sql               — Fix push_notify_new_budget_request (NEW.category)
+  setup-offer-fires.sql                — Tabla offer_fires + RPC toggle_offer_fire + fire_count en offers
+  fix-redemption-max-uses.sql          — RPC get_or_create_redemption con validación max_uses
+  setup-offer-redemptions.sql          — Tabla offer_redemptions + RPCs
+  setup-notifications-complete.sql     — Triggers in-app para favoritos
+  setup-job-applications-complete.sql  — Sistema candidaturas
+  setup-reviews-controls.sql           — edit_count en reviews + RPC can_user_review
+  setup-admin-system-complete.sql      — Panel de administración
+  setup-verification-documents.sql     — Documentos de verificación
+  setup-support-requests.sql           — Tabla support_requests
+  add-view-counters.sql                — view_count/click_count + RPCs
+  add-birth-date.sql                   — Campo birth_date en profiles
+  fix-profiles-rls.sql                 — Políticas RLS para profiles
+  add-is-banned.sql                    — Columna is_banned en profiles + índice
+
+⚠️ EJECUTAR SI HAY PROBLEMAS:
+  fix-profiles-rls.sql                 — Si hay timeout en login (políticas SELECT/UPDATE en profiles)
+```
 
 ### Edge Functions
-- `supabase/functions/send-push/index.ts` — Envía push notifications con cifrado RFC 8291 nativo Deno (sin npm:web-push)
+- `supabase/functions/send-push/index.ts` — Envía push notifications con cifrado RFC 8291 nativo Deno
+
+### Service Worker
+- `public/sw.js` — Cache, push listener, notificationclick handler
+  - Vibración fuerte: `budget_accepted`, `new_application`, `hired`
+  - Vibración media: `budget_response`, `new_offer_favorite`, `new_job_favorite`
+  - requireInteraction: `budget_accepted`, `new_application`, `hired`, `budget_response`
 
 ---
 
@@ -248,24 +281,22 @@ npm run preview  # Preview del build de producción
 - **Styling**: Tailwind CSS 3 con colores custom
 - **Icons**: Lucide React
 - **State**: React useState/useEffect (sin librerías externas)
-- **Deploy**: Vercel (activo en cornella-local.vercel.app)
+- **Deploy**: Vercel — https://www.cornellalocal.es (dominio propio activo)
 
 ---
 
 ## Architecture
 
 ### Single-File Structure
-Toda la aplicación está en `src/App.jsx` (~19,500 líneas). Intencional para este proyecto.
+Toda la aplicación está en `src/App.jsx` (~20,400 líneas). Intencional para este proyecto.
 
 ### Key Patterns
 
 **Auth Flow** (Supabase v2 + PKCE):
 ```javascript
 // onAuthStateChange con INITIAL_SESSION es la fuente principal de verdad
-// Con detectSessionInUrl: true, Supabase intercambia el código OAuth automáticamente
 supabase.auth.onAuthStateChange(async (event, session) => {
   if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-    // Setear usuario inmediatamente desde session.user (no esperar profiles query)
     setUser({ id, email, full_name, avatar_url }); // desde session.user.user_metadata
     setCurrentPage('home');
     // Sincronizar con tabla profiles en segundo plano (sin await)
@@ -273,34 +304,49 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 });
 ```
 
-**Supabase Integration**:
+**Back Button (móvil/PWA)**:
 ```javascript
-useEffect(() => {
-  const fetchData = async () => {
-    const { data, error } = await supabase.from('table').select('*');
-    if (error) console.error(error);
-    setData(data);
-  };
-  fetchData();
-}, [dependency]);
+// userRef evita stale closures — se sincroniza con useEffect([user])
+const userRef = useRef(null);
+useEffect(() => { userRef.current = user; }, [user]);
+
+// En handlePopState: bloquear navegación a auth si hay usuario logueado
+const AUTH_PAGES = ['login', 'register', 'forgot-password', 'reset-password'];
+if (AUTH_PAGES.includes(targetPage) && userRef.current) {
+  window.history.pushState({ page: 'home', params: {} }, '', '#home');
+  return;
+}
 ```
 
-**Optimistic Updates** (favoritos, notificaciones, estados):
+**Pull to Refresh**:
 ```javascript
-setState(prev => newState);           // 1. Actualizar UI
+const { pullDistance, isRefreshing, handlers } = usePullToRefresh(handleRefresh);
+// En el div raíz: {...handlers}
+// Encima del header: <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
+```
+
+**Optimistic Updates** (favoritos, fuegos, notificaciones):
+```javascript
+setState(prev => newState);              // 1. Actualizar UI
 await supabase.from('table').update(...); // 2. Persistir
-setState(prev => originalState);     // 3. Revertir si error
+setState(prev => originalState);        // 3. Revertir si error
+```
+
+**Supabase Queries — Reglas Críticas**:
+```javascript
+// ❌ NUNCA — causa PGRST200
+.select('*, profiles:user_id(full_name)')
+
+// ✅ SIEMPRE — dos queries separadas
+const { data } = await supabase.from('budget_requests').select('*');
+const userIds = data.map(r => r.user_id);
+const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds);
 ```
 
 **Navigation**:
 ```javascript
 navigate('owner-dashboard')
 navigate('job-detail', { id: jobId })
-```
-
-**Icon System**:
-```jsx
-<Icon name="Star" size={20} className="text-primary" />
 ```
 
 ---
@@ -315,18 +361,22 @@ Custom colors en `tailwind.config.js`:
 
 ## Important Notes
 
+- **Eficiencia de tokens**: No vuelvas a leer archivos ya leídos en esta sesión a menos que se pida explícitamente. Minimiza llamadas a herramientas y trabaja con lo que ya tienes en contexto.
 - App mobile-first (max-width: 448px)
 - Todo en español en la UI
 - localStorage solo para: búsquedas recientes, onboarding, push-asked, settings
-- Pull-to-refresh implementado
 - **Todos los datos críticos persisten en Supabase**
 - Lightbox y modales deben renderizarse FUERA de contenedores `overflow-x-hidden` (usar Fragment `<>`)
 - Campos en BD son snake_case, en React son camelCase — mapear correctamente
 - NUNCA usar `alert()` → siempre `showToast()`
 - NUNCA JOIN `profiles:user_id(...)` en Supabase queries → da PGRST200. Usar `select('*')` y cargar separado
+- NUNCA seleccionar columnas que no existen en la tabla → da 400 Bad Request (ej. `subcategory` no existe en `businesses`)
 - En tabla `businesses` el propietario se identifica con `owner_id` (NO `user_id`)
 - `showToast` debe pasarse como prop explícitamente a cada componente que lo necesite (no es global)
 - Para OAuth, NO esperar query a profiles para navegar — usar `session.user.user_metadata` directamente
+- `businesses.id` es **INTEGER**; `offers.id`, `budget_requests.id`, `budget_quotes.id` son **UUID**
+- `budget_quotes` tiene columna `budget_request_id` (NO `request_id`) — error frecuente en triggers
+- `handleToggleFavoriteInList` en `HomePage` actualiza `businesses` state local + llama prop `toggleFavorite`
 
 ---
 

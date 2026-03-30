@@ -4223,9 +4223,13 @@ const AdminUsersScreen = ({ onNavigate, showToast }) => {
 
   const handleDelete = async (user) => {
     setActionLoading(true);
+    // Banear primero para bloquear login aunque el delete no elimine el auth user
+    await supabase.from('profiles').update({ is_banned: true }).eq('id', user.id);
     const { error } = await supabase.from('profiles').delete().eq('id', user.id);
     if (error) {
-      showToast('Error al eliminar', 'error');
+      // Si el delete falla por FK, al menos queda baneado
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_banned: true } : u));
+      showToast(`Cuenta desactivada (no se pudo eliminar completamente)`, 'warning');
     } else {
       setUsers(prev => prev.filter(u => u.id !== user.id));
       showToast(`Cuenta de ${user.full_name || user.email} eliminada`, 'success');
@@ -4703,7 +4707,7 @@ const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
       try {
         let query = supabase
           .from('businesses')
-          .select('id, name, category, verification_status, is_published, owner_id, created_at, neighborhood')
+          .select('*')
           .order('created_at', { ascending: false });
 
         if (filter !== 'all') query = query.eq('verification_status', filter);

@@ -4522,10 +4522,14 @@ const AdminDashboard = ({ onNavigate, user }) => {
       {/* Stats Cards */}
       <div className="px-4 -mt-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-2xl font-bold text-slate-900">{stats.totalBusinesses}</div>
+          <button
+            onClick={() => onNavigate('admin-all-businesses')}
+            className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left"
+          >
+            <div className="text-2xl font-bold text-primary">{stats.totalBusinesses}</div>
             <div className="text-xs text-gray-500 mt-1">Negocios</div>
-          </div>
+            <div className="text-[10px] text-primary mt-1 font-medium">Ver todos →</div>
+          </button>
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="text-2xl font-bold text-slate-900">{stats.totalUsers}</div>
             <div className="text-xs text-gray-500 mt-1">Usuarios</div>
@@ -4581,6 +4585,205 @@ const AdminDashboard = ({ onNavigate, user }) => {
       {/* Navbar */}
       <Navbar currentPage="profile" onNavigate={onNavigate} />
     </div>
+  );
+};
+
+// AdminAllBusinessesScreen - Lista completa de negocios con opción de eliminar
+const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
+  const [businesses, setBusinesses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // business a eliminar
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        let query = supabase
+          .from('businesses')
+          .select('id, name, category, subcategory, verification_status, is_published, owner_id, created_at, neighborhood')
+          .order('created_at', { ascending: false });
+
+        if (filter !== 'all') query = query.eq('verification_status', filter);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        setBusinesses(data || []);
+      } catch {
+        showToast('Error al cargar negocios', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [filter]);
+
+  const handleDelete = async (business) => {
+    setDeletingId(business.id);
+    try {
+      const { error } = await supabase.from('businesses').delete().eq('id', business.id);
+      if (error) throw error;
+      setBusinesses(prev => prev.filter(b => b.id !== business.id));
+      showToast(`"${business.name}" eliminado`, 'success');
+    } catch {
+      showToast('Error al eliminar el negocio', 'error');
+    } finally {
+      setDeletingId(null);
+      setConfirmDelete(null);
+    }
+  };
+
+  const statusBadge = (status, isPublished) => {
+    if (status === 'approved' && isPublished) return <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">Publicado</span>;
+    if (status === 'approved') return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">Aprobado</span>;
+    if (status === 'pending') return <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">Pendiente</span>;
+    if (status === 'rejected') return <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">Rechazado</span>;
+    return null;
+  };
+
+  const filtered = businesses.filter(b =>
+    b.name?.toLowerCase().includes(search.toLowerCase()) ||
+    b.category?.toLowerCase().includes(search.toLowerCase()) ||
+    b.neighborhood?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filters = [
+    { key: 'all', label: 'Todos' },
+    { key: 'approved', label: 'Aprobados' },
+    { key: 'pending', label: 'Pendientes' },
+    { key: 'rejected', label: 'Rechazados' },
+  ];
+
+  return (
+    <>
+      <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50">
+        {/* Header */}
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <button onClick={() => onNavigate('admin-dashboard')} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+              <ArrowLeft size={20} className="text-gray-700" />
+            </button>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Todos los Negocios</h1>
+              <p className="text-xs text-gray-500">{filtered.length} de {businesses.length}</p>
+            </div>
+          </div>
+          {/* Buscador */}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar por nombre, categoría, barrio..."
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-400 focus:outline-none focus:border-primary"
+            />
+          </div>
+          {/* Filtros */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {filters.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                  filter === f.key ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        {/* Lista */}
+        <div className="p-4 pb-24 space-y-3">
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl p-4 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-2/3 mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-1/3" />
+              </div>
+            ))
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <Store size={40} className="mx-auto mb-3 opacity-40" />
+              <p className="text-sm">No hay negocios</p>
+            </div>
+          ) : (
+            filtered.map(business => (
+              <div key={business.id} className="bg-white rounded-xl p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="font-bold text-slate-900 truncate">{business.name}</h3>
+                      {statusBadge(business.verification_status, business.is_published)}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">
+                      {business.category}{business.subcategory ? ` · ${business.subcategory}` : ''}{business.neighborhood ? ` · ${business.neighborhood}` : ''}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      ID: {business.id} · Creado: {new Date(business.created_at).toLocaleDateString('es-ES')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => onNavigate('business', { id: business.id })}
+                      className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors"
+                      title="Ver negocio"
+                    >
+                      <Eye size={15} />
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(business)}
+                      disabled={deletingId === business.id}
+                      className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-50"
+                      title="Eliminar negocio"
+                    >
+                      {deletingId === business.id
+                        ? <RefreshCw size={14} className="animate-spin" />
+                        : <Trash2 size={15} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Modal confirmación eliminar */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="text-red-500" size={24} />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-slate-900 mb-1">¿Eliminar negocio?</h3>
+              <p className="text-sm text-gray-600">
+                Se eliminará <strong>"{confirmDelete.name}"</strong> y todos sus datos (ofertas, empleos, reseñas, candidaturas). Esta acción no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 h-12 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDelete)}
+                className="flex-1 h-12 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -20296,6 +20499,8 @@ export default function App() {
         return <ProfilePage onNavigate={navigate} businessStatus={businessStatus} businessData={businessData} validateBusiness={validateBusiness} savedCoupons={savedCoupons} user={user} userOffers={userOffers} userJobOffers={userJobOffers} incomingBudgetRequests={incomingBudgetRequests} userJobApplications={userJobApplications} onDeleteBusiness={deleteBusiness} showToast={showToast} />;
       case 'admin-dashboard':
         return <AdminDashboard onNavigate={navigate} user={user} />;
+      case 'admin-all-businesses':
+        return <AdminAllBusinessesScreen onNavigate={navigate} showToast={showToast} />;
       case 'admin-approve-businesses':
         return <BusinessApprovalScreen onNavigate={navigate} user={user} showToast={showToast} />;
       case 'admin-users':

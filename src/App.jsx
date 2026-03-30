@@ -3885,7 +3885,10 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
             businessId: offer.businesses?.id,
             businessIcon: 'Store',
             image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
-            discount: offer.discount_label || `-${offer.discount_value}%`,
+            discount: offer.discount_label ||
+                      (offer.discount_type === '2x1' ? '2x1' :
+                       offer.discount_type === 'free' ? 'GRATIS' :
+                       (offer.discount_value ? `-${offer.discount_value}%` : 'Oferta')),
             expiresIn: `${daysLeft} día${daysLeft !== 1 ? 's' : ''}`,
             description: offer.description,
             fireCount: offer.fire_count || 0,
@@ -7720,7 +7723,10 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
     type: offer.is_flash ? 'Oferta Flash' : 'Oferta',
     code: 'CORNELLA' + offer.id.substring(0, 8).toUpperCase(),
     qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${offer.id}`,
-    discount: offer.discount_label || offer.discount_value + '%',
+    discount: offer.discount_label ||
+              (offer.discount_type === '2x1' ? '2x1' :
+               offer.discount_type === 'free' ? 'GRATIS' :
+               (offer.discount_value || '0') + '%'),
     originalPrice: offer.original_price,
     discountedPrice: offer.discounted_price,
     conditions: [

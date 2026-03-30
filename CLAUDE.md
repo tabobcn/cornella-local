@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## ESTADO DEL PROYECTO (Actualizado: 2026-03-31)
+## ESTADO DEL PROYECTO (Actualizado: 2026-04-01)
 
 ### ✅ TODO LO IMPLEMENTADO
 
@@ -137,11 +137,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] ReportsScreen para gestionar reportes
 - [x] BusinessAnalyticsScreen — analítica de negocios
 - [x] **AdminUsersScreen** — lista de usuarios con fecha, badge Admin, acciones banear/desbanear/eliminar
-- [x] **AdminAllBusinessesScreen** — lista completa de negocios con filtros (todos/aprobados/pendientes/rechazados), búsqueda y botón eliminar; accesible desde el contador de negocios en el dashboard
+- [x] **AdminAllBusinessesScreen** — lista completa de negocios con filtros (todos/aprobados/pendientes/rechazados), búsqueda y botón eliminar; accesible desde el contador de negocios en el dashboard; usa `select('*')` para evitar 400
 - [x] **AdminSupportScreen** — bandeja de mensajes de soporte (pendiente/resuelto)
 - [x] **Formulario de contacto funcional** — guarda en tabla `support_requests` (Supabase), visible en panel admin
 - [x] Solo visible para usuarios con `is_admin = true`
 - [x] **Sistema de ban** — admin puede banear usuarios; si el usuario baneado intenta acceder → signOut automático + toast de error
+- [x] **Delete usuario con ban previo** — handleDelete hace `is_banned=true` primero, luego delete; si delete falla por FK el usuario queda baneado y no puede entrar
+- [x] **RLS admin en profiles** — políticas DELETE+UPDATE para admins en tabla `profiles` (script: `admin-profiles-policies.sql`)
 
 #### Sistema de Redención de Ofertas
 - [x] **Código único por usuario+oferta** — formato `CL-XXXX`, generado en BD con RPC `get_or_create_redemption`
@@ -206,6 +208,7 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 | **Teléfono presupuesto** | Oculto para ambas partes hasta que el usuario acepte una cotización |
 | **Fotos en oferta** | Obligatorio subir imagen para poder publicar |
 | **Ban de usuarios** | Admin banea desde AdminUsersScreen → `is_banned=true` en profiles → próximo login hace signOut automático |
+| **Delete usuarios** | Delete en admin hace ban primero + luego delete; si hay FK el usuario queda baneado. El auth user de Supabase sigue existiendo (no hay Edge Function de borrado); si el usuario vuelve a registrarse, el check `is_banned` lo expulsa si el perfil persiste |
 
 ---
 
@@ -248,6 +251,7 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   add-birth-date.sql                   — Campo birth_date en profiles
   fix-profiles-rls.sql                 — Políticas RLS para profiles
   add-is-banned.sql                    — Columna is_banned en profiles + índice
+  admin-profiles-policies.sql          — RLS UPDATE+DELETE para admins en profiles
 
 ⚠️ EJECUTAR SI HAY PROBLEMAS:
   fix-profiles-rls.sql                 — Si hay timeout en login (políticas SELECT/UPDATE en profiles)
@@ -370,7 +374,7 @@ Custom colors en `tailwind.config.js`:
 - Campos en BD son snake_case, en React son camelCase — mapear correctamente
 - NUNCA usar `alert()` → siempre `showToast()`
 - NUNCA JOIN `profiles:user_id(...)` en Supabase queries → da PGRST200. Usar `select('*')` y cargar separado
-- NUNCA seleccionar columnas que no existen en la tabla → da 400 Bad Request (ej. `subcategory` no existe en `businesses`)
+- NUNCA seleccionar columnas que no existen en la tabla → da 400 Bad Request (ej. `subcategory` no existe en `businesses`). En pantallas admin usar `select('*')` para evitar este error
 - En tabla `businesses` el propietario se identifica con `owner_id` (NO `user_id`)
 - `showToast` debe pasarse como prop explícitamente a cada componente que lo necesite (no es global)
 - Para OAuth, NO esperar query a profiles para navegar — usar `session.user.user_metadata` directamente

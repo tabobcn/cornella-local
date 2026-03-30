@@ -1497,12 +1497,19 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
         onClick={onClick}
         className="group relative flex w-full flex-row gap-4 rounded-2xl bg-white p-3 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer border border-gray-100"
       >
-        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl">
-          <img
-            src={business.cover_photo || (business.images && business.images[0]) || ''}
-            alt={business.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl bg-gray-100">
+          {business.cover_photo || (business.images && business.images[0]) ? (
+            <img
+              src={business.cover_photo || business.images[0]}
+              alt={business.name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+          ) : (
+            <div className="h-full w-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-primary/10 to-primary/20">
+              <Store className="text-primary/50" size={28} />
+              <span className="text-[10px] font-bold text-primary/60 text-center px-1 leading-tight truncate w-full text-center">{business.name?.charAt(0).toUpperCase()}</span>
+            </div>
+          )}
           {business.isOpen !== undefined && (
             <div className={`absolute bottom-1 right-1 rounded px-1.5 py-0.5 text-[10px] font-bold backdrop-blur-sm ${
               business.isOpen ? 'bg-white/90 text-slate-800' : 'bg-slate-800/90 text-white'
@@ -1545,12 +1552,19 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
       onClick={onClick}
       className="bg-white rounded-2xl shadow-soft overflow-hidden border border-gray-100 cursor-pointer hover:shadow-lg transition-shadow"
     >
-      <div className="relative aspect-video">
-        <img
-          src={business.cover_photo || (business.images && business.images[0]) || ''}
-          alt={business.name}
-          className="w-full h-full object-cover"
-        />
+      <div className="relative aspect-video bg-gray-100">
+        {business.cover_photo || (business.images && business.images[0]) ? (
+          <img
+            src={business.cover_photo || business.images[0]}
+            alt={business.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-primary/20">
+            <Store className="text-primary/40" size={40} />
+            <span className="text-sm font-bold text-primary/50">{business.name?.charAt(0).toUpperCase()}</span>
+          </div>
+        )}
         {business.isNew && (
           <span className="absolute top-3 left-3 bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">
             Nuevo
@@ -1786,11 +1800,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           .select('*')
           .eq('is_verified', true)
           .eq('is_published', true)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(150);
 
         if (error) throw error;
         setBusinesses(data || []);
       } catch (error) {
+        console.error('Error cargando negocios:', error);
       } finally {
         setLoadingBusinesses(false);
       }
@@ -1806,7 +1822,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
         .from('businesses')
         .select('neighborhood')
         .eq('verification_status', 'approved')
-        .eq('is_published', true);
+        .eq('is_published', true)
+        .limit(500);
       const counts = {};
       data?.forEach(b => {
         if (b.neighborhood) counts[b.neighborhood] = (counts[b.neighborhood] || 0) + 1;
@@ -1830,11 +1847,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           .eq('status', 'active')
           .eq('is_visible', true)
           .gt('expires_at', new Date().toISOString())
-          .order('expires_at', { ascending: true });
+          .order('expires_at', { ascending: true })
+          .limit(50);
 
         if (error) throw error;
         setFlashOffers(data || []);
       } catch (error) {
+        console.error('Error cargando ofertas flash:', error);
       } finally {
         setLoadingOffers(false);
       }
@@ -2001,7 +2020,10 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       id: offer.id,
       title: offer.title,
       image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
-      discount: offer.discount_label || offer.discount_value + '%',
+      discount: offer.discount_label ||
+               (offer.discount_type === '2x1' ? '2x1' :
+                offer.discount_type === 'free' ? 'GRATIS' :
+                (offer.discount_value || '0') + '%'),
       discountType: offer.discount_type,
       expiresAt: offer.expires_at,
       timeLeft: timeLeft,
@@ -2470,7 +2492,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                       className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left"
                     >
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                        <img src={business.cover_photo || (business.images && business.images[0]) || ''} alt={business.name} loading="lazy" className="w-full h-full object-cover" />
+                        {business.cover_photo || (business.images && business.images[0]) ? (
+                          <img src={business.cover_photo || business.images[0]} alt={business.name} loading="lazy" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-bold text-base">
+                            {business.name?.charAt(0).toUpperCase() || '?'}
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{business.name}</p>
@@ -2899,7 +2927,8 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
         status: 'pending',
       });
       setAdminNotified(true);
-    } catch {
+    } catch (error) {
+      console.error('Error enviando notificación admin:', error);
       showToast?.('Error al enviar la notificación', 'error');
     } finally {
       setLoading(false);
@@ -3088,7 +3117,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
                         if (error) throw error;
                         const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
                         setFormData(prev => ({ ...prev, photos: [...prev.photos, publicUrl] }));
-                      } catch { showToast?.('Error al subir la foto', 'error'); }
+                      } catch (error) { console.error('Error subiendo foto presupuesto:', error); showToast?.('Error al subir la foto', 'error'); }
                       finally { setUploadingBudgetPhoto(false); }
                     }} />
                   </label>
@@ -3313,7 +3342,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
       setFormData(prev => ({ ...prev, photos: [...prev.photos, publicUrl] }));
-    } catch { showToast?.('Error al subir la foto', 'error'); }
+    } catch (error) { console.error('Error subiendo foto documento:', error); showToast?.('Error al subir la foto', 'error'); }
     finally { setUploadingDPhoto(false); }
   };
 
@@ -3341,7 +3370,8 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
         });
       }
       setSubmitted(true);
-    } catch {
+    } catch (error) {
+      console.error('Error enviando solicitud de soporte:', error);
       showToast?.('Error al enviar la solicitud', 'error');
     } finally {
       setLoading(false);
@@ -3564,11 +3594,13 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
           .eq('status', 'active')
           .eq('is_visible', true)
           .gt('expires_at', new Date().toISOString())
-          .order('expires_at', { ascending: true });
+          .order('expires_at', { ascending: true })
+          .limit(50);
 
         if (error) throw error;
         setFlashOffers(data || []);
       } catch (error) {
+        console.error('Error cargando ofertas flash:', error);
       } finally {
         setLoadingOffers(false);
       }
@@ -3606,7 +3638,10 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
       id: offer.id,
       title: offer.title,
       image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
-      discount: offer.discount_label || offer.discount_value + '%',
+      discount: offer.discount_label ||
+               (offer.discount_type === '2x1' ? '2x1' :
+                offer.discount_type === 'free' ? 'GRATIS' :
+                (offer.discount_value || '0') + '%'),
       discountType: offer.discount_type,
       timeLeft: timeLeft,
       timeMinutes: diffMinutes,
@@ -4715,7 +4750,8 @@ const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
         const { data, error } = await query;
         if (error) throw error;
         setBusinesses(data || []);
-      } catch {
+      } catch (error) {
+        console.error('Error cargando negocios (admin):', error);
         showToast('Error al cargar negocios', 'error');
       } finally {
         setLoading(false);
@@ -4727,11 +4763,31 @@ const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
   const handleDelete = async (business) => {
     setDeletingId(business.id);
     try {
+      // Obtener IDs de ofertas y empleos para borrar sus relaciones primero
+      const { data: offerIds } = await supabase.from('offers').select('id').eq('business_id', business.id);
+      const { data: jobIds } = await supabase.from('jobs').select('id').eq('business_id', business.id);
+      const oIds = (offerIds || []).map(o => o.id);
+      const jIds = (jobIds || []).map(j => j.id);
+
+      if (oIds.length > 0) {
+        await supabase.from('offer_redemptions').delete().in('offer_id', oIds);
+        await supabase.from('offer_fires').delete().in('offer_id', oIds);
+      }
+      if (jIds.length > 0) {
+        await supabase.from('job_applications').delete().in('job_id', jIds);
+      }
+      await supabase.from('offers').delete().eq('business_id', business.id);
+      await supabase.from('jobs').delete().eq('business_id', business.id);
+      await supabase.from('reviews').delete().eq('business_id', business.id);
+      await supabase.from('favorites').delete().eq('business_id', business.id);
+      await supabase.from('notifications').delete().eq('data->>business_id', String(business.id));
+
       const { error } = await supabase.from('businesses').delete().eq('id', business.id);
       if (error) throw error;
       setBusinesses(prev => prev.filter(b => b.id !== business.id));
       showToast(`"${business.name}" eliminado`, 'success');
-    } catch {
+    } catch (err) {
+      console.error('Error eliminando negocio:', err);
       showToast('Error al eliminar el negocio', 'error');
     } finally {
       setDeletingId(null);
@@ -4926,6 +4982,8 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
 
       setBusinesses(data || []);
     } catch (error) {
+      console.error('Error cargando negocios (admin):', error);
+      showToast('Error al cargar negocios', 'error');
     } finally {
       setLoading(false);
     }
@@ -4958,8 +5016,8 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
       await supabase.from('notifications').insert({
         user_id: selectedBusiness.owner_id,
         type: 'business_approved',
-        title: '¡Tu negocio ya está en Cornellà Local! 🎉',
-        message: `"${selectedBusiness.name}" ha sido verificado y ya aparece en la app. Accede a tu panel para añadir ofertas y empleos.`,
+        title: '¡Tu negocio ha sido aprobado! Completa tu perfil 📸',
+        message: `¡Enhorabuena! "${selectedBusiness.name}" ya aparece en Cornellà Local. Entra a editar tu negocio para añadir la foto de portada, galería y descripción — así los clientes te encontrarán mejor.`,
         data: { business_id: selectedBusiness.id },
         is_read: false,
       });
@@ -4969,7 +5027,8 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
       setSelectedBusiness(null);
       loadBusinesses();
     } catch (error) {
-      showToast(`Error: ${error.message}`, 'error');
+      console.error('Error aprobando negocio:', error);
+      showToast('Error al aprobar el negocio. Inténtalo de nuevo.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -6593,7 +6652,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           .from('reviews')
           .select('*')
           .eq('business_id', businessId)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
         if (error) throw error;
         setReviews((data || []).map(mapReview));
       } catch (error) {
@@ -6656,7 +6716,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
       }
 
       // El propietario no puede reseñar su propio negocio
-      if (business?.owner_id === user.id) {
+      if (business?.owner_id === user?.id) {
         setCanReview({ can_review: false, reason: 'No puedes reseñar tu propio negocio' });
         return;
       }
@@ -6675,7 +6735,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     };
 
     checkCanReview();
-  }, [user, businessId]);
+  }, [user?.id, businessId]);
 
   // Cargar contador de favoritos desde Supabase + Realtime
   useEffect(() => {
@@ -6996,8 +7056,8 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
 
   // Función para compartir por WhatsApp
   const handleShareWhatsApp = () => {
-    const profileUrl = `${window.location.origin}?negocio=${business.id}`;
-    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business.name}*\n⭐ ${business.rating} (${business.review_count || business.reviews || 0} reseñas)\n📍 ${business.address}\n📂 ${business.category}\n\n👉 Ver perfil: ${profileUrl}\n\nDescúbrelo en Cornellà Local`;
+    const profileUrl = `${window.location.origin}?negocio=${business?.id}`;
+    const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business?.name}*\n⭐ ${business?.rating} (${business?.review_count || business?.reviews || 0} reseñas)\n📍 ${business?.address}\n📂 ${business?.category}\n\n👉 Ver perfil: ${profileUrl}\n\nDescúbrelo en Cornellà Local`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -7654,6 +7714,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
     title: offer.title,
     description: offer.description || 'Oferta exclusiva para ti.',
     business: offer.businesses?.name || 'Negocio',
+    businessId: offer.businesses?.id || null,
     image: offer.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400'%3E%3Crect width='800' height='400' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3EOferta%3C/text%3E%3C/svg%3E",
     validUntil: formattedExpiry,
     type: offer.is_flash ? 'Oferta Flash' : 'Oferta',
@@ -7753,9 +7814,12 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
             <div className="size-6 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
               <Store className="text-gray-500" size={14} />
             </div>
-            <button className="flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-primary transition-colors">
+            <button
+              onClick={() => coupon.businessId && onNavigate('business', { id: coupon.businessId })}
+              className={`flex items-center gap-1 text-sm font-semibold transition-colors ${coupon.businessId ? 'text-primary hover:text-primary-dark' : 'text-gray-600'}`}
+            >
               {coupon.business}
-              <ChevronRight size={16} />
+              {coupon.businessId && <ChevronRight size={16} />}
             </button>
           </div>
 
@@ -9032,7 +9096,7 @@ const UserReviewsScreen = ({ onNavigate, user }) => {
       setLoading(false);
     };
     loadReviews();
-  }, [user]);
+  }, [user?.id]);
 
   const renderStars = (rating, interactive = false, onSelect = null) => {
     return Array(5).fill(0).map((_, i) => (
@@ -9386,7 +9450,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
     };
 
     loadMyApplications();
-  }, [user]);
+  }, [user?.id]);
 
   // Calcular estadísticas
   const stats = {
@@ -13855,7 +13919,7 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
     } catch (error) {
       setIsSubmitting(false);
       setUploadProgress('');
-      setErrors({ general: `Error al crear el negocio: ${error.message || 'Inténtalo de nuevo'}` });
+      setErrors({ general: error.message?.includes('duplicate') ? 'Ya existe un negocio con estos datos.' : 'Error al crear el negocio. Inténtalo de nuevo.' });
       return;
     }
 
@@ -14342,9 +14406,9 @@ const servicesBySubcategory = {
 };
 
 // Pantalla de Editar Datos del Negocio (Completa con pestañas)
-const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, showToast }) => {
+const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, showToast, initialStep }) => {
   const [activeTab, setActiveTab] = useState('store'); // 'store', 'schedule', 'gallery'
-  const [currentStep, setCurrentStep] = useState(1); // 1=store, 2=schedule, 3=gallery, 4=documents
+  const [currentStep, setCurrentStep] = useState(initialStep || 1); // 1=store, 2=schedule, 3=gallery, 4=documents
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -18960,7 +19024,7 @@ export default function App() {
     };
 
     loadUserFavorites();
-  }, [user]);
+  }, [user?.id]);
 
   // Helper: Mapear tipo de notificación a ruta y parámetros
   const getNotificationRoute = (notif) => {
@@ -19012,7 +19076,7 @@ export default function App() {
       case 'business_approved':
         return {
           route: 'edit-business',
-          params: { businessId: data.business_id }
+          params: { businessId: data.business_id, initialStep: 3 }
         };
       case 'business_rejected':
         return {
@@ -19099,11 +19163,12 @@ export default function App() {
 
         setDynamicNotifications(transformed);
       } catch (error) {
+        console.error('Error cargando notificaciones:', error);
       }
     };
 
     loadUserNotifications();
-  }, [user]);
+  }, [user?.id]);
 
   // Suscripción en tiempo real para notificaciones nuevas
   useEffect(() => {
@@ -19169,7 +19234,7 @@ export default function App() {
     return () => {
       notificationChannel.unsubscribe();
     };
-  }, [user]);
+  }, [user?.id]);
 
   // Estado del onboarding - usar localStorage para persistir
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -19231,7 +19296,8 @@ export default function App() {
             )
           `)
           .eq('status', 'active')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
 
         if (error) throw error;
 
@@ -19425,6 +19491,7 @@ export default function App() {
 
         setUserJobOffers(transformedJobs);
       } catch (error) {
+        console.error('Error cargando empleos del propietario:', error);
       }
     };
 
@@ -19505,6 +19572,7 @@ export default function App() {
 
         setUserOffers(transformedOffers);
       } catch (error) {
+        console.error('Error cargando ofertas del propietario:', error);
       }
     };
 
@@ -19546,6 +19614,7 @@ export default function App() {
 
         setJobApplications(data || []);
       } catch (error) {
+        console.error('Error cargando candidaturas:', error);
       }
     };
 
@@ -19688,7 +19757,7 @@ export default function App() {
     };
 
     loadUserApplications();
-  }, [user]);
+  }, [user?.id]);
 
   // Cargar presupuestos del usuario
   useEffect(() => {
@@ -19745,6 +19814,7 @@ export default function App() {
 
         setUserBudgetRequests(transformed);
       } catch (error) {
+        console.error('Error cargando solicitudes de presupuesto:', error);
       }
     };
 
@@ -20034,7 +20104,7 @@ export default function App() {
   };
 
   // Mantener userRef sincronizado para usarlo en handlers de eventos sin stale closures
-  useEffect(() => { userRef.current = user; }, [user]);
+  useEffect(() => { userRef.current = user; }, [user?.id]);
 
   // Manejar botón atrás del navegador/móvil
   useEffect(() => {
@@ -20225,7 +20295,9 @@ export default function App() {
           discount_type: offerData.discountType,
           // Solo guardar valor numérico si es porcentaje
           discount_value: offerData.discountType === 'percentage' ? (offerData.discount || null) : null,
-          discount_label: offerData.discountLabel || null,
+          discount_label: offerData.discountLabel ||
+                         (offerData.discountType === '2x1' ? '2x1' :
+                          offerData.discountType === 'free' ? 'GRATIS' : null),
           original_price: offerData.originalPrice || null,
           discounted_price: offerData.discountedPrice || null,
           image: offerData.image || null,
@@ -20692,7 +20764,7 @@ export default function App() {
       case 'business-appeal':
         return <BusinessAppealScreen onNavigate={navigate} businessData={businessData} user={user} showToast={showToast} />;
       case 'edit-business':
-        return <EditBusinessScreen onNavigate={navigate} businessData={businessData} onUpdateBusiness={updateBusiness} user={user} showToast={showToast} />;
+        return <EditBusinessScreen onNavigate={navigate} businessData={businessData} onUpdateBusiness={updateBusiness} user={user} showToast={showToast} initialStep={pageParams.initialStep} />;
       case 'validate-code':
         return <ValidateCodeScreen onNavigate={navigate} user={user} showToast={showToast} />;
       case 'owner-dashboard':

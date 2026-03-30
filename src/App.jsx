@@ -22,7 +22,7 @@ import {
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
   Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick, Flag,
-  ShieldAlert, UserCog, BarChart3, XCircle
+  ShieldAlert, UserCog, BarChart3, XCircle, UserX, ShieldOff
 } from 'lucide-react';
 
 import {

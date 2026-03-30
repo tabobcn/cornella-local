@@ -4187,23 +4187,52 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
 // PANEL DE ADMINISTRACIÓN
 // =====================================================
 
-// AdminUsersScreen - Lista de usuarios registrados
-const AdminUsersScreen = ({ onNavigate }) => {
+// AdminUsersScreen - Lista de usuarios registrados con ban y delete
+const AdminUsersScreen = ({ onNavigate, showToast }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null); // { type: 'delete'|'ban'|'unban', user }
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, email, created_at, is_admin')
+        .select('id, full_name, email, created_at, is_admin, is_banned')
         .order('created_at', { ascending: false });
       setUsers(data || []);
       setLoading(false);
     };
     load();
   }, []);
+
+  const handleBanToggle = async (user) => {
+    setActionLoading(true);
+    const newVal = !user.is_banned;
+    const { error } = await supabase.from('profiles').update({ is_banned: newVal }).eq('id', user.id);
+    if (error) {
+      showToast('Error al actualizar', 'error');
+    } else {
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_banned: newVal } : u));
+      showToast(newVal ? `${user.full_name || 'Usuario'} baneado` : `${user.full_name || 'Usuario'} desbaneado`, 'success');
+    }
+    setActionLoading(false);
+    setConfirmAction(null);
+  };
+
+  const handleDelete = async (user) => {
+    setActionLoading(true);
+    const { error } = await supabase.from('profiles').delete().eq('id', user.id);
+    if (error) {
+      showToast('Error al eliminar', 'error');
+    } else {
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      showToast(`Cuenta de ${user.full_name || user.email} eliminada`, 'success');
+    }
+    setActionLoading(false);
+    setConfirmAction(null);
+  };
 
   const filtered = users.filter(u => {
     if (!search.trim()) return true;
@@ -4212,52 +4241,123 @@ const AdminUsersScreen = ({ onNavigate }) => {
   });
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
-      <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
-        <div className="flex items-center px-4 py-4">
-          <button onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
-            <ArrowLeft size={24} />
-          </button>
-          <div className="flex-1 text-center pr-10">
-            <h2 className="text-slate-900 text-lg font-bold">Usuarios</h2>
-            {!loading && <p className="text-xs text-gray-400">{users.length} registrados</p>}
-          </div>
-        </div>
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar por nombre o email..."
-              className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
-            />
-          </div>
-        </div>
-      </header>
-      <div className="p-4 space-y-2">
-        {loading ? (
-          <div className="text-center text-gray-400 py-10">Cargando...</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center text-gray-400 py-10">Sin resultados</div>
-        ) : filtered.map(u => (
-          <div key={u.id} className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-              {(u.full_name || u.email || '?')[0].toUpperCase()}
+    <>
+      <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
+          <div className="flex items-center px-4 py-4">
+            <button onClick={() => onNavigate('admin-dashboard')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+              <ArrowLeft size={24} />
+            </button>
+            <div className="flex-1 text-center pr-10">
+              <h2 className="text-slate-900 text-lg font-bold">Usuarios</h2>
+              {!loading && <p className="text-xs text-gray-400">{filtered.length} de {users.length} registrados</p>}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-slate-800 text-sm truncate">{u.full_name || 'Sin nombre'}</p>
-              <p className="text-xs text-gray-400 truncate">{u.email}</p>
-              <p className="text-xs text-gray-300">{new Date(u.created_at).toLocaleDateString('es-ES')}</p>
-            </div>
-            {u.is_admin && (
-              <span className="text-xs bg-primary/10 text-primary font-semibold px-2 py-0.5 rounded-full shrink-0">Admin</span>
-            )}
           </div>
-        ))}
+          <div className="px-4 pb-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar por nombre o email..."
+                className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
+        </header>
+
+        <div className="p-4 pb-24 space-y-2">
+          {loading ? (
+            <div className="text-center text-gray-400 py-10">Cargando...</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center text-gray-400 py-10">Sin resultados</div>
+          ) : filtered.map(u => (
+            <div key={u.id} className={`bg-white rounded-xl p-4 shadow-sm flex items-center gap-3 ${u.is_banned ? 'opacity-60 border border-red-200' : ''}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${u.is_banned ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary'}`}>
+                {u.is_banned ? <UserX size={18} /> : (u.full_name || u.email || '?')[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="font-semibold text-slate-800 text-sm truncate">{u.full_name || 'Sin nombre'}</p>
+                  {u.is_admin && <span className="text-[10px] bg-primary/10 text-primary font-semibold px-1.5 py-0.5 rounded-full">Admin</span>}
+                  {u.is_banned && <span className="text-[10px] bg-red-100 text-red-600 font-semibold px-1.5 py-0.5 rounded-full">Baneado</span>}
+                </div>
+                <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                <p className="text-[10px] text-gray-300">{new Date(u.created_at).toLocaleDateString('es-ES')}</p>
+              </div>
+              {!u.is_admin && (
+                <div className="flex gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setConfirmAction({ type: u.is_banned ? 'unban' : 'ban', user: u })}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${u.is_banned ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'}`}
+                    title={u.is_banned ? 'Desbanear' : 'Banear'}
+                  >
+                    {u.is_banned ? <UserCheck size={15} /> : <UserX size={15} />}
+                  </button>
+                  <button
+                    onClick={() => setConfirmAction({ type: 'delete', user: u })}
+                    className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
+                    title="Eliminar cuenta"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Modal confirmación */}
+      {confirmAction && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto ${
+              confirmAction.type === 'delete' ? 'bg-red-100' :
+              confirmAction.type === 'ban' ? 'bg-amber-100' : 'bg-green-100'
+            }`}>
+              {confirmAction.type === 'delete' ? <Trash2 className="text-red-500" size={24} /> :
+               confirmAction.type === 'ban' ? <UserX className="text-amber-600" size={24} /> :
+               <UserCheck className="text-green-600" size={24} />}
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-slate-900 mb-1">
+                {confirmAction.type === 'delete' ? '¿Eliminar cuenta?' :
+                 confirmAction.type === 'ban' ? '¿Banear usuario?' : '¿Desbanear usuario?'}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {confirmAction.type === 'delete'
+                  ? <>Se eliminará el perfil de <strong>{confirmAction.user.full_name || confirmAction.user.email}</strong> y todos sus datos. No se puede deshacer.</>
+                  : confirmAction.type === 'ban'
+                  ? <><strong>{confirmAction.user.full_name || confirmAction.user.email}</strong> no podrá acceder a la app.</>
+                  : <>Se restaurará el acceso de <strong>{confirmAction.user.full_name || confirmAction.user.email}</strong>.</>}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="flex-1 h-12 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => confirmAction.type === 'delete' ? handleDelete(confirmAction.user) : handleBanToggle(confirmAction.user)}
+                disabled={actionLoading}
+                className={`flex-1 h-12 rounded-xl text-white font-semibold flex items-center justify-center gap-2 ${
+                  confirmAction.type === 'delete' ? 'bg-red-500 hover:bg-red-600' :
+                  confirmAction.type === 'ban' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
+                {actionLoading ? <RefreshCw size={16} className="animate-spin" /> :
+                 confirmAction.type === 'delete' ? 'Eliminar' :
+                 confirmAction.type === 'ban' ? 'Banear' : 'Desbanear'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -4603,7 +4703,7 @@ const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
       try {
         let query = supabase
           .from('businesses')
-          .select('id, name, category, subcategory, verification_status, is_published, owner_id, created_at, neighborhood')
+          .select('id, name, category, verification_status, is_published, owner_id, created_at, neighborhood')
           .order('created_at', { ascending: false });
 
         if (filter !== 'all') query = query.eq('verification_status', filter);
@@ -4721,7 +4821,7 @@ const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
                       {statusBadge(business.verification_status, business.is_published)}
                     </div>
                     <p className="text-xs text-gray-500 truncate">
-                      {business.category}{business.subcategory ? ` · ${business.subcategory}` : ''}{business.neighborhood ? ` · ${business.neighborhood}` : ''}
+                      {business.category}{business.neighborhood ? ` · ${business.neighborhood}` : ''}
                     </p>
                     <p className="text-[10px] text-gray-400 mt-1">
                       ID: {business.id} · Creado: {new Date(business.created_at).toLocaleDateString('es-ES')}
@@ -18550,11 +18650,19 @@ export default function App() {
 
       // 2. Sincronizar con profiles en segundo plano (sin await — no bloquea el login)
       supabase.from('profiles')
-        .select('id, full_name, avatar_url, is_admin, birth_date')
+        .select('id, full_name, avatar_url, is_admin, birth_date, is_banned')
         .eq('id', session.user.id)
         .single()
         .then(({ data }) => {
           if (data) {
+            // Comprobar si la cuenta está baneada
+            if (data.is_banned === true) {
+              supabase.auth.signOut();
+              setUser(null);
+              setCurrentPage('login');
+              showToast('Tu cuenta ha sido suspendida. Contacta con soporte: soporte@cornellalocal.es', 'error');
+              return;
+            }
             // Perfil existe: actualizar estado con datos completos del perfil
             setUser(prev => ({ ...prev, ...data }));
           } else {
@@ -20504,7 +20612,7 @@ export default function App() {
       case 'admin-approve-businesses':
         return <BusinessApprovalScreen onNavigate={navigate} user={user} showToast={showToast} />;
       case 'admin-users':
-        return <AdminUsersScreen onNavigate={navigate} />;
+        return <AdminUsersScreen onNavigate={navigate} showToast={showToast} />;
       case 'admin-support':
         return <AdminSupportScreen onNavigate={navigate} />;
       case 'business-analytics':

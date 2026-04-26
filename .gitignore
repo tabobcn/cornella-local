@@ -7,3 +7,13 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+# Claude Code internals
+.claude/worktrees/
+
+# Supabase CLI temp
+supabase/.temp/
+
+# Debug / ad-hoc scripts (root)
+/check-*.js
+

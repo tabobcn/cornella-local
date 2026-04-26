@@ -1906,6 +1906,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
         setNewBusinesses(data || []);
       } catch (error) {
+        console.error('Error:', error);
       } finally {
         setLoadingNewBusinesses(false);
       }
@@ -2891,7 +2892,8 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
         .from('businesses')
         .select('subcategory')
         .eq('is_published', true)
-        .eq('verification_status', 'approved');
+        .eq('verification_status', 'approved')
+        .limit(1000);
 
       if (!data) return;
 
@@ -3872,7 +3874,8 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
           .eq('status', 'active')
           .eq('is_visible', true)
           .gt('expires_at', new Date().toISOString())
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
 
         if (error) throw error;
 
@@ -3908,6 +3911,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
           setFiredIds(new Set((fires || []).map(f => f.offer_id)));
         }
       } catch (error) {
+        console.error('Error:', error);
       } finally {
         setLoadingOffers(false);
       }
@@ -4166,6 +4170,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
         if (error) throw error;
         setFavoriteBusinesses(data || []);
       } catch (error) {
+        console.error('Error:', error);
       } finally {
         setLoading(false);
       }
@@ -4238,7 +4243,8 @@ const AdminUsersScreen = ({ onNavigate, showToast }) => {
       const { data } = await supabase
         .from('profiles')
         .select('id, full_name, email, created_at, is_admin, is_banned')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500);
       setUsers(data || []);
       setLoading(false);
     };
@@ -4593,6 +4599,7 @@ const AdminDashboard = ({ onNavigate, user }) => {
           activeJobs: activeJb || 0,
         });
       } catch (error) {
+        console.error('Error:', error);
       } finally {
         setLoading(false);
       }
@@ -4746,7 +4753,8 @@ const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
         let query = supabase
           .from('businesses')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(500);
 
         if (filter !== 'all') query = query.eq('verification_status', filter);
 
@@ -4972,7 +4980,8 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
       let query = supabase
         .from('businesses')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (filter === 'pending') {
         query = query.eq('verification_status', 'pending').is('appeal_message', null);
@@ -5519,7 +5528,7 @@ const BusinessAnalyticsScreen = ({ onNavigate, user, businessData }) => {
     if (businessData?.id) {
       loadAnalytics();
     }
-  }, [businessData, selectedPeriod]);
+  }, [businessData?.id, selectedPeriod]);
 
   const loadAnalytics = async () => {
     setLoading(true);
@@ -5555,6 +5564,7 @@ const BusinessAnalyticsScreen = ({ onNavigate, user, businessData }) => {
       setHourlyStats(hourlyData || []);
 
     } catch (error) {
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -5858,7 +5868,8 @@ const ReportsScreen = ({ onNavigate, user, showToast }) => {
           profiles!reports_user_id_fkey(full_name, email),
           businesses(name, address)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (filter === 'pending') {
         query = query.eq('status', 'pending');
@@ -5869,6 +5880,7 @@ const ReportsScreen = ({ onNavigate, user, showToast }) => {
 
       setReports(data || []);
     } catch (error) {
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -6780,21 +6792,29 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     try {
       await supabase.rpc('increment_business_clicks', { business_id: businessId });
     } catch (error) {
+      console.error('Error:', error);
     }
   };
 
   const handleCallClick = () => {
     handleClick('phone');
     if (business?.phone) {
-      window.location.href = `tel:${business.phone}`;
+      const safePhone = String(business.phone).replace(/[^\d+]/g, '');
+      if (safePhone) window.location.href = `tel:${safePhone}`;
     }
   };
 
   const handleWebClick = () => {
     handleClick('website');
-    if (business?.website) {
-      const url = business.website.startsWith('http') ? business.website : `https://${business.website}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
+    if (!business?.website) return;
+    try {
+      const raw = business.website.trim();
+      const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+      const parsed = new URL(candidate);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return;
+      window.open(parsed.href, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('URL del negocio inválida:', err);
     }
   };
 
@@ -7635,6 +7655,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
         if (error) throw error;
         setOffer(data);
       } catch (error) {
+        console.error('Error:', error);
       } finally {
         setLoading(false);
       }
@@ -7653,6 +7674,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
       try {
         await supabase.rpc('increment_offer_views', { offer_id: couponId });
       } catch (error) {
+        console.error('Error:', error);
       }
     };
 
@@ -8053,6 +8075,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
       try {
         await supabase.rpc('increment_job_views', { job_id: jobId });
       } catch (error) {
+        console.error('Error:', error);
       }
     };
 
@@ -8784,7 +8807,8 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
           .select('*')
           .eq('category_id', categoryId)
           .eq('is_verified', true)
-          .eq('is_published', true);
+          .eq('is_published', true)
+          .limit(150);
 
         if (error) throw error;
 
@@ -8798,6 +8822,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
 
         setBusinesses(filtered);
       } catch (error) {
+        console.error('Error:', error);
       } finally {
         setLoadingBusinesses(false);
       }
@@ -9088,7 +9113,8 @@ const UserReviewsScreen = ({ onNavigate, user }) => {
         .from('reviews')
         .select('*, businesses(name, cover_photo)')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
       if (data) {
         setReviews(data.map(r => ({
           id: r.id,
@@ -9450,6 +9476,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
 
         setApplications(transformed);
       } catch (error) {
+        console.error('Error:', error);
       } finally {
         setLoading(false);
       }
@@ -12059,13 +12086,14 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
 
         setCandidates(transformedCandidates);
       } catch (error) {
+        console.error('Error cargando candidatos:', error);
       } finally {
         setLoading(false);
       }
     };
 
     loadCandidates();
-  }, [user, businessData]);
+  }, [user?.id, businessData?.id]);
 
   // Contar por estado
   const counts = {
@@ -13494,6 +13522,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
 
         if (error) throw error;
       } catch (error) {
+        console.error('Error:', error);
       }
     }
   };
@@ -13654,11 +13683,12 @@ const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, businessData
   useEffect(() => {
     if (businessData?.id) {
       showToast('Ya tienes un negocio registrado. Te redirigimos para editarlo.', 'info');
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         onNavigate('edit-business');
       }, 2000);
+      return () => clearTimeout(timeoutId);
     }
-  }, [businessData, onNavigate, showToast]);
+  }, [businessData?.id]);
 
   // Todas las categorías, renombrando "Más" a "Otros"
   const availableCategories = categories.map(cat =>
@@ -14493,7 +14523,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
         specialClosures: businessData.special_closures || [],
       });
     }
-  }, [businessData]);
+  }, [businessData?.id]);
 
   const availableCategories = categories.map(cat =>
     cat.id === 8 ? { ...cat, name: 'Otros' } : cat
@@ -17592,7 +17622,8 @@ const RegisterScreen = ({ onNavigate }) => {
       } else if (error.message.includes('Email')) {
         setError('Email inválido. Por favor verifica el formato.');
       } else {
-        setError(`Error al crear la cuenta: ${error.message}`);
+        console.error('Error al crear cuenta:', error);
+        setError('No se pudo crear la cuenta. Inténtalo de nuevo en unos minutos.');
       }
     } finally {
       setLoading(false);
@@ -18950,7 +18981,7 @@ export default function App() {
 
       return () => clearTimeout(timer);
     }
-  }, [user, pushPermission, pushSupported]);
+  }, [user?.id, pushPermission, pushSupported]);
 
   // Cargar negocio del propietario cuando cambie el usuario
   useEffect(() => {
@@ -19026,6 +19057,7 @@ export default function App() {
         const favoriteIds = (data || []).map(f => f.business_id);
         setUserFavorites(favoriteIds);
       } catch (error) {
+        console.error('Error:', error);
       }
     };
 
@@ -19238,7 +19270,7 @@ export default function App() {
 
     // Cleanup: desuscribirse cuando el usuario cambie o el componente se desmonte
     return () => {
-      notificationChannel.unsubscribe();
+      supabase.removeChannel(notificationChannel);
     };
   }, [user?.id]);
 
@@ -19502,7 +19534,7 @@ export default function App() {
     };
 
     loadOwnerJobs();
-  }, [businessData]);
+  }, [businessData?.id]);
 
   // Cargar ofertas creadas por el propietario
   useEffect(() => {
@@ -19583,7 +19615,7 @@ export default function App() {
     };
 
     loadOwnerOffers();
-  }, [businessData]);
+  }, [businessData?.id]);
 
   // Cargar candidaturas recibidas para los empleos del negocio
   useEffect(() => {
@@ -19648,10 +19680,10 @@ export default function App() {
 
     return () => {
       if (subscription) {
-        subscription.unsubscribe();
+        supabase.removeChannel(subscription);
       }
     };
-  }, [businessData]);
+  }, [businessData?.id]);
 
   // Cargar solicitudes de presupuesto para TODAS las categorías de TODOS los negocios del usuario
   useEffect(() => {
@@ -19734,6 +19766,7 @@ export default function App() {
 
         setIncomingBudgetRequests(transformedRequests);
       } catch (error) {
+        console.error('Error:', error);
       }
     };
 
@@ -19753,12 +19786,14 @@ export default function App() {
           .from('job_applications')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
 
         if (error) throw error;
 
         setUserJobApplications(data || []);
       } catch (error) {
+        console.error('Error cargando candidaturas del usuario:', error);
       }
     };
 
@@ -19779,7 +19814,8 @@ export default function App() {
           .from('budget_requests')
           .select('*, budget_quotes(id, price, description, business_id)')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
 
         if (error) throw error;
 
@@ -20191,7 +20227,8 @@ export default function App() {
 
       return newBusiness;
     } catch (error) {
-      showToast('Error: ' + (error.message || 'No se pudo registrar el negocio'), 'error');
+      console.error('Error al registrar negocio:', error);
+      showToast('No se pudo registrar el negocio. Inténtalo de nuevo.', 'error');
       throw error; // Re-lanzar para que BusinessVerificationScreen lo maneje
     }
   };

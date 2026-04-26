@@ -2,17 +2,27 @@
 // SUPABASE EDGE FUNCTION: SEND PUSH NOTIFICATION
 // ==============================================
 // Implementación RFC 8291 (aes128gcm) con Deno Web Crypto nativo
-// Deploy: npx supabase functions deploy send-push --no-verify-jwt
+// Deploy: npx supabase functions deploy send-push  (verify_jwt habilitado)
 // ==============================================
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey',
-};
+const ALLOWED_ORIGINS = new Set([
+  'https://www.cornellalocal.es',
+  'https://cornellalocal.es',
+  'http://localhost:3000',
+]);
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : 'https://www.cornellalocal.es';
+  return {
+    'Access-Control-Allow-Origin': allow,
+    'Vary': 'Origin',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey',
+  };
+}
 
 const VAPID_PUBLIC_KEY  = Deno.env.get('VAPID_PUBLIC_KEY')!;
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!;
@@ -133,6 +143,7 @@ async function encryptPayload(keys: { p256dh: string; auth: string }, plaintext:
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 serve(async (req) => {
+  const CORS = corsHeaders(req.headers.get('origin'));
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { ...CORS, 'Content-Type': 'application/json' } });

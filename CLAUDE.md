@@ -191,10 +191,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Ideas debatidas (no implementar sin confirmación)
 - [ ] Notificaciones por email automáticas (triggers PostgreSQL → Edge Function → proveedor email)
 
-### Secrets en Supabase → Edge Functions → Secrets (ya configurados)
-- `VAPID_PUBLIC_KEY` = `BA_vRY5jNz2ro0yPN_-GXmTemr-oH4VzVodixY6ukjYigsm_8GFKFrWggD3VqGwMSAfEjxnZuhNbr04HZAL6Mw8`
-- `VAPID_PRIVATE_KEY` = `***REDACTED-VAPID-PRIVATE-KEY***`
-- `VAPID_SUBJECT` = `mailto:noreply@cornellalocal.es`
+### Secrets en Supabase → Edge Functions → Secrets (configurados en Dashboard)
+- `VAPID_PUBLIC_KEY` — clave pública VAPID (puede aparecer en cliente como `import.meta.env.VITE_VAPID_PUBLIC_KEY`)
+- `VAPID_PRIVATE_KEY` — clave privada VAPID (SOLO en Supabase Edge Functions Secrets, nunca en cliente ni en repo)
+- `VAPID_SUBJECT` — `mailto:noreply@cornellalocal.es`
+
+> ⚠️ Nunca pegues claves privadas en este archivo ni en código. Si necesitas regenerarlas, usa `supabase/generate-vapid-keys.js` y configúralas con `npx supabase secrets set VAPID_PRIVATE_KEY=...`.
 
 ### Nota Push Notifications
 Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).

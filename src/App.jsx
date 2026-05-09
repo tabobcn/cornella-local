@@ -1657,7 +1657,7 @@ const FlashOfferCard = ({ offer, onClick, onExpire }) => {
     e.stopPropagation();
     const text = `¡Oferta Flash en Cornellà! ⚡\n\n*${offer.title}*\n💰 ${offer.discount} de descuento\n⏰ Termina en ${timeLeft}\n\n¡No te la pierdas en Cornellà Local!`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -1768,7 +1768,8 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
     try {
       const saved = localStorage.getItem('recentSearches');
       return saved ? JSON.parse(saved) : [];
-    } catch {
+    } catch (e) {
+      console.error('recentSearches parse error:', e);
       return [];
     }
   });
@@ -3814,7 +3815,7 @@ const OfferCard = ({ offer, isFired, onFire, onNavigate }) => (
         {offer.discount}
       </div>
       <button
-        onClick={(e) => { e.stopPropagation(); const url = `${window.location.origin}${window.location.pathname}?oferta=${offer.id}`; window.open(`https://wa.me/?text=${encodeURIComponent(`¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n👉 ${url}`)}`, '_blank'); }}
+        onClick={(e) => { e.stopPropagation(); const url = `${window.location.origin}${window.location.pathname}?oferta=${offer.id}`; window.open(`https://wa.me/?text=${encodeURIComponent(`¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n👉 ${url}`)}`, '_blank', 'noopener,noreferrer'); }}
         className="absolute top-3 right-3 w-9 h-9 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg"
       >
         <MessageCircle size={16} />
@@ -6822,7 +6823,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     handleClick('map');
     if (business?.address) {
       const address = encodeURIComponent(business.address + ', Cornellà de Llobregat');
-      window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+      window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -7082,7 +7083,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     const profileUrl = `${window.location.origin}?negocio=${business?.id}`;
     const text = `¡Mira este comercio local en Cornellà! 🏪\n\n*${business?.name}*\n⭐ ${business?.rating} (${business?.review_count || business?.reviews || 0} reseñas)\n📍 ${business?.address}\n📂 ${business?.category}\n\n👉 Ver perfil: ${profileUrl}\n\nDescúbrelo en Cornellà Local`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -7774,7 +7775,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
   const handleShareWhatsApp = () => {
     const ofertaUrl = `${window.location.origin}${window.location.pathname}?oferta=${coupon.id}`;
     const text = `¡Mira esta oferta en Cornellà! 🎉\n\n*${coupon.title}*\n🏪 ${coupon.business}\n⏰ Válido hasta ${coupon.validUntil}\n\n👉 Ver oferta: ${ofertaUrl}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleGetCode = async () => {
@@ -8210,7 +8211,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
   const handleShare = () => {
     const empleoUrl = `${window.location.origin}${window.location.pathname}?empleo=${job.id}`;
     const text = `¡Oferta de empleo en Cornellà! 💼\n\n*${job.title}*\n🏢 ${job.company}\n📍 ${job.location}\n💰 ${job.salary}\n\n👉 Ver oferta: ${empleoUrl}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
   // Datos del mapa (placeholder)
@@ -9934,7 +9935,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
               <button
                 onClick={() => {
                   const text = `Tengo una entrevista programada para el puesto de ${showInterviewDetails.position} en ${showInterviewDetails.company}. ${showInterviewDetails.timeline?.find(s => s.current)?.date || ''}`;
-                  window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}`, '_blank');
+                  window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
                 }}
                 className="flex-1 h-11 bg-primary text-white font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
               >
@@ -10406,7 +10407,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
 
   const handleContactWhatsApp = (phone, businessName) => {
     const text = `Hola ${businessName}, te contacto por el presupuesto que me enviaste a través de Cornellà Local.`;
-    window.open(`https://wa.me/34${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/34${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleCall = (phone) => {
@@ -11075,7 +11076,7 @@ const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onA
 
   const handleContactWhatsApp = (phone, customerName) => {
     const text = `Hola, soy de ${businessData?.name || 'tu negocio local'}, te contacto por tu presupuesto en Cornellà Local.`;
-    window.open(`https://wa.me/34${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/34${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
   const getStatusBadge = (status) => {
@@ -18177,7 +18178,8 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
       showToast('Perfil actualizado correctamente', 'success');
       onNavigate('settings');
     } catch (e) {
-      showToast(e.message || 'Error al guardar', 'error');
+      console.error('Error guardando perfil:', e);
+      showToast('Error al guardar el perfil', 'error');
     } finally {
       setSaving(false);
     }

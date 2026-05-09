@@ -7,6 +7,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const ALLOWED_ORIGINS = new Set([
   'https://www.cornellalocal.es',
@@ -27,6 +28,20 @@ function corsHeaders(origin: string | null): Record<string, string> {
 const VAPID_PUBLIC_KEY  = Deno.env.get('VAPID_PUBLIC_KEY')!;
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!;
 const VAPID_SUBJECT     = Deno.env.get('VAPID_SUBJECT') || 'mailto:noreply@cornellalocal.es';
+const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') || Deno.env.get('PROJECT_URL') || '';
+const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY') || '';
+
+function decodeJwtPayload(jwt: string): { sub?: string; role?: string } | null {
+  try {
+    const parts = jwt.split('.');
+    if (parts.length !== 3) return null;
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=');
+    return JSON.parse(atob(pad));
+  } catch {
+    return null;
+  }
+}
 
 // ── base64url ─────────────────────────────────────────────────────────────────
 
@@ -159,11 +174,44 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing: subscription, title, message' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
+    // Validar ownership solo para llamadas authenticated (cliente con JWT de usuario).
+    // - service_role (triggers internos / edge functions con clave): bypass total.
+    // - anon (triggers SQL legacy con anon_key): bypass — no exponen identidad de
+    //   user, así que no podemos validar ownership sin migrarlos a service_role.
+    // - authenticated (cliente): EXIGIMOS que la subscription pertenezca al sub del JWT.
+    const authHeader = req.headers.get('Authorization') || '';
+    const callerJwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    const claims = decodeJwtPayload(callerJwt);
+
+    if (claims?.role === 'authenticated') {
+      if (!claims.sub) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
+      if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+        console.error('[PUSH] Missing SUPABASE_URL or SERVICE_ROLE_KEY for ownership check');
+        return new Response(JSON.stringify({ error: 'Server misconfigured' }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
+      const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+      const { data: owned, error: ownErr } = await admin
+        .from('push_subscriptions')
+        .select('id')
+        .eq('user_id', claims.sub)
+        .filter('subscription->>endpoint', 'eq', subscription.endpoint)
+        .limit(1)
+        .maybeSingle();
+      if (ownErr || !owned) {
+        console.error('[PUSH] Ownership check failed:', ownErr);
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
+    }
+    // role==='anon' o sin claims: no bloqueamos para no romper triggers legacy.
+    // TODO: migrar triggers SQL a service_role y endurecer aquí.
+
     const payload = JSON.stringify({ title, body: message, url: url || '/', type: type || 'general', icon: icon || '/icons/icon-192x192.png', requireInteraction: !!requireInteraction, metadata: metadata || {}, timestamp: Date.now() });
 
     console.log('[PUSH] Sending to:', subscription.endpoint.substring(0, 60));
 
-    const [jwt, body] = await Promise.all([
+    const [vapidToken, body] = await Promise.all([
       vapidJwt(subscription.endpoint),
       encryptPayload(subscription.keys, payload),
     ]);
@@ -171,7 +219,7 @@ serve(async (req) => {
     const res = await fetch(subscription.endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `vapid t=${jwt},k=${VAPID_PUBLIC_KEY}`,
+        'Authorization': `vapid t=${vapidToken},k=${VAPID_PUBLIC_KEY}`,
         'Content-Type': 'application/octet-stream',
         'Content-Encoding': 'aes128gcm',
         'TTL': '86400',

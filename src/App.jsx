@@ -20015,21 +20015,25 @@ export default function App() {
     const navTo = urlParams.get('nav');
 
     if (negocioId) {
+      const params = { id: parseInt(negocioId) };
       setCurrentPage('business');
-      setPageParams({ id: parseInt(negocioId) });
-      window.history.replaceState({}, '', window.location.pathname);
+      setPageParams(params);
+      // Mantenemos la URL ?negocio=ID en la barra para que sea compartible
+      window.history.replaceState({ page: 'business', params }, '', `?negocio=${negocioId}`);
     } else if (ofertaId) {
+      const params = { id: ofertaId };
       setCurrentPage('coupon');
-      setPageParams({ id: ofertaId });
-      window.history.replaceState({}, '', window.location.pathname);
+      setPageParams(params);
+      window.history.replaceState({ page: 'coupon', params }, '', `?oferta=${ofertaId}`);
     } else if (empleoId) {
+      const params = { id: empleoId };
       setCurrentPage('job-detail');
-      setPageParams({ id: empleoId });
-      window.history.replaceState({}, '', window.location.pathname);
+      setPageParams(params);
+      window.history.replaceState({ page: 'job-detail', params }, '', `?empleo=${empleoId}`);
     } else if (navTo) {
       setCurrentPage(navTo);
       setPageParams({});
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({ page: navTo, params: {} }, '', `#${navTo}`);
     }
   }, []);
 
@@ -20207,6 +20211,16 @@ export default function App() {
     }
   };
 
+  // Construye la URL a mostrar para una página dada. Para detalles
+  // compartibles usamos query params canónicos (?oferta, ?negocio, ?empleo)
+  // que coinciden con los deep links que la app ya sabe abrir.
+  const buildUrlFor = (page, params = {}) => {
+    if (page === 'coupon' && params.id) return `?oferta=${params.id}`;
+    if (page === 'business' && params.id) return `?negocio=${params.id}`;
+    if (page === 'job-detail' && params.id) return `?empleo=${params.id}`;
+    return `#${page}`;
+  };
+
   const navigate = (page, params = {}, addToHistory = true) => {
     // Activar animación de salida
     setIsPageTransitioning(true);
@@ -20219,7 +20233,7 @@ export default function App() {
 
       // Añadir al historial del navegador para que funcione el botón atrás
       if (addToHistory) {
-        window.history.pushState({ page, params }, '', `#${page}`);
+        window.history.pushState({ page, params }, '', buildUrlFor(page, params));
       }
 
       // Desactivar transición para mostrar la nueva página
@@ -20257,8 +20271,11 @@ export default function App() {
       // Si no hay estado (file pickers nativos en iOS/Android), ignorar
     };
 
-    // Añadir estado inicial al historial
-    window.history.replaceState({ page: currentPage, params: pageParams }, '', `#${currentPage}`);
+    // Añadir estado inicial al historial sólo si aún no hay state
+    // (el deep link useEffect ya pudo dejar un state válido con su URL canónica)
+    if (!window.history.state || !window.history.state.page) {
+      window.history.replaceState({ page: currentPage, params: pageParams }, '', `#${currentPage}`);
+    }
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);

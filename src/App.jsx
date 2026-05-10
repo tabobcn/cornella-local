@@ -7512,16 +7512,10 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           <div className="flex flex-col gap-4">
             <h2 className="text-lg font-bold text-gray-900">Ubicación</h2>
             <div className="bg-white rounded-2xl overflow-hidden shadow-soft border border-gray-100/50">
-              {/* Google Maps embed */}
+              {/* Google Maps embed (click-to-load si no hay consent de cookies de terceros) */}
               <div className="relative w-full h-48 overflow-hidden">
-                <iframe
-                  title="Mapa ubicación"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent((business.fullAddress || business.address || '') + ', Cornellà de Llobregat')}&output=embed&z=16`}
+                <ConsentedMapEmbed
+                  address={(business.fullAddress || business.address || '') + ', Cornellà de Llobregat'}
                 />
               </div>
               {/* Dirección + botón navegar */}
@@ -13655,16 +13649,80 @@ const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
 };
 
 // =============================================
-// BANNER DE COOKIES
+// HOOK: useCookieConsent — escucha cambios del banner
+// =============================================
+const useCookieConsent = () => {
+  const [consent, setConsent] = useState(() => localStorage.getItem('cookie-consent'));
+  useEffect(() => {
+    const handler = () => setConsent(localStorage.getItem('cookie-consent'));
+    window.addEventListener('cookie-consent-changed', handler);
+    window.addEventListener('storage', handler);
+    return () => {
+      window.removeEventListener('cookie-consent-changed', handler);
+      window.removeEventListener('storage', handler);
+    };
+  }, []);
+  return consent;
+};
+
+// =============================================
+// COMPONENTE: Google Maps embed con click-to-load
+// =============================================
+// Google Maps instala cookies propias (NID, etc.) en cuanto se carga el
+// iframe. Para cumplir RGPD lo cargamos solo si el user ha aceptado todas
+// las cookies. Si no, mostramos un placeholder con consentimiento explícito.
+const ConsentedMapEmbed = ({ address }) => {
+  const consent = useCookieConsent();
+  const [overrideLoad, setOverrideLoad] = useState(false);
+  const shouldLoad = consent === 'all' || overrideLoad;
+
+  if (shouldLoad) {
+    return (
+      <iframe
+        title="Mapa ubicación"
+        width="100%"
+        height="100%"
+        style={{ border: 0 }}
+        loading="lazy"
+        allowFullScreen
+        src={`https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed&z=16`}
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setOverrideLoad(true)}
+      className="w-full h-full bg-gray-100 hover:bg-gray-200 transition-colors flex flex-col items-center justify-center gap-2 p-4 text-center"
+    >
+      <Icon name="MapPin" size={32} className="text-primary" />
+      <p className="text-sm font-semibold text-slate-700">Mostrar mapa</p>
+      <p className="text-xs text-gray-500 leading-relaxed">
+        Cargar el mapa instalará cookies propias de Google.
+        <br />
+        Toca para cargarlo solo esta vez.
+      </p>
+    </button>
+  );
+};
+
+// =============================================
+// BANNER DE COOKIES (RGPD/AEPD compliant)
+// =============================================
+// 3 opciones igualmente visibles: Rechazar / Configurar / Aceptar todas.
+// Rechazar y Aceptar tienen el MISMO peso visual (exigencia AEPD 2023).
 // =============================================
 const CookieBanner = ({ onNavigate }) => {
   const [visible, setVisible] = useState(() => !localStorage.getItem('cookie-consent'));
 
   if (!visible) return null;
 
-  const accept = (value) => {
+  const setConsent = (value) => {
     localStorage.setItem('cookie-consent', value);
+    // Forzar re-render de toda la app para que componentes condicionales
+    // (Analytics, Google Maps embed) reaccionen al consentimiento
     setVisible(false);
+    window.dispatchEvent(new Event('cookie-consent-changed'));
   };
 
   return (
@@ -13677,28 +13735,28 @@ const CookieBanner = ({ onNavigate }) => {
           <div className="flex-1">
             <p className="text-sm font-semibold text-slate-900 mb-1">Cookies y privacidad</p>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Usamos lo mínimo: solo lo necesario para que la app funcione (sesión).
-              Los mapas y el inicio de sesión con Google pueden instalar cookies propias.
+              Usamos solo lo imprescindible para que la app funcione. Si aceptas todas,
+              también activamos analítica anónima y los mapas de Google se cargan automáticamente.
               {' '}
               <button
                 onClick={() => onNavigate('cookies-policy')}
                 className="text-primary font-medium underline"
               >
-                Más info
+                Configurar / más info
               </button>
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => accept('essential')}
-            className="flex-1 h-10 bg-gray-100 text-slate-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors"
+            onClick={() => setConsent('rejected')}
+            className="h-10 bg-white border border-gray-300 text-slate-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
           >
-            Solo esenciales
+            Rechazar
           </button>
           <button
-            onClick={() => accept('all')}
-            className="flex-1 h-10 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+            onClick={() => setConsent('all')}
+            className="h-10 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
           >
             Aceptar todas
           </button>
@@ -17941,6 +17999,19 @@ const LoginScreen = ({ onNavigate, setUser }) => {
               Regístrate
             </button>
           </p>
+        </div>
+
+        {/* Footer legal — accesible sin login (LSSI-CE / RGPD) */}
+        <div className="pt-6 pb-2 border-t border-gray-100 mt-4">
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-gray-400">
+            <button onClick={() => onNavigate('legal-notice')} className="hover:text-primary hover:underline">Aviso legal</button>
+            <span>·</span>
+            <button onClick={() => onNavigate('privacy-policy')} className="hover:text-primary hover:underline">Privacidad</button>
+            <span>·</span>
+            <button onClick={() => onNavigate('cookies-policy')} className="hover:text-primary hover:underline">Cookies</button>
+            <span>·</span>
+            <button onClick={() => onNavigate('terms')} className="hover:text-primary hover:underline">Términos</button>
+          </div>
         </div>
       </div>
     </div>

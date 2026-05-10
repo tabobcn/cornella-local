@@ -13162,88 +13162,111 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
   const privacySections = [
     {
       id: 1,
-      icon: 'FileText',
-      title: 'Información que recopilamos',
-      content: 'Recopilamos información que usted nos proporciona directamente, como nombre, correo electrónico, teléfono y dirección cuando crea una cuenta o solicita un presupuesto.',
+      icon: 'User',
+      title: 'Responsable del tratamiento',
+      content: 'CornellaLocal es un proyecto personal sin ánimo de lucro creado para apoyar al comercio local de Cornellà de Llobregat. El responsable del tratamiento de los datos es una persona física, no una empresa.',
       bullets: [
-        'Datos de registro: nombre, email, teléfono',
-        'Datos de ubicación para mostrar negocios cercanos',
-        'Historial de búsquedas y preferencias',
-        'Comunicaciones con empresas locales'
+        'Responsable: [NOMBRE Y APELLIDOS DEL RESPONSABLE]',
+        'NIF: [NIF DEL RESPONSABLE]',
+        'Localidad: Cornellà de Llobregat (Barcelona)',
+        'Email de contacto en materia de privacidad: privacidad@cornellalocal.es',
+        'Web: https://www.cornellalocal.es'
       ]
     },
     {
       id: 2,
-      icon: 'Shield',
-      title: 'Cómo protegemos sus datos',
-      content: 'Implementamos medidas de seguridad técnicas y organizativas para proteger su información personal contra acceso no autorizado, alteración o destrucción.',
+      icon: 'FileText',
+      title: 'Datos que tratamos y finalidad',
+      content: 'Tratamos únicamente los datos imprescindibles para que la aplicación funcione. Cada dato tiene una finalidad concreta y una base jurídica conforme al artículo 6 del RGPD.',
       bullets: [
-        'Encriptación SSL/TLS en todas las comunicaciones',
-        'Almacenamiento seguro en servidores europeos',
-        'Acceso restringido solo a personal autorizado',
-        'Auditorías de seguridad periódicas'
+        'Email, nombre y avatar (de tu cuenta o tu proveedor OAuth como Google) — para crear y gestionar tu cuenta. Base: ejecución de contrato (art. 6.1.b RGPD).',
+        'Teléfono — solo si lo proporcionas al solicitar un presupuesto, para que el negocio que aceptes pueda contactarte. Base: ejecución de contrato.',
+        'Reseñas, favoritos, candidaturas y solicitudes de presupuesto — para prestar el servicio. Base: ejecución de contrato.',
+        'Documentos acreditativos del negocio (si registras un comercio) — para verificar la titularidad. Base: interés legítimo (art. 6.1.f RGPD).',
+        'Datos de uso anonimizados (visitas, dispositivo, país) vía Vercel Analytics, sin cookies — para mejorar la app. Base: interés legítimo.',
+        'No realizamos perfilados ni decisiones automatizadas con efectos jurídicos.'
       ]
     },
     {
       id: 3,
-      icon: 'Users',
-      title: 'Compartir información',
-      content: 'Solo compartimos su información con los comercios locales cuando usted solicita un presupuesto o contacta con ellos. Nunca vendemos sus datos a terceros.',
+      icon: 'Shield',
+      title: 'Seguridad y plazos de conservación',
+      content: 'Aplicamos medidas técnicas y organizativas razonables para una aplicación de este tamaño. Los datos se conservan únicamente el tiempo necesario para cumplir su finalidad.',
       bullets: [
-        'Comercios locales solo cuando usted lo solicita',
-        'Proveedores de servicios esenciales (hosting, email)',
-        'Autoridades cuando sea legalmente requerido',
-        'Nunca vendemos datos a terceros'
+        'Comunicaciones cifradas con TLS / HTTPS',
+        'Almacenamiento en Supabase (UE) con políticas de Row Level Security activadas en todas las tablas',
+        'Cuenta de usuario: mientras la mantengas activa. Tras la baja se elimina en 30 días, salvo obligación legal de conservar (p. ej. facturación si la hubiera).',
+        'Documentos de verificación de negocio: máximo 30 días tras la aprobación o rechazo definitivo.',
+        'Reseñas y comentarios: mientras el negocio reseñado esté activo o hasta que solicites su supresión.',
+        'Logs técnicos (errores, accesos): hasta 90 días.'
       ]
     },
     {
       id: 4,
-      icon: 'Settings',
-      title: 'Sus derechos',
-      content: 'Conforme al RGPD, tiene derecho a acceder, rectificar, eliminar y portar sus datos personales. También puede oponerse al tratamiento o solicitar su limitación.',
+      icon: 'Users',
+      title: 'Destinatarios y encargados de tratamiento',
+      content: 'CornellaLocal no vende ni cede tus datos a terceros con fines comerciales. Sí los comparte con los proveedores tecnológicos imprescindibles para que la aplicación funcione, todos ellos con sus propias políticas de privacidad RGPD.',
       bullets: [
-        'Derecho de acceso a sus datos',
-        'Derecho de rectificación',
-        'Derecho de supresión ("derecho al olvido")',
-        'Derecho a la portabilidad de datos'
+        'Supabase (Supabase Inc., con servidores EU) — base de datos, autenticación y almacenamiento.',
+        'Vercel (Vercel Inc., USA) — alojamiento web. Transferencia internacional amparada en cláusulas contractuales tipo de la Comisión Europea.',
+        'Resend (Resend Inc., USA) — envío de notificaciones por email cuando aplica. Misma garantía contractual.',
+        'Google (Maps, OAuth, Push notifications vía FCM) — solo si interactúas con esos componentes.',
+        'Negocios locales — únicamente cuando tú decides solicitarles un presupuesto o aplicar a una oferta de empleo. Solo los datos que tú facilitas en esa interacción.',
+        'Autoridades públicas — únicamente cuando exista una obligación legal.'
       ]
     },
     {
       id: 5,
-      icon: 'Cookie',
-      title: 'Cookies y tecnologías similares',
-      content: 'Utilizamos cookies esenciales para el funcionamiento de la aplicación y cookies analíticas para mejorar nuestros servicios.',
+      icon: 'Settings',
+      title: 'Tus derechos (RGPD / LOPDGDD)',
+      content: 'Conforme al Reglamento (UE) 2016/679 y a la Ley Orgánica 3/2018, en cualquier momento puedes ejercer los siguientes derechos sobre tus datos personales de forma gratuita.',
       bullets: [
-        'Cookies esenciales para la sesión',
-        'Cookies de preferencias de usuario',
-        'Cookies analíticas (anonimizadas)',
-        'Puede gestionar las cookies desde Ajustes'
+        'Acceso: saber qué datos tuyos tratamos.',
+        'Rectificación: corregir datos inexactos.',
+        'Supresión ("derecho al olvido"): borrar tus datos cuando ya no sean necesarios.',
+        'Oposición: oponerte a un tratamiento basado en interés legítimo.',
+        'Limitación: pedir que se restrinja el uso temporalmente.',
+        'Portabilidad: recibir tus datos en formato estructurado y reutilizable.',
+        'Retirar el consentimiento: cuando el tratamiento se base en él, sin afectar a la licitud previa.',
+        'Cómo ejercerlos: escribe a privacidad@cornellalocal.es indicando el derecho que quieres ejercer y adjuntando un documento que acredite tu identidad. Responderemos en el plazo máximo de un mes.',
+        'Reclamar ante la AEPD: tienes derecho a presentar reclamación ante la Agencia Española de Protección de Datos (www.aepd.es) si consideras que el tratamiento no se ajusta a la normativa.'
       ]
     },
     {
       id: 6,
-      icon: 'Mail',
-      title: 'Contacto',
-      content: 'Si tiene preguntas sobre nuestra política de privacidad o desea ejercer sus derechos, puede contactarnos en cualquier momento.',
+      icon: 'Cookie',
+      title: 'Cookies y tecnologías similares',
+      content: 'CornellaLocal utiliza únicamente lo imprescindible. Para el detalle completo consulta la Política de Cookies dedicada.',
       bullets: [
-        'Email: privacidad@cornellalocal.com',
-        'Teléfono: 93 XXX XX XX',
-        'Dirección: Cornellà de Llobregat, Barcelona'
+        'No usamos cookies de marketing ni publicitarias propias.',
+        'Vercel Analytics no usa cookies — solo tokens efímeros sin identificación personal.',
+        'Google Maps (cuando ves un mapa de un negocio) puede instalar cookies propias de Google. Es un servicio de terceros con su propia política.',
+        'Inicio de sesión con Google (OAuth) usa cookies de google.com en su flujo de autenticación.',
+        'localStorage (no es cookie técnicamente, pero te lo informamos): guardamos tu sesión, búsquedas recientes y preferencias en tu propio navegador. Puedes borrarlo desde los ajustes del navegador.',
+        'Más información en la Política de Cookies.'
       ]
     },
     {
       id: 7,
       icon: 'Trash2',
       title: 'Documentos de verificación de negocios',
-      content: 'Los documentos aportados para verificar la titularidad de un negocio (CIF/NIF del negocio, licencias comerciales, alta de autónomo, recibos del local, facturas o similares) son tratados conforme al Reglamento (UE) 2016/679 (RGPD) y a la Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD). La base jurídica del tratamiento es el interés legítimo del titular del negocio en acreditar su vínculo con el comercio para publicar contenido en su nombre.',
+      content: 'Si registras un negocio, te pedimos un documento que acredite tu vínculo con el comercio (alta de autónomo, recibo del local, factura a nombre del negocio, licencia comercial, etc.). No solicitamos DNI/NIE personal del propietario.',
       bullets: [
-        'Los documentos se almacenan en infraestructura cifrada y privada (Supabase Storage), no son públicos y no se indexan',
-        'Solo el equipo de administración de CornellaLocal puede acceder a estos documentos durante el proceso de verificación',
-        'No se conservan los documentos tras la aprobación: se eliminan en un plazo máximo de 30 días desde la decisión final',
-        'En caso de rechazo, los documentos se eliminan inmediatamente salvo que se inicie un proceso de apelación, que se resuelve también en el plazo de 30 días tras el cual se eliminan',
-        'No solicitamos DNI/NIE personal del propietario; los documentos requeridos son los del negocio, no documentos de identidad personales',
-        'En cualquier momento puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a privacidad@cornellalocal.com',
-        'Tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (www.aepd.es) si consideras que el tratamiento no se ajusta a la normativa'
+        'Almacenados en Supabase Storage privado (no público, no indexable).',
+        'Solo accesibles por el equipo de administración durante la verificación.',
+        'Plazo máximo de conservación: 30 días tras la aprobación o rechazo definitivo.',
+        'En caso de apelación, se conservan hasta resolver y se eliminan en 30 días.',
+        'Base jurídica: interés legítimo del titular del negocio en acreditar la titularidad.'
+      ]
+    },
+    {
+      id: 8,
+      icon: 'Mail',
+      title: 'Contacto y modificaciones',
+      content: 'Para cualquier asunto relacionado con la privacidad o el ejercicio de tus derechos, escribe a privacidad@cornellalocal.es. Esta política puede actualizarse. La fecha de la última versión se muestra al inicio. Si los cambios son sustanciales, te informaremos.',
+      bullets: [
+        'Email: privacidad@cornellalocal.es',
+        'Última actualización: mayo 2026'
       ]
     },
   ];
@@ -13269,7 +13292,7 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
         {/* Intro */}
         <div className="px-6 pt-6 pb-2">
           <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
-            Última actualización: Enero 2026
+            Última actualización: Mayo 2026
           </p>
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -13330,6 +13353,357 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
           ))}
         </div>
       </main>
+    </div>
+  );
+};
+
+// =============================================
+// AVISO LEGAL (LSSI-CE Ley 34/2002)
+// =============================================
+const LegalNoticeScreen = ({ onNavigate }) => {
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  const sections = [
+    {
+      id: 1,
+      icon: 'User',
+      title: 'Datos identificativos del titular',
+      content: 'En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y Comercio Electrónico (LSSI-CE), se ofrece la siguiente información:',
+      bullets: [
+        'Titular del sitio web: [NOMBRE Y APELLIDOS DEL RESPONSABLE]',
+        'NIF: [NIF DEL RESPONSABLE]',
+        'Domicilio: Cornellà de Llobregat (Barcelona)',
+        'Email de contacto: contacto@cornellalocal.es',
+        'Sitio web: https://www.cornellalocal.es',
+        'Naturaleza del proyecto: iniciativa personal sin ánimo de lucro orientada a apoyar al comercio local.'
+      ]
+    },
+    {
+      id: 2,
+      icon: 'FileText',
+      title: 'Objeto y condiciones de uso',
+      content: 'CornellaLocal es una plataforma que conecta a vecinos de Cornellà de Llobregat con comercios locales, permitiendo descubrir negocios, ver ofertas, solicitar presupuestos y aplicar a ofertas de empleo locales.',
+      bullets: [
+        'El uso de la plataforma supone la aceptación plena de las condiciones del Aviso Legal y la Política de Privacidad.',
+        'El acceso es gratuito. La publicación de contenido por parte de comercios verificados también es gratuita en esta fase del proyecto.',
+        'El usuario se compromete a usar la plataforma conforme a la ley, la moral, el orden público y el respeto a los demás usuarios y comercios.',
+        'Quedan prohibidos los contenidos que sean ilícitos, atenten contra derechos de terceros, sean ofensivos, falsos o engañosos.'
+      ]
+    },
+    {
+      id: 3,
+      icon: 'Shield',
+      title: 'Propiedad intelectual e industrial',
+      content: 'Los contenidos del sitio (textos, gráficos, código fuente, logotipo) son propiedad del titular o de terceros que han autorizado su uso, y están protegidos por la legislación vigente sobre propiedad intelectual e industrial.',
+      bullets: [
+        'No se autoriza la reproducción, distribución, comunicación pública o transformación, salvo con autorización expresa del titular.',
+        'Las marcas, nombres comerciales y logos de los negocios mostrados son propiedad de sus respectivos titulares.',
+        'Las imágenes y contenido aportados por los comercios son propiedad de éstos; al publicarlos en CornellaLocal otorgan licencia no exclusiva para su exhibición en la plataforma.'
+      ]
+    },
+    {
+      id: 4,
+      icon: 'AlertTriangle',
+      title: 'Responsabilidad y exoneración',
+      content: 'El titular del sitio actúa como intermediario entre usuarios y comercios y no es parte de las transacciones que entre ellos se acuerden.',
+      bullets: [
+        'El titular no garantiza la veracidad ni exactitud de la información publicada por los comercios, aunque adopta medidas razonables para verificar su titularidad.',
+        'Las relaciones comerciales (presupuestos, contrataciones, compras) se establecen exclusivamente entre el usuario y el comercio. Cualquier reclamación debe dirigirse al comercio implicado.',
+        'El titular no se responsabiliza de los daños derivados de un mal uso del servicio o de la imposibilidad de acceso por motivos técnicos, mantenimiento o causas ajenas razonables.',
+        'Se reserva el derecho a suspender, modificar o eliminar contenido que infrinja estas condiciones o la legislación vigente.'
+      ]
+    },
+    {
+      id: 5,
+      icon: 'Globe',
+      title: 'Enlaces a terceros',
+      content: 'El sitio puede incluir enlaces a webs de terceros (negocios, redes sociales, servicios externos). El titular no se hace responsable del contenido ni del tratamiento de datos que esos terceros realicen.',
+      bullets: [
+        'Los enlaces externos se abren con atributos noopener/noreferrer.',
+        'La inclusión de enlaces no implica relación, recomendación ni respaldo de los contenidos enlazados.'
+      ]
+    },
+    {
+      id: 6,
+      icon: 'Scale',
+      title: 'Legislación y jurisdicción aplicable',
+      content: 'Las presentes condiciones se rigen por la legislación española.',
+      bullets: [
+        'Para cualquier controversia, las partes se someten a los Juzgados y Tribunales del domicilio del usuario consumidor (art. 90.2 TRLGDCU).',
+        'Si el usuario no es consumidor, los Juzgados y Tribunales de Cornellà de Llobregat / Barcelona.'
+      ]
+    },
+  ];
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-hidden shadow-2xl bg-white">
+      <div className="sticky top-0 z-20 flex items-center justify-between bg-blue-50 px-5 py-4 border-b border-primary/10 backdrop-blur-md">
+        <button
+          onClick={() => onNavigate('settings')}
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-900 hover:bg-black/5 transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">Aviso Legal</h2>
+        <div className="w-10" />
+      </div>
+      <main className="flex-1 overflow-y-auto pb-8">
+        <div className="px-6 pt-6 pb-2">
+          <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
+            Última actualización: Mayo 2026
+          </p>
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <Icon name="FileText" size={32} className="text-primary" />
+            </div>
+          </div>
+          <h3 className="text-slate-900 text-xl font-bold leading-tight mb-3 text-center">
+            Aviso Legal
+          </h3>
+          <p className="text-gray-600 text-sm leading-relaxed text-center">
+            Información obligatoria conforme a la Ley 34/2002 (LSSI-CE).
+          </p>
+        </div>
+        <div className="flex flex-col px-4 py-4 gap-3">
+          {sections.map(section => (
+            <details
+              key={section.id}
+              className="group rounded-xl border border-gray-100 bg-white overflow-hidden transition-all duration-300 open:shadow-md"
+              open={expandedSection === section.id}
+              onClick={(e) => {
+                e.preventDefault();
+                setExpandedSection(expandedSection === section.id ? null : section.id);
+              }}
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-4 p-4 select-none hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary">
+                    <Icon name={section.icon} size={20} />
+                  </div>
+                  <p className="text-slate-900 text-sm font-semibold leading-normal">{section.title}</p>
+                </div>
+                <ChevronDown className={`text-gray-400 transition-transform duration-300 ${expandedSection === section.id ? 'rotate-180' : ''}`} size={20} />
+              </summary>
+              {expandedSection === section.id && (
+                <div className="px-4 pb-4 pt-0">
+                  <div className="pl-13">
+                    <p className="text-gray-500 text-sm leading-relaxed mb-3">{section.content}</p>
+                    {section.bullets && (
+                      <ul className="space-y-2">
+                        {section.bullets.map((b, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                            <Check size={16} className="text-green-500 mt-0.5 shrink-0" />
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </details>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+// =============================================
+// POLÍTICA DE COOKIES
+// =============================================
+const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  const resetConsent = () => {
+    localStorage.removeItem('cookie-consent');
+    if (showToast) showToast('Preferencia de cookies restablecida. Recarga la página para volver a verla.', 'info');
+  };
+
+  const sections = [
+    {
+      id: 1,
+      icon: 'Info',
+      title: '¿Qué son las cookies?',
+      content: 'Una cookie es un pequeño archivo de texto que un sitio web guarda en tu navegador para recordar información (preferencias, sesión, etc.). Junto a las cookies, los sitios pueden usar otras tecnologías similares como localStorage o tokens de sesión, que también te explicamos aquí.',
+      bullets: [
+        'Cookies propias: las pone CornellaLocal directamente en tu navegador.',
+        'Cookies de terceros: las ponen servicios externos integrados (Google Maps, OAuth de Google).',
+        'Sesión: duran hasta que cierras el navegador.',
+        'Persistentes: se mantienen hasta una fecha de caducidad.'
+      ]
+    },
+    {
+      id: 2,
+      icon: 'Shield',
+      title: 'Cookies y tecnologías que usamos',
+      content: 'CornellaLocal procura usar lo mínimo imprescindible. La mayoría de información persistente se guarda en localStorage del navegador, no en cookies.',
+      bullets: [
+        '✅ Esenciales (no requieren consentimiento): tokens de sesión de Supabase Auth para mantenerte logueado, almacenados en localStorage.',
+        '✅ Preferencias propias en localStorage: búsquedas recientes, opciones de notificación, banner de instalación PWA.',
+        '✅ Analítica anónima — Vercel Analytics sin cookies, sin rastreo individual, no requiere consentimiento (cumple con CCPA/GDPR).',
+        '⚠️ Google Maps (de terceros): si visualizas el mapa de un negocio, Google puede instalar cookies propias (NID, etc.).',
+        '⚠️ Google OAuth (de terceros): si inicias sesión con Google, Google gestiona sus propias cookies en su dominio.',
+        '⚠️ Push notifications (Firebase Cloud Messaging de Google): si activas notificaciones, se intercambian tokens con servidores de Google.'
+      ]
+    },
+    {
+      id: 3,
+      icon: 'Settings',
+      title: 'Cómo gestionar tus preferencias',
+      content: 'Tienes el control sobre las cookies en cualquier momento.',
+      bullets: [
+        'Puedes aceptar o rechazar las cookies de terceros desde el banner que aparece en tu primera visita.',
+        'Puedes restablecer tu preferencia con el botón al final de esta página.',
+        'En la mayoría de navegadores puedes bloquear las cookies o eliminarlas desde la configuración. Hazlo desde el menú "Privacidad" o "Historial".',
+        'Bloquear cookies de terceros puede afectar a la visualización de mapas de los negocios o al inicio de sesión con Google. La aplicación seguirá funcionando con login por email.'
+      ]
+    },
+    {
+      id: 4,
+      icon: 'Globe',
+      title: 'Información de los terceros',
+      content: 'Si tienes dudas sobre cómo gestionan tus datos los servicios de terceros que pueden instalar cookies a través de CornellaLocal, consulta sus políticas:',
+      bullets: [
+        'Google (Maps, OAuth, FCM): https://policies.google.com/privacy',
+        'Vercel (hosting, analytics): https://vercel.com/legal/privacy-policy',
+        'Supabase (hosting de datos): https://supabase.com/privacy'
+      ]
+    },
+  ];
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md relative overflow-hidden shadow-2xl bg-white">
+      <div className="sticky top-0 z-20 flex items-center justify-between bg-blue-50 px-5 py-4 border-b border-primary/10 backdrop-blur-md">
+        <button
+          onClick={() => onNavigate('settings')}
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-900 hover:bg-black/5 transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">Política de Cookies</h2>
+        <div className="w-10" />
+      </div>
+      <main className="flex-1 overflow-y-auto pb-8">
+        <div className="px-6 pt-6 pb-2">
+          <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
+            Última actualización: Mayo 2026
+          </p>
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <Icon name="Cookie" size={32} className="text-primary" />
+            </div>
+          </div>
+          <h3 className="text-slate-900 text-xl font-bold leading-tight mb-3 text-center">
+            Política de Cookies
+          </h3>
+          <p className="text-gray-600 text-sm leading-relaxed text-center">
+            Cómo usamos cookies y tecnologías similares en CornellaLocal.
+          </p>
+        </div>
+        <div className="flex flex-col px-4 py-4 gap-3">
+          {sections.map(section => (
+            <details
+              key={section.id}
+              className="group rounded-xl border border-gray-100 bg-white overflow-hidden transition-all duration-300 open:shadow-md"
+              open={expandedSection === section.id}
+              onClick={(e) => {
+                e.preventDefault();
+                setExpandedSection(expandedSection === section.id ? null : section.id);
+              }}
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-4 p-4 select-none hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary">
+                    <Icon name={section.icon} size={20} />
+                  </div>
+                  <p className="text-slate-900 text-sm font-semibold leading-normal">{section.title}</p>
+                </div>
+                <ChevronDown className={`text-gray-400 transition-transform duration-300 ${expandedSection === section.id ? 'rotate-180' : ''}`} size={20} />
+              </summary>
+              {expandedSection === section.id && (
+                <div className="px-4 pb-4 pt-0">
+                  <div className="pl-13">
+                    <p className="text-gray-500 text-sm leading-relaxed mb-3">{section.content}</p>
+                    {section.bullets && (
+                      <ul className="space-y-2">
+                        {section.bullets.map((b, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                            <Check size={16} className="text-green-500 mt-0.5 shrink-0" />
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </details>
+          ))}
+        </div>
+        <div className="px-6 mt-6">
+          <button
+            onClick={resetConsent}
+            className="w-full h-12 bg-gray-100 text-slate-700 font-medium rounded-xl hover:bg-gray-200 transition-colors text-sm"
+          >
+            Restablecer preferencia de cookies
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+// =============================================
+// BANNER DE COOKIES
+// =============================================
+const CookieBanner = ({ onNavigate }) => {
+  const [visible, setVisible] = useState(() => !localStorage.getItem('cookie-consent'));
+
+  if (!visible) return null;
+
+  const accept = (value) => {
+    localStorage.setItem('cookie-consent', value);
+    setVisible(false);
+  };
+
+  return (
+    <div className="fixed bottom-0 inset-x-0 z-[100] mx-auto max-w-md p-3">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <Icon name="Cookie" size={20} className="text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-slate-900 mb-1">Cookies y privacidad</p>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Usamos lo mínimo: solo lo necesario para que la app funcione (sesión).
+              Los mapas y el inicio de sesión con Google pueden instalar cookies propias.
+              {' '}
+              <button
+                onClick={() => onNavigate('cookies-policy')}
+                className="text-primary font-medium underline"
+              >
+                Más info
+              </button>
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => accept('essential')}
+            className="flex-1 h-10 bg-gray-100 text-slate-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors"
+          >
+            Solo esenciales
+          </button>
+          <button
+            onClick={() => accept('all')}
+            className="flex-1 h-10 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+          >
+            Aceptar todas
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -18599,6 +18973,30 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
               <ChevronRight className="text-gray-400" size={20} />
             </button>
             <button
+              onClick={() => onNavigate('cookies-policy')}
+              className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-100 p-2 rounded-lg text-slate-600">
+                  <Icon name="Cookie" size={20} />
+                </div>
+                <span className="font-medium text-slate-700">Política de cookies</span>
+              </div>
+              <ChevronRight className="text-gray-400" size={20} />
+            </button>
+            <button
+              onClick={() => onNavigate('legal-notice')}
+              className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-100 p-2 rounded-lg text-slate-600">
+                  <Icon name="Scale" size={20} />
+                </div>
+                <span className="font-medium text-slate-700">Aviso legal</span>
+              </div>
+              <ChevronRight className="text-gray-400" size={20} />
+            </button>
+            <button
               onClick={() => onNavigate('contact-support')}
               className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
             >
@@ -20888,6 +21286,10 @@ export default function App() {
         />;
       case 'privacy-policy':
         return <PrivacyPolicyScreen onNavigate={navigate} />;
+      case 'legal-notice':
+        return <LegalNoticeScreen onNavigate={navigate} />;
+      case 'cookies-policy':
+        return <CookiesPolicyScreen onNavigate={navigate} showToast={showToast} />;
       case 'contact-support':
         return <ContactSupportScreen onNavigate={navigate} showToast={showToast} />;
       default:
@@ -21037,6 +21439,7 @@ export default function App() {
       >
         {renderPage()}
       </div>
+      <CookieBanner onNavigate={navigate} />
     </div>
     </ErrorBoundary>
   );

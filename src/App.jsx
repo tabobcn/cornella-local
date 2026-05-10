@@ -13166,8 +13166,8 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
       title: 'Responsable del tratamiento',
       content: 'CornellaLocal es un proyecto personal sin ánimo de lucro creado para apoyar al comercio local de Cornellà de Llobregat. El responsable del tratamiento de los datos es una persona física, no una empresa.',
       bullets: [
-        'Responsable: [NOMBRE Y APELLIDOS DEL RESPONSABLE]',
-        'NIF: [NIF DEL RESPONSABLE]',
+        'Responsable: Carlos Taboada Valencia',
+        'NIF: 46462083J',
         'Localidad: Cornellà de Llobregat (Barcelona)',
         'Email de contacto en materia de privacidad: cornellalocal@gmail.com',
         'Web: https://www.cornellalocal.es'
@@ -13370,8 +13370,8 @@ const LegalNoticeScreen = ({ onNavigate }) => {
       title: 'Datos identificativos del titular',
       content: 'En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y Comercio Electrónico (LSSI-CE), se ofrece la siguiente información:',
       bullets: [
-        'Titular del sitio web: [NOMBRE Y APELLIDOS DEL RESPONSABLE]',
-        'NIF: [NIF DEL RESPONSABLE]',
+        'Titular del sitio web: Carlos Taboada Valencia',
+        'NIF: 46462083J',
         'Domicilio: Cornellà de Llobregat (Barcelona)',
         'Email de contacto: cornellalocal@gmail.com',
         'Sitio web: https://www.cornellalocal.es',

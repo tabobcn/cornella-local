@@ -9,22 +9,23 @@
 --    DELETE para que cada usuario pueda borrar SUS propias notificaciones.
 -- ============================================================================
 
--- ─── 1) SUPPORT_REQUESTS: permitir insert anónimo (con validación trigger) ───
+-- ─── 1) SUPPORT_REQUESTS: permitir insert anónimo (con validación) ──────────
+-- La tabla NO tiene columna user_id (sólo name/email/subject/message/status).
+-- Validamos tamaños mínimos para evitar spam vacío; el trigger
+-- support_rate_limit (security-hardening.sql) hace rate limit por email.
 
 DROP POLICY IF EXISTS "support_insert_anon" ON public.support_requests;
+DROP POLICY IF EXISTS "support_insert_authenticated" ON public.support_requests;
+DROP POLICY IF EXISTS "Anyone can insert support requests" ON public.support_requests;
 
-CREATE POLICY "support_insert_anon"
+-- Insert para cualquiera (anon o authenticated) con validación mínima
+CREATE POLICY "support_insert_any"
   ON public.support_requests FOR INSERT
-  TO anon
   WITH CHECK (
-    -- Validación básica de tamaño; el trigger support_rate_limit hace el resto
-    -- (rate limit por email + cleanup + checks adicionales)
-    user_id IS NULL
+    length(coalesce(name, '')) BETWEEN 1 AND 100
     AND length(coalesce(email, '')) BETWEEN 5 AND 200
     AND length(coalesce(message, '')) BETWEEN 5 AND 2000
   );
-
--- (la política support_insert_authenticated de hardening v1 sigue activa para users logueados)
 
 
 -- ─── 2) NOTIFICATIONS: permitir DELETE de las propias ──────────────────────

@@ -18994,6 +18994,11 @@ export default function App() {
               navigate('job-detail', { id: params.get('empleo') });
               return;
             }
+            // Deep link genérico ?nav=PAGE para llevar a una pantalla concreta
+            if (params.get('nav')) {
+              navigate(params.get('nav'), {});
+              return;
+            }
 
             // Fallback: hash legacy (#/page) o pathname
             const hashPath = (parsed.hash || '').replace(/^#\/?/, '');
@@ -19992,12 +19997,13 @@ export default function App() {
     };
   }, []);
 
-  // Detectar parámetro de URL para abrir perfil de negocio, oferta o empleo directamente
+  // Detectar parámetro de URL para abrir perfil de negocio, oferta, empleo o pantalla directa
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const negocioId = urlParams.get('negocio');
     const ofertaId = urlParams.get('oferta');
     const empleoId = urlParams.get('empleo');
+    const navTo = urlParams.get('nav');
 
     if (negocioId) {
       setCurrentPage('business');
@@ -20010,6 +20016,10 @@ export default function App() {
     } else if (empleoId) {
       setCurrentPage('job-detail');
       setPageParams({ id: empleoId });
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (navTo) {
+      setCurrentPage(navTo);
+      setPageParams({});
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);

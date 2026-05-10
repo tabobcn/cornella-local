@@ -20570,20 +20570,17 @@ export default function App() {
     }
 
     try {
-
-      // 1. Obtener TODOS los budget_quotes para este request
+      // 1. Contar cuántos quotes hay en este request (sin JOIN anidado: viola regla del proyecto)
       const { data: allQuotes, error: quotesError } = await supabase
         .from('budget_quotes')
-        .select('id, business_id, price, businesses(name, owner_id)')
+        .select('id')
         .eq('budget_request_id', requestId);
 
-      if (quotesError) {
-      }
+      if (quotesError) console.error('Error cargando quotes:', quotesError);
 
-      // 2. Identificar quotes rechazados (todos menos el aceptado)
-      const rejectedQuotes = (allQuotes || []).filter(q => q.id !== quote.id);
+      const rejectedCount = ((allQuotes || []).filter(q => q.id !== quote.id)).length;
 
-      // 3. Actualizar el estado del budget_request a 'accepted'
+      // 2. Marcar el budget_request como aceptado
       const { error: updateError } = await supabase
         .from('budget_requests')
         .update({ status: 'accepted' })
@@ -20591,16 +20588,16 @@ export default function App() {
 
       if (updateError) throw updateError;
 
-      // 4. Obtener información del negocio aceptado
+      // 3. Datos del negocio aceptado (query separada — sin JOIN anidado)
       const { data: business, error: businessError } = await supabase
         .from('businesses')
         .select('name, owner_id')
         .eq('id', quote.businessId)
         .single();
 
-      if (businessError) {
-      }
+      if (businessError) console.error('Error cargando negocio:', businessError);
 
+      // 4. Notificar a los demás negocios
       const { error: notifyError } = await supabase.rpc('notify_budget_quote_result', {
         p_budget_request_id: requestId,
         p_accepted_quote_id: quote.id,
@@ -20608,12 +20605,12 @@ export default function App() {
 
       if (notifyError) throw notifyError;
 
-      const rejectedCount = rejectedQuotes.length;
       const message = rejectedCount > 0
         ? `¡Presupuesto de ${business?.name || 'negocio'} aceptado! ${rejectedCount} negocio${rejectedCount > 1 ? 's' : ''} notificado${rejectedCount > 1 ? 's' : ''}.`
         : `¡Presupuesto de ${business?.name || 'negocio'} aceptado!`;
       showToast(message, 'success');
     } catch (error) {
+      console.error('Error aceptando presupuesto:', error);
       showToast('Error al aceptar el presupuesto', 'error');
     }
   };

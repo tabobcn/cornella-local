@@ -13177,7 +13177,7 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
         'Teléfono — solo si lo proporcionas al solicitar un presupuesto, para que el negocio que aceptes pueda contactarte. Base: ejecución de contrato.',
         'Reseñas, favoritos, candidaturas y solicitudes de presupuesto — para prestar el servicio. Base: ejecución de contrato.',
         'Documentos acreditativos del negocio (si registras un comercio) — para verificar la titularidad. Base: interés legítimo (art. 6.1.f RGPD).',
-        'Datos de uso anonimizados (visitas, dispositivo, país) vía Vercel Analytics, sin cookies — para mejorar la app. Base: interés legítimo.',
+        'Datos de uso anonimizados (visitas, dispositivo, país) vía Vercel Analytics, que no usa cookies. Por prudencia, CornellaLocal activa Vercel Analytics únicamente si aceptas todas las cookies/preferencias en el banner. Base: consentimiento (art. 6.1.a RGPD).',
         'No realizamos perfilados ni decisiones automatizadas con efectos jurídicos.'
       ]
     },
@@ -13535,7 +13535,7 @@ const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
       bullets: [
         '✅ Esenciales (no requieren consentimiento): tokens de sesión de Supabase Auth para mantenerte logueado, almacenados en localStorage.',
         '✅ Preferencias propias en localStorage: búsquedas recientes, opciones de notificación, banner de instalación PWA.',
-        '✅ Analítica anónima — Vercel Analytics sin cookies, sin rastreo individual, no requiere consentimiento (cumple con CCPA/GDPR).',
+        '✅ Analítica anónima — Vercel Analytics no usa cookies y no rastrea individualmente. Aunque técnicamente no requeriría consentimiento, CornellaLocal lo activa solo si aceptas todas las cookies/preferencias en el banner.',
         '⚠️ Google Maps (de terceros): si visualizas el mapa de un negocio, Google puede instalar cookies propias (NID, etc.).',
         '⚠️ Google OAuth (de terceros): si inicias sesión con Google, Google gestiona sus propias cookies en su dominio.',
         '⚠️ Push notifications (Firebase Cloud Messaging de Google): si activas notificaciones, se intercambian tokens con servidores de Google.'

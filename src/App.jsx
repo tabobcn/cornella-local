@@ -13235,12 +13235,15 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
       id: 7,
       icon: 'Trash2',
       title: 'Documentos de verificación de negocios',
-      content: 'Los documentos aportados para verificar un negocio (CIF/NIF, licencias comerciales, recibos a nombre del negocio o documentos acreditativos similares) son utilizados exclusivamente para el proceso de verificación de la titularidad. Se almacenan de forma privada y se eliminan cuando el negocio es aprobado o rechazado definitivamente.',
+      content: 'Los documentos aportados para verificar la titularidad de un negocio (CIF/NIF del negocio, licencias comerciales, alta de autónomo, recibos del local, facturas o similares) son tratados conforme al Reglamento (UE) 2016/679 (RGPD) y a la Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD). La base jurídica del tratamiento es el interés legítimo del titular del negocio en acreditar su vínculo con el comercio para publicar contenido en su nombre.',
       bullets: [
-        'Los documentos se eliminan una vez completado el proceso de verificación',
-        'No se conservan copias de documentos de identidad tras la aprobación o rechazo',
-        'Solo el equipo de administración accede a estos documentos durante la revisión',
-        'En caso de apelación, los documentos se eliminan al resolverse'
+        'Los documentos se almacenan en infraestructura cifrada y privada (Supabase Storage), no son públicos y no se indexan',
+        'Solo el equipo de administración de CornellaLocal puede acceder a estos documentos durante el proceso de verificación',
+        'No se conservan los documentos tras la aprobación: se eliminan en un plazo máximo de 30 días desde la decisión final',
+        'En caso de rechazo, los documentos se eliminan inmediatamente salvo que se inicie un proceso de apelación, que se resuelve también en el plazo de 30 días tras el cual se eliminan',
+        'No solicitamos DNI/NIE personal del propietario; los documentos requeridos son los del negocio, no documentos de identidad personales',
+        'En cualquier momento puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a privacidad@cornellalocal.com',
+        'Tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (www.aepd.es) si consideras que el tratamiento no se ajusta a la normativa'
       ]
     },
   ];

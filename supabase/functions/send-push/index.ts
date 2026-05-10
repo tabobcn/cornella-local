@@ -174,6 +174,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing: subscription, title, message' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
+    // Sanitizar URL: solo aceptar same-origin del frontend o paths relativos.
+    // Previene que un trigger comprometido envíe pushes con URLs maliciosas.
+    let safeUrl = '/';
+    if (url) {
+      try {
+        const u = new URL(url, 'https://www.cornellalocal.es');
+        if (u.origin === 'https://www.cornellalocal.es' || u.origin === 'https://cornellalocal.es') {
+          safeUrl = u.pathname + u.search + u.hash;
+        }
+      } catch {
+        // url malformada → usar fallback
+      }
+    }
+
     // Validar caller:
     // - service_role (triggers internos / edge functions con clave): bypass total.
     // - authenticated (cliente): EXIGIMOS que la subscription pertenezca al sub del JWT.
@@ -214,7 +228,7 @@ serve(async (req) => {
       }
     }
 
-    const payload = JSON.stringify({ title, body: message, url: url || '/', type: type || 'general', icon: icon || '/icons/icon-192x192.png', requireInteraction: !!requireInteraction, metadata: metadata || {}, timestamp: Date.now() });
+    const payload = JSON.stringify({ title, body: message, url: safeUrl, type: type || 'general', icon: icon || '/icons/icon-192x192.png', requireInteraction: !!requireInteraction, metadata: metadata || {}, timestamp: Date.now() });
 
     console.log('[PUSH] Sending to:', subscription.endpoint.substring(0, 60));
 

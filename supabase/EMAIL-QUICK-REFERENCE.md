@@ -1,5 +1,10 @@
 # 📧 Notificaciones por Email - Referencia Rápida
 
+> ⚠️ **DOC OBSOLETA (auditoría 2026-05-10)** — Los triggers SQL de este proyecto
+> usan `app.settings.supabase_service_role_key` desde Vault, **no `anon_key`**.
+> Si vas a re-ejecutar setup, usa `setup-email-triggers.sql` actualizado.
+> Mantenido como referencia histórica.
+
 ## 🚀 Setup Inicial (Solo una vez)
 
 ```bash

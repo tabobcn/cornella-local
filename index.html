@@ -96,20 +96,7 @@
     }
     </script>
 
-    <!-- Registrar Service Worker -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registrado:', registration.scope);
-            })
-            .catch((error) => {
-              console.log('SW error:', error);
-            });
-        });
-      }
-    </script>
+    <!-- Service Worker se registra desde src/main.jsx (única fuente) -->
 
     <!-- Estilos para splash screen mientras carga -->
     <style>

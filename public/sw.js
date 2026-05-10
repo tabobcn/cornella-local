@@ -237,8 +237,20 @@ self.addEventListener('notificationclick', (event) => {
   // Si el usuario cerró la notificación, no hacer nada
   if (event.action === 'close') return;
 
-  // URL a la que navegar
-  const urlToOpen = new URL(event.notification.data.url || '/', self.location.origin).href;
+  // URL a la que navegar — forzar same-origin para prevenir abuso si alguien
+  // logra inyectar una notificación con URL externa
+  const requested = event.notification.data?.url || '/';
+  let urlToOpen = self.location.origin + '/';
+  try {
+    const parsed = new URL(requested, self.location.origin);
+    if (parsed.origin === self.location.origin) {
+      urlToOpen = parsed.href;
+    } else {
+      console.warn('[SW] URL externa bloqueada:', parsed.origin);
+    }
+  } catch (e) {
+    console.warn('[SW] URL inválida en notificación:', requested);
+  }
 
   event.waitUntil(
     clients.matchAll({

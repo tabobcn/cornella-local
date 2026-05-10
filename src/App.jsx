@@ -13235,7 +13235,7 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
       id: 7,
       icon: 'Trash2',
       title: 'Documentos de verificación de negocios',
-      content: 'Los documentos aportados para verificar un negocio (DNI, licencias, certificados) son utilizados exclusivamente para el proceso de verificación.',
+      content: 'Los documentos aportados para verificar un negocio (CIF/NIF, licencias comerciales, recibos a nombre del negocio o documentos acreditativos similares) son utilizados exclusivamente para el proceso de verificación de la titularidad. Se almacenan de forma privada y se eliminan cuando el negocio es aprobado o rechazado definitivamente.',
       bullets: [
         'Los documentos se eliminan una vez completado el proceso de verificación',
         'No se conservan copias de documentos de identidad tras la aprobación o rechazo',
@@ -14037,10 +14037,10 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
         documents.push(licenseUrl);
       }
 
-      // 3. Subir DNI
+      // 3. Subir documento acreditativo del negocio
       if (idFile && businessId) {
-        setUploadProgress('Subiendo documento de identidad...');
-        const idUrl = await uploadFile(idFile, businessId, 'dni');
+        setUploadProgress('Subiendo documento acreditativo...');
+        const idUrl = await uploadFile(idFile, businessId, 'acreditacion');
         documents.push(idUrl);
       }
 
@@ -14156,12 +14156,16 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
           )}
         </div>
 
-        {/* ID Upload */}
+        {/* Documento acreditativo del negocio */}
         <div className="mb-6">
           <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-1">
-            Documento de Identidad (DNI/NIE)
+            Documento acreditativo del negocio
             <span className="text-red-500">*</span>
           </h3>
+          <p className="text-xs text-gray-500 mb-2">
+            Sube uno de estos a nombre del negocio: alta de autónomo, recibo de luz/agua/alquiler del local,
+            factura reciente o cualquier documento oficial que acredite tu vínculo con el negocio.
+          </p>
           <label className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
             errors.id
               ? 'border-red-300 bg-red-50 hover:bg-red-100'
@@ -14172,7 +14176,7 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
             <input
               type="file"
               className="hidden"
-              accept=".png,.jpg,.jpeg"
+              accept=".pdf,.png,.jpg,.jpeg"
               onChange={(e) => {
                 setIdFile(e.target.files[0]);
                 setErrors(prev => ({ ...prev, id: null }));
@@ -14191,9 +14195,9 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
                   <Camera size={24} />
                 </div>
                 <p className={`text-sm font-medium ${errors.id ? 'text-red-500' : 'text-slate-700'}`}>
-                  Subir foto del documento
+                  Subir documento
                 </p>
-                <p className="text-gray-400 text-xs mt-1">Asegúrate que los datos sean legibles</p>
+                <p className="text-gray-400 text-xs mt-1">PDF o imagen — datos legibles</p>
               </>
             )}
           </label>

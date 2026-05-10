@@ -19184,10 +19184,10 @@ export default function App() {
 
       // Ofertas y empleos de negocios favoritos
       case 'new_offer':
-        return {
-          route: 'business',
-          params: { id: data.business_id }
-        };
+        // Si tenemos offer_id vamos directos al detalle; fallback al perfil del negocio
+        return data.offer_id
+          ? { route: 'coupon-detail', params: { id: data.offer_id } }
+          : { route: 'business', params: { id: data.business_id } };
       case 'new_job':
         return {
           route: 'job-detail',

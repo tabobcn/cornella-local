@@ -18992,7 +18992,7 @@ export default function App() {
 
             // Deep links canónicos de la app (?oferta, ?negocio, ?empleo)
             if (params.get('oferta')) {
-              navigate('coupon-detail', { id: params.get('oferta') });
+              navigate('coupon', { id: params.get('oferta') });
               return;
             }
             if (params.get('negocio')) {
@@ -19186,7 +19186,7 @@ export default function App() {
       case 'new_offer':
         // Si tenemos offer_id vamos directos al detalle; fallback al perfil del negocio
         return data.offer_id
-          ? { route: 'coupon-detail', params: { id: data.offer_id } }
+          ? { route: 'coupon', params: { id: data.offer_id } }
           : { route: 'business', params: { id: data.business_id } };
       case 'new_job':
         return {
@@ -20019,7 +20019,7 @@ export default function App() {
       setPageParams({ id: parseInt(negocioId) });
       window.history.replaceState({}, '', window.location.pathname);
     } else if (ofertaId) {
-      setCurrentPage('coupon-detail');
+      setCurrentPage('coupon');
       setPageParams({ id: ofertaId });
       window.history.replaceState({}, '', window.location.pathname);
     } else if (empleoId) {

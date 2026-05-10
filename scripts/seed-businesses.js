@@ -6,8 +6,29 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const supabaseUrl = 'https://zwhlcgckhocdkdxilldo.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3aGxjZ2NraG9jZGtkeGlsbGRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2NDM2MzIsImV4cCI6MjA4NTIxOTYzMn0.pMmohH-dgY0HQS1yD6KFcv3_vFhU0YD1a8wL1gLCw8M';
+const readLocalEnv = () => {
+  const envPath = path.join(__dirname, '..', '.env');
+  if (!fs.existsSync(envPath)) return {};
+
+  return Object.fromEntries(
+    fs.readFileSync(envPath, 'utf8')
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#') && line.includes('='))
+      .map(line => {
+        const [key, ...valueParts] = line.split('=');
+        return [key, valueParts.join('=').replace(/^["']|["']$/g, '')];
+      })
+  );
+};
+
+const localEnv = readLocalEnv();
+const supabaseUrl = process.env.VITE_SUPABASE_URL || localEnv.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || localEnv.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env o variables de entorno.');
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

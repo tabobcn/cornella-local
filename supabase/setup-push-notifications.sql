@@ -5,6 +5,9 @@
 -- Triggers para enviar push notifications automáticas
 -- =============================================
 
+-- Requiere guardar la service role key en Supabase Vault:
+--   select vault.create_secret('TU_SERVICE_ROLE_KEY', 'supabase_service_role_key', 'Service role key para triggers');
+
 -- =============================================
 -- TABLA: push_subscriptions
 -- =============================================
@@ -53,6 +56,55 @@ CREATE POLICY "Users can delete own subscriptions"
   ON public.push_subscriptions FOR DELETE
   USING (auth.uid() = user_id);
 
+-- RPC segura para registrar la suscripción desde el cliente.
+-- Evita fallos por RLS o por perfiles OAuth todavía no materializados.
+CREATE OR REPLACE FUNCTION public.register_push_subscription(
+  p_subscription JSONB,
+  p_user_agent TEXT DEFAULT NULL
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
+  v_email TEXT := auth.jwt() ->> 'email';
+  v_full_name TEXT := COALESCE(
+    auth.jwt() -> 'user_metadata' ->> 'full_name',
+    auth.jwt() -> 'user_metadata' ->> 'name',
+    split_part(auth.jwt() ->> 'email', '@', 1),
+    'Usuario'
+  );
+  v_endpoint TEXT := p_subscription ->> 'endpoint';
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Usuario no autenticado';
+  END IF;
+
+  IF v_endpoint IS NULL OR v_endpoint = '' THEN
+    RAISE EXCEPTION 'Subscription sin endpoint';
+  END IF;
+
+  INSERT INTO public.profiles (id, email, full_name)
+  VALUES (
+    v_user_id,
+    COALESCE(v_email, v_user_id::text || '@push.local'),
+    v_full_name
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = COALESCE(public.profiles.email, EXCLUDED.email),
+    full_name = COALESCE(public.profiles.full_name, EXCLUDED.full_name);
+
+  DELETE FROM public.push_subscriptions
+  WHERE user_id = v_user_id
+    AND subscription ->> 'endpoint' = v_endpoint;
+
+  INSERT INTO public.push_subscriptions (user_id, subscription, user_agent, is_active, last_used_at)
+  VALUES (v_user_id, p_subscription, p_user_agent, true, NOW());
+
+  RETURN true;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION public.register_push_subscription(JSONB, TEXT) TO authenticated;
+
 
 -- =============================================
 -- FUNCIÓN HELPER: Enviar Push Notification
@@ -71,12 +123,19 @@ RETURNS INTEGER AS $$
 DECLARE
   subscription_record RECORD;
   function_url TEXT;
-  anon_key TEXT;
+  service_role_key TEXT;
   notifications_sent INTEGER := 0;
 BEGIN
-  -- URL de la Edge Function
-  function_url := current_setting('app.settings.supabase_url', true) || '/functions/v1/send-push';
-  anon_key := current_setting('app.settings.supabase_anon_key', true);
+  function_url := 'https://zwhlcgckhocdkdxilldo.supabase.co/functions/v1/send-push';
+  SELECT decrypted_secret INTO service_role_key
+  FROM vault.decrypted_secrets
+  WHERE name = 'supabase_service_role_key'
+  LIMIT 1;
+
+  IF service_role_key IS NULL OR service_role_key = '' THEN
+    RAISE WARNING 'Missing Vault secret: supabase_service_role_key';
+    RETURN 0;
+  END IF;
 
   -- Obtener todas las subscripciones activas del usuario
   FOR subscription_record IN
@@ -91,7 +150,7 @@ BEGIN
         url := function_url,
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || anon_key
+          'Authorization', 'Bearer ' || service_role_key
         ),
         body := jsonb_build_object(
           'subscription', subscription_record.subscription,
@@ -139,7 +198,7 @@ DECLARE
   business_data RECORD;
   app_url TEXT;
 BEGIN
-  app_url := 'https://cornellalocal.vercel.app';
+  app_url := 'https://www.cornellalocal.es';
 
   -- Enviar push a los top 5 negocios mejor valorados de la categoría
   FOR business_data IN
@@ -194,7 +253,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener datos de la solicitud
     SELECT br.user_id
@@ -245,7 +304,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener datos del empleo y propietario
     SELECT
@@ -297,7 +356,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   IF (TG_OP = 'UPDATE' AND OLD.status != NEW.status AND NEW.status != 'pending') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener datos del empleo
     SELECT
@@ -370,7 +429,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   IF (TG_OP = 'INSERT' AND NEW.is_visible = true AND NEW.status = 'active') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener nombre del negocio
     SELECT name INTO business_name

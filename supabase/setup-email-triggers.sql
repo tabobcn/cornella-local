@@ -8,6 +8,9 @@
 -- 4. Cambia el estado de una candidatura
 -- =============================================
 
+-- Requiere guardar la service role key en Supabase Vault:
+--   select vault.create_secret('TU_SERVICE_ROLE_KEY', 'supabase_service_role_key', 'Service role key para triggers');
+
 -- =============================================
 -- FUNCIÓN HELPER: Llamar Edge Function
 -- =============================================
@@ -19,18 +22,25 @@ CREATE OR REPLACE FUNCTION send_email_notification(
 RETURNS void AS $$
 DECLARE
   function_url TEXT;
-  anon_key TEXT;
+  service_role_key TEXT;
 BEGIN
-  -- URL de la Edge Function (ajustar según tu proyecto)
-  function_url := current_setting('app.settings.supabase_url', true) || '/functions/v1/send-email';
-  anon_key := current_setting('app.settings.supabase_anon_key', true);
+  function_url := 'https://zwhlcgckhocdkdxilldo.supabase.co/functions/v1/send-email';
+  SELECT decrypted_secret INTO service_role_key
+  FROM vault.decrypted_secrets
+  WHERE name = 'supabase_service_role_key'
+  LIMIT 1;
+
+  IF service_role_key IS NULL OR service_role_key = '' THEN
+    RAISE WARNING 'Missing Vault secret: supabase_service_role_key';
+    RETURN;
+  END IF;
 
   -- Llamar a la Edge Function de forma asíncrona usando pg_net
   PERFORM net.http_post(
     url := function_url,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || anon_key
+      'Authorization', 'Bearer ' || service_role_key
     ),
     body := jsonb_build_object(
       'type', email_type,
@@ -63,7 +73,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   -- Obtener URL de la app
-  app_url := 'https://cornellalocal.vercel.app'; -- Cambiar a tu dominio
+  app_url := 'https://www.cornellalocal.es';
 
   -- Obtener negocios de la categoría
   FOR business_data IN
@@ -118,7 +128,7 @@ DECLARE
 BEGIN
   -- Solo notificar cuando se crea una cotización
   IF (TG_OP = 'INSERT') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener datos de la solicitud y usuario
     SELECT
@@ -173,7 +183,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener datos del empleo y propietario
     SELECT
@@ -229,7 +239,7 @@ DECLARE
 BEGIN
   -- Solo notificar cuando cambia el estado y no es "pending"
   IF (TG_OP = 'UPDATE' AND OLD.status != NEW.status AND NEW.status != 'pending') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener email del candidato
     SELECT profiles.email INTO candidate_email
@@ -290,7 +300,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   IF (TG_OP = 'INSERT' AND NEW.is_visible = true AND NEW.status = 'active') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener nombre del negocio
     SELECT name INTO business_name
@@ -344,7 +354,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   IF (TG_OP = 'INSERT' AND NEW.status = 'active') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     -- Obtener nombre del negocio
     SELECT name INTO business_name

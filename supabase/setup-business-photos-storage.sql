@@ -2,10 +2,16 @@
 -- Ejecutar en Supabase SQL Editor
 
 -- 1. Permitir a usuarios autenticados subir fotos
+DROP POLICY IF EXISTS "Usuarios autenticados pueden subir fotos" ON storage.objects;
+DROP POLICY IF EXISTS "business-photos-insert" ON storage.objects;
+
 CREATE POLICY "Usuarios autenticados pueden subir fotos"
 ON storage.objects FOR INSERT
 TO authenticated
-WITH CHECK (bucket_id = 'business-photos');
+WITH CHECK (
+  bucket_id = 'business-photos'
+  AND auth.uid()::text = (storage.foldername(name))[1]
+);
 
 -- 2. Permitir a cualquiera ver las fotos (bucket público)
 CREATE POLICY "Fotos de negocios son públicas"

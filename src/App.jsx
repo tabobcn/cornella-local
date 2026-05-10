@@ -54,6 +54,174 @@ import { DeleteConfirmModal, DeactivateConfirmModal } from './components/Confirm
 // FUNCIONES HELPER
 // ==============================================
 
+const getPrivateStoragePath = (value, bucketName) => {
+  if (!value) return '';
+  const raw = String(value);
+
+  try {
+    const url = new URL(raw);
+    const markers = [
+      `/storage/v1/object/public/${bucketName}/`,
+      `/storage/v1/object/sign/${bucketName}/`,
+      `/storage/v1/object/authenticated/${bucketName}/`,
+    ];
+    const marker = markers.find(item => url.pathname.includes(item));
+    if (marker) {
+      return decodeURIComponent(url.pathname.split(marker)[1] || '');
+    }
+  } catch {
+    // El valor ya puede ser un path de Storage.
+  }
+
+  return raw.replace(/^\/+/, '');
+};
+
+const getFileNameFromStorageRef = (value, bucketName) => {
+  const path = getPrivateStoragePath(value, bucketName);
+  return path.split('/').pop() || 'documento';
+};
+
+const createPrivateSignedUrl = async (bucketName, value, expiresIn = 300) => {
+  const path = getPrivateStoragePath(value, bucketName);
+  if (!path) return null;
+
+  const { data, error } = await supabase.storage
+    .from(bucketName)
+    .createSignedUrl(path, expiresIn);
+
+  if (error) throw error;
+  return data?.signedUrl || null;
+};
+
+const SignedVerificationImage = ({ documentRef, className, alt = '' }) => {
+  const [signedUrl, setSignedUrl] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    createPrivateSignedUrl('verification-documents', documentRef)
+      .then(url => { if (active) setSignedUrl(url || ''); })
+      .catch(() => { if (active) setSignedUrl(''); });
+    return () => { active = false; };
+  }, [documentRef]);
+
+  if (!signedUrl) {
+    return <div className={`${className} bg-gray-100`} />;
+  }
+
+  return (
+    <a href={signedUrl} target="_blank" rel="noopener noreferrer">
+      <img src={signedUrl} alt={alt} className={className} />
+    </a>
+  );
+};
+
+const VerificationDocumentCard = ({ documentRef, index, onRemove, layout = 'large' }) => {
+  const [signedUrl, setSignedUrl] = useState('');
+  const fileName = getFileNameFromStorageRef(documentRef, 'verification-documents');
+  const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+  const isPDF = fileExt === 'pdf';
+
+  useEffect(() => {
+    let active = true;
+    createPrivateSignedUrl('verification-documents', documentRef)
+      .then(url => { if (active) setSignedUrl(url || ''); })
+      .catch(() => { if (active) setSignedUrl(''); });
+    return () => { active = false; };
+  }, [documentRef]);
+
+  if (layout === 'row') {
+    return (
+      <div className="bg-white rounded-xl p-4 border border-gray-100 flex items-center gap-4">
+        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {isPDF || !signedUrl ? (
+            <FileText className="text-blue-600" size={24} />
+          ) : (
+            <img src={signedUrl} alt={`Documento ${index + 1}`} className="w-full h-full object-cover rounded-xl" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-slate-900 truncate">{isPDF ? 'Documento PDF' : 'Imagen'}</p>
+          <p className="text-xs text-gray-500">Documento {index + 1} - {fileExt.toUpperCase()}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <a
+            href={signedUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-disabled={!signedUrl}
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${signedUrl ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-gray-100 text-gray-400 pointer-events-none'}`}
+          >
+            <ExternalLink size={16} />
+          </a>
+          {onRemove && (
+            <button
+              onClick={() => onRemove(documentRef)}
+              className="w-9 h-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all">
+      {!isPDF && signedUrl ? (
+        <div className="w-full h-48 bg-gray-100">
+          <img src={signedUrl} alt={`Documento ${index + 1}`} className="w-full h-full object-contain" />
+        </div>
+      ) : (
+        <div className="w-full h-48 bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+          <FileText className="text-red-500" size={64} />
+        </div>
+      )}
+      <div className="p-4 flex items-center justify-between">
+        <div>
+          <p className="font-medium text-slate-900">{isPDF ? 'Documento PDF' : 'Imagen'}</p>
+          <p className="text-xs text-gray-500">Documento #{index + 1} - {fileExt.toUpperCase()}</p>
+        </div>
+        <a
+          href={signedUrl || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-disabled={!signedUrl}
+          className={`h-10 px-4 rounded-lg font-medium transition-colors flex items-center gap-2 ${signedUrl ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-200 text-gray-400 pointer-events-none'}`}
+        >
+          <ExternalLink size={16} />
+          Abrir
+        </a>
+      </div>
+    </div>
+  );
+};
+
+const PrivateStorageLink = ({ bucketName, fileRef, children, className }) => {
+  const [signedUrl, setSignedUrl] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    createPrivateSignedUrl(bucketName, fileRef)
+      .then(url => { if (active) setSignedUrl(url || ''); })
+      .catch(() => { if (active) setSignedUrl(''); });
+    return () => { active = false; };
+  }, [bucketName, fileRef]);
+
+  return (
+    <a
+      href={signedUrl || '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-disabled={!signedUrl}
+      className={`${className || ''} ${signedUrl ? '' : 'pointer-events-none opacity-60'}`}
+    >
+      {children}
+    </a>
+  );
+};
+
+
 /**
  * Calcula la distancia entre dos puntos geográficos usando la fórmula de Haversine
  * @param {number} lat1 - Latitud del punto 1
@@ -3115,7 +3283,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
                       setUploadingBudgetPhoto(true);
                       try {
                         const fileExt = file.name.split('.').pop();
-                        const fileName = `budget-requests/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+                        const fileName = `${user?.id || 'unknown'}/budget-requests/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
                         const { error } = await supabase.storage.from('business-photos').upload(fileName, file, { cacheControl: '3600', upsert: false });
                         if (error) throw error;
                         const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
@@ -3340,7 +3508,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
     setUploadingDPhoto(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `budget-requests/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const fileName = `${user?.id || 'unknown'}/budget-requests/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
       const { error } = await supabase.storage.from('business-photos').upload(fileName, file, { cacheControl: '3600', upsert: false });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
@@ -5026,15 +5194,6 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
       if (error) throw error;
       if (!data || data.length === 0) throw new Error('Sin permisos. Ejecuta el script SQL de políticas RLS para admin.');
 
-      await supabase.from('notifications').insert({
-        user_id: selectedBusiness.owner_id,
-        type: 'business_approved',
-        title: '¡Tu negocio ha sido aprobado! Completa tu perfil 📸',
-        message: `¡Enhorabuena! "${selectedBusiness.name}" ya aparece en Cornellà Local. Entra a editar tu negocio para añadir la foto de portada, galería y descripción — así los clientes te encontrarán mejor.`,
-        data: { business_id: selectedBusiness.id },
-        is_read: false,
-      });
-
       showToast(`✅ ${selectedBusiness.name} aprobado`, 'success');
       setShowApproveModal(false);
       setSelectedBusiness(null);
@@ -5072,17 +5231,6 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
         rejection_reason: rejectReason || 'No cumple los requisitos.',
         rejection_count: newRejectionCount,
       }).eq('id', selectedBusiness.id).then(() => {}).catch(() => {});
-
-      // Notificar al propietario del rechazo
-      await supabase.from('notifications').insert({
-        user_id: selectedBusiness.owner_id,
-        type: 'business_rejected',
-        title: `Solicitud de negocio rechazada${newRejectionCount > 1 ? ` (vez ${newRejectionCount})` : ''}`,
-        message: `"${selectedBusiness.name}": ${rejectReason || 'No cumple los requisitos.'}. Puedes apelar con más información.`,
-        data: { business_id: selectedBusiness.id, rejection_reason: rejectReason, rejection_count: newRejectionCount },
-        is_read: false,
-        created_at: new Date().toISOString(),
-      });
 
       showToast(`${selectedBusiness.name} rechazado. El propietario ha sido notificado`, 'info');
       setShowRejectModal(false);
@@ -5306,9 +5454,12 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
                           {business.appeal_images?.length > 0 && (
                             <div className="flex gap-2 mt-2">
                               {business.appeal_images.map((url, i) => (
-                                <a key={i} href={url} target="_blank" rel="noreferrer">
-                                  <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border border-amber-200" />
-                                </a>
+                                <SignedVerificationImage
+                                  key={i}
+                                  documentRef={url}
+                                  alt={`Apelación ${i + 1}`}
+                                  className="w-16 h-16 object-cover rounded-lg border border-amber-200"
+                                />
                               ))}
                             </div>
                           )}
@@ -5393,51 +5544,14 @@ const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
             <div className="p-6 overflow-y-auto max-h-[calc(85vh-80px)]">
               {selectedBusiness.verification_documents && selectedBusiness.verification_documents.length > 0 ? (
                 <div className="space-y-4">
-                  {selectedBusiness.verification_documents.map((docUrl, index) => {
-                    const fileName = docUrl.split('/').pop() || `Documento ${index + 1}`;
-                    const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
-                    const isPDF = fileExt === 'pdf';
-
-                    return (
-                      <div key={index} className="bg-gray-50 rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all">
-                        {/* Preview */}
-                        {!isPDF ? (
-                          <div className="w-full h-48 bg-gray-100">
-                            <img
-                              src={docUrl}
-                              alt={`Documento ${index + 1}`}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-full h-48 bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
-                            <FileText className="text-red-500" size={64} />
-                          </div>
-                        )}
-
-                        {/* Info and Actions */}
-                        <div className="p-4 flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-slate-900">
-                              {isPDF ? 'Documento PDF' : 'Imagen'}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Documento #{index + 1} • {fileExt.toUpperCase()}
-                            </p>
-                          </div>
-                          <a
-                            href={docUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="h-10 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center gap-2"
-                          >
-                            <ExternalLink size={16} />
-                            Abrir
-                          </a>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {selectedBusiness.verification_documents.map((docUrl, index) => (
+                    <VerificationDocumentCard
+                      key={`${docUrl}-${index}`}
+                      documentRef={docUrl}
+                      index={index}
+                      layout="large"
+                    />
+                  ))}
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -8151,13 +8265,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
 
         if (uploadError) throw uploadError;
 
-        // Obtener URL pública
-        const { data: { publicUrl } } = supabase
-          .storage
-          .from('job-applications')
-          .getPublicUrl(filePath);
-
-        cvUrl = publicUrl;
+        cvUrl = filePath;
       }
 
       // Guardar candidatura en Supabase
@@ -12190,31 +12298,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
           } else {
           }
 
-          // Crear notificaciones para los rechazados
-          const rejectNotifications = otherCandidates.map(c => ({
-            user_id: c.userId,
-            type: 'application_rejected',
-            title: 'Candidatura no seleccionada',
-            message: `Gracias por tu interés en ${hiredCandidate.jobTitle}. Lamentablemente, hemos seleccionado a otro candidato. ¡Te deseamos mucho éxito en tu búsqueda!`,
-            data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
-            is_read: false,
-            created_at: new Date().toISOString()
-          }));
-
-          await supabase.from('notifications').insert(rejectNotifications);
         }
-
-        // Crear notificación para el contratado
-        await supabase.from('notifications').insert({
-          user_id: hiredCandidate.userId,
-          type: 'application_accepted',
-          title: '¡Felicidades! Has sido seleccionado',
-          message: `¡Enhorabuena! Has sido seleccionado para el puesto de ${hiredCandidate.jobTitle}. La empresa se pondrá en contacto contigo pronto.`,
-          data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
-          is_read: false,
-          created_at: new Date().toISOString()
-        });
-
 
         // Cerrar automáticamente la oferta de empleo
         const { error: jobCloseError } = await supabase
@@ -12227,17 +12311,8 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         }
       }
 
-      // Si rechazamos manualmente a alguien, enviar notificación
+      // Si rechazamos manualmente a alguien, el trigger de BD envía la notificación
       if (newStatus === 'rejected' && hiredCandidate) {
-        await supabase.from('notifications').insert({
-          user_id: hiredCandidate.userId,
-          type: 'application_rejected',
-          title: 'Candidatura no seleccionada',
-          message: `Gracias por tu interés en ${hiredCandidate.jobTitle}. Lamentablemente, hemos decidido no continuar con tu candidatura. ¡Te deseamos mucho éxito!`,
-          data: { job_id: hiredCandidate.jobId, job_title: hiredCandidate.jobTitle },
-          is_read: false,
-          created_at: new Date().toISOString()
-        });
         showToast('Candidato rechazado. Se ha enviado notificación.', 'success');
       }
     } catch (error) {
@@ -12274,18 +12349,6 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
         .eq('id', selectedCandidate.id);
 
       if (error) throw error;
-
-
-      // Enviar notificación al candidato
-      await supabase.from('notifications').insert({
-        user_id: selectedCandidate.userId,
-        type: 'interview_scheduled',
-        title: '¡Entrevista programada!',
-        message: `Has sido preseleccionado para ${selectedCandidate.jobTitle}. Fecha: ${interviewDateTime.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. ¡Mucha suerte!`,
-        data: { job_id: selectedCandidate.jobId, job_title: selectedCandidate.jobTitle, interview_date: interviewDateTime.toISOString() },
-        is_read: false,
-        created_at: new Date().toISOString()
-      });
 
       showToast(`Entrevista programada. ${selectedCandidate.candidate.name} ha sido notificado.`, 'success');
     } catch (error) {
@@ -12480,10 +12543,9 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
               {selectedCandidate.candidate.cv && (
                 <div className="mb-4">
                   <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Currículum Vitae</p>
-                  <a
-                    href={selectedCandidate.candidate.cv}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <PrivateStorageLink
+                    bucketName="job-applications"
+                    fileRef={selectedCandidate.candidate.cv}
                     className="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-100 rounded-xl hover:border-red-200 hover:shadow-md transition-all group"
                   >
                     <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -12496,7 +12558,7 @@ const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showToast })
                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:bg-red-500 transition-colors">
                       <ArrowRight size={18} className="text-red-500 group-hover:text-white transition-colors" />
                     </div>
-                  </a>
+                  </PrivateStorageLink>
                 </div>
               )}
 
@@ -13934,11 +13996,7 @@ const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, user }) =>
 
     if (error) throw error;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('verification-documents')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
+    return fileName;
   };
 
   const handleSubmit = async () => {
@@ -14222,14 +14280,12 @@ const BusinessAppealScreen = ({ onNavigate, businessData, user, showToast }) => 
       for (const img of appealImages) {
         if (img.file) {
           const fileExt = img.file.name.split('.').pop();
-          const fileName = `${businessData.id}/appeal-${Date.now()}-${Math.random().toString(36).substr(2,5)}.${fileExt}`;
+          const fileName = `${user.id}/appeal-${businessData.id}-${Date.now()}-${Math.random().toString(36).substr(2,5)}.${fileExt}`;
           const { error: uploadError } = await supabase.storage
             .from('verification-documents')
             .upload(fileName, img.file, { cacheControl: '3600', upsert: false });
           if (uploadError) throw uploadError;
-          const { data: { publicUrl } } = supabase.storage
-            .from('verification-documents').getPublicUrl(fileName);
-          uploadedUrls.push(publicUrl);
+          uploadedUrls.push(fileName);
         }
       }
 
@@ -14737,13 +14793,8 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
 
       if (uploadError) throw uploadError;
 
-      // Obtener URL pública
-      const { data: { publicUrl } } = supabase.storage
-        .from('verification-documents')
-        .getPublicUrl(fileName);
-
       // Actualizar array de documentos en la BD
-      const newDocuments = [...verificationDocuments, publicUrl];
+      const newDocuments = [...verificationDocuments, fileName];
 
       const { error: updateError } = await supabase
         .from('businesses')
@@ -14775,9 +14826,10 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
 
       if (error) throw error;
 
-      // Eliminar de Storage (opcional, puedes dejarlo para historial)
-      // const fileName = documentUrl.split('/').pop();
-      // await supabase.storage.from('verification-documents').remove([`${user.id}/${fileName}`]);
+      const storagePath = getPrivateStoragePath(documentUrl, 'verification-documents');
+      if (storagePath) {
+        await supabase.storage.from('verification-documents').remove([storagePath]);
+      }
 
       setVerificationDocuments(newDocuments);
       showToast('Documento eliminado', 'info');
@@ -15705,56 +15757,15 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
               {verificationDocuments.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-bold text-slate-900">Documentos subidos</h4>
-                  {verificationDocuments.map((docUrl, index) => {
-                    const fileName = docUrl.split('/').pop() || `Documento ${index + 1}`;
-                    const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
-                    const isPDF = fileExt === 'pdf';
-
-                    return (
-                      <div key={index} className="bg-white rounded-xl p-4 border border-gray-100 flex items-center gap-4">
-                        {/* Document Icon/Preview */}
-                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                          {isPDF ? (
-                            <FileText className="text-blue-600" size={24} />
-                          ) : (
-                            <img
-                              src={docUrl}
-                              alt={`Documento ${index + 1}`}
-                              className="w-full h-full object-cover rounded-xl"
-                            />
-                          )}
-                        </div>
-
-                        {/* Document Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 truncate">
-                            {isPDF ? 'Documento PDF' : 'Imagen'}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Documento {index + 1} • {fileExt.toUpperCase()}
-                          </p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={docUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-9 h-9 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-100 transition-colors"
-                          >
-                            <ExternalLink size={16} />
-                          </a>
-                          <button
-                            onClick={() => handleRemoveDocument(docUrl)}
-                            className="w-9 h-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {verificationDocuments.map((docUrl, index) => (
+                    <VerificationDocumentCard
+                      key={`${docUrl}-${index}`}
+                      documentRef={docUrl}
+                      index={index}
+                      onRemove={handleRemoveDocument}
+                      layout="row"
+                    />
+                  ))}
                 </div>
               )}
 
@@ -16058,7 +16069,7 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
     setUploadingOfferImage(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `offers/${businessData?.id || 'unknown'}-${Date.now()}.${fileExt}`;
+      const fileName = `${user?.id || businessData?.owner_id || 'unknown'}/offers/${businessData?.id || 'unknown'}-${Date.now()}.${fileExt}`;
       const { error } = await supabase.storage
         .from('business-photos')
         .upload(fileName, file, { cacheControl: '3600', upsert: false });
@@ -18138,7 +18149,7 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
     setUploadingAvatar(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `avatars/${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/avatars/${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
         .from('business-photos')
         .upload(fileName, file, { cacheControl: '3600', upsert: true });
@@ -18277,7 +18288,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
   // Estados locales para los toggles
   const [settings, setSettings] = useState(userSettings || {
     // Notificaciones
-    pushEnabled: true,
+    pushEnabled: false,
     offerNotifications: true,
     messageNotifications: true,
     reminderNotifications: true,
@@ -18297,6 +18308,12 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [pushPermissionStatus, setPushPermissionStatus] = useState('default');
 
+  useEffect(() => {
+    if (userSettings) {
+      setSettings(userSettings);
+    }
+  }, [userSettings]);
+
   // Verificar permisos de notificaciones al montar
   if (typeof window !== 'undefined' && 'Notification' in window && pushPermissionStatus === 'default') {
     // Solo actualizar si es diferente al estado actual
@@ -18313,17 +18330,22 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 
   // Solicitar permisos de notificaciones push
   const requestPushPermission = async () => {
+    if (onRequestPushPermission) {
+      const success = await onRequestPushPermission();
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setPushPermissionStatus(Notification.permission);
+      }
+      if (success) {
+        const newSettings = { ...settings, pushEnabled: true };
+        setSettings(newSettings);
+        if (updateSettings) updateSettings(newSettings);
+      }
+      return;
+    }
+
     if ('Notification' in window) {
       const permission = await Notification.requestPermission();
       setPushPermissionStatus(permission);
-      if (permission === 'granted') {
-        handleToggle('pushEnabled');
-        // Mostrar notificación de prueba
-        new Notification('¡Notificaciones activadas! 🔔', {
-          body: 'Recibirás alertas de ofertas y mensajes importantes.',
-          icon: '/favicon.ico',
-        });
-      }
     }
   };
 
@@ -18379,7 +18401,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                   </div>
                 </div>
                 {pushPermissionStatus === 'granted' ? (
-                  <ToggleSwitch enabled={settings.pushEnabled} onToggle={() => handleToggle('pushEnabled')} />
+                  <ToggleSwitch enabled={settings.pushEnabled} onToggle={settings.pushEnabled ? () => handleToggle('pushEnabled') : requestPushPermission} />
                 ) : (
                   <button
                     onClick={requestPushPermission}
@@ -18716,6 +18738,7 @@ export default function App() {
   const [pageParams, setPageParams] = useState({});
   const currentPageRef = useRef('login'); // Ref para acceder a currentPage desde closures de auth
   const userRef = useRef(null); // Ref para acceder a user desde handlers de eventos (sin stale closure)
+  const pushSyncAttemptedRef = useRef(false);
 
   // Estado del usuario autenticado
   const [user, setUser] = useState(null);
@@ -18911,22 +18934,13 @@ export default function App() {
       } else {
       }
 
-      // Guardar subscription en Supabase (delete+insert para evitar problemas con onConflict en índices de expresión)
-      const endpoint = subscription.toJSON().endpoint;
-      await supabase.from('push_subscriptions')
-        .delete()
-        .eq('user_id', user.id)
-        .filter('subscription->>endpoint', 'eq', endpoint);
-
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .insert({
-          user_id: user.id,
-          subscription: subscription.toJSON(),
-          user_agent: navigator.userAgent,
-        });
+      const { error } = await supabase.rpc('register_push_subscription', {
+        p_subscription: subscription.toJSON(),
+        p_user_agent: navigator.userAgent,
+      });
 
       if (error) {
+        console.error('Error registrando push subscription:', error);
         showToast('Error al activar notificaciones', 'error');
         return false;
       }
@@ -18952,11 +18966,15 @@ export default function App() {
           // Navegar a la URL especificada
           const url = event.data.url;
           if (url) {
-            // Parsear la URL y extraer la ruta
-            const path = url.replace(/^.*#\//, '');
+            let path = '';
+            try {
+              const parsed = new URL(url, window.location.origin);
+              path = (parsed.hash || '').replace(/^#\/?/, '') || parsed.pathname.replace(/^\/+/, '');
+            } catch {
+              path = String(url).replace(/^.*#\/?/, '').replace(/^\/+/, '');
+            }
             if (path) {
-              // Usar tu función de navegación
-              navigate(path, event.data.data || {});
+              navigate(path, event.data.metadata || {});
             }
           }
         }
@@ -18984,6 +19002,48 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [user?.id, pushPermission, pushSupported]);
+
+  // Si el permiso ya estaba concedido pero no hay fila en BD, re-sincronizar.
+  useEffect(() => {
+    if (!user?.id || !pushSupported || pushPermission !== 'granted' || pushSyncAttemptedRef.current) return;
+
+    pushSyncAttemptedRef.current = true;
+    requestPushPermission().then((success) => {
+      if (success) {
+        setUserSettings(prev => ({ ...prev, pushEnabled: true }));
+      }
+    });
+  }, [user?.id, pushPermission, pushSupported]);
+
+  // El switch de ajustes debe reflejar la suscripción real guardada en BD.
+  useEffect(() => {
+    const syncPushEnabledFromDatabase = async () => {
+      if (!user?.id) {
+        setUserSettings(prev => ({ ...prev, pushEnabled: false }));
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('push_subscriptions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .limit(1);
+
+        if (error) throw error;
+
+        setUserSettings(prev => ({
+          ...prev,
+          pushEnabled: (data || []).length > 0,
+        }));
+      } catch {
+        setUserSettings(prev => ({ ...prev, pushEnabled: false }));
+      }
+    };
+
+    syncPushEnabledFromDatabase();
+  }, [user?.id, pushPermission]);
 
   // Cargar negocio del propietario cuando cambie el usuario
   useEffect(() => {
@@ -19920,11 +19980,11 @@ export default function App() {
       window.history.replaceState({}, '', window.location.pathname);
     } else if (ofertaId) {
       setCurrentPage('coupon-detail');
-      setPageParams({ id: parseInt(ofertaId) });
+      setPageParams({ id: ofertaId });
       window.history.replaceState({}, '', window.location.pathname);
     } else if (empleoId) {
       setCurrentPage('job-detail');
-      setPageParams({ id: parseInt(empleoId) });
+      setPageParams({ id: empleoId });
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
@@ -20029,30 +20089,6 @@ export default function App() {
         actionRoute: 'business-jobs',
       });
 
-      // Notificar a usuarios que favoritearon el negocio
-      try {
-        const { data: favoritesData, error: favError } = await supabase
-          .from('favorites')
-          .select('user_id')
-          .eq('business_id', businessData.id);
-
-        if (!favError && favoritesData && favoritesData.length > 0) {
-          const notifications = favoritesData.map(fav => ({
-            user_id: fav.user_id,
-            type: 'new_job',
-            title: `Nueva oferta de empleo en ${businessData.name}`,
-            message: `${businessData.name} ha publicado una nueva oferta: ${jobData.title}. ¡Aplica ahora!`,
-            data: { business_id: businessData.id, job_id: data.id, job_title: jobData.title },
-            is_read: false,
-            created_at: new Date().toISOString()
-          }));
-
-          await supabase.from('notifications').insert(notifications);
-        }
-      } catch (notifError) {
-        // No bloqueamos el flujo si falla la notificación
-      }
-
       showToast(SUCCESS_MESSAGES.created, 'success');
       return data;
     } catch (error) {
@@ -20081,7 +20117,7 @@ export default function App() {
 
   // Configuración del usuario
   const [userSettings, setUserSettings] = useState({
-    pushEnabled: true,
+    pushEnabled: false,
     offerNotifications: true,
     messageNotifications: true,
     reminderNotifications: true,
@@ -20442,16 +20478,7 @@ export default function App() {
     }
 
     try {
-      // 1. Obtener el user_id del budget_request
-      const { data: budgetRequest, error: fetchError } = await supabase
-        .from('budget_requests')
-        .select('user_id')
-        .eq('id', requestId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // 2. Insertar la cotización
+      // 1. Insertar la cotización
       const { data, error } = await supabase
         .from('budget_quotes')
         .insert({
@@ -20472,24 +20499,6 @@ export default function App() {
         .from('budget_requests')
         .update({ status: 'quoted' })
         .eq('id', requestId);
-
-
-      // 4. Crear notificación para el USUARIO que solicitó el presupuesto
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: budgetRequest.user_id,
-          type: 'budget_quote_received',
-          title: 'Nuevo presupuesto recibido',
-          message: `${businessData.name} te ha enviado un presupuesto de ${quoteData.price}€`,
-          is_read: false,
-          data: {
-            budget_request_id: requestId,
-            business_id: businessData.id,
-            business_name: businessData.name,
-            price: parseFloat(quoteData.price),
-          },
-        });
 
 
       // 5. Actualizar estado local
@@ -20557,50 +20566,12 @@ export default function App() {
       if (businessError) {
       }
 
-      // 5. Crear notificación para el propietario del negocio ACEPTADO
-      if (business?.owner_id) {
-        const { error: notifError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: business.owner_id,
-            type: 'budget_quote_accepted',
-            title: '¡Presupuesto aceptado!',
-            message: `Un cliente ha aceptado tu presupuesto de ${quote.price}€`,
-            is_read: false,
-            data: {
-              budget_request_id: requestId,
-              business_id: quote.businessId,
-              price: quote.price,
-            },
-          });
+      const { error: notifyError } = await supabase.rpc('notify_budget_quote_result', {
+        p_budget_request_id: requestId,
+        p_accepted_quote_id: quote.id,
+      });
 
-      }
-
-      // 6. Notificar a los negocios NO seleccionados
-      if (rejectedQuotes.length > 0) {
-        const rejectedNotifications = rejectedQuotes.map(rejectedQuote => ({
-          user_id: rejectedQuote.businesses?.owner_id,
-          type: 'budget_quote_rejected',
-          title: 'Presupuesto no seleccionado',
-          message: `El cliente ha elegido otro profesional. ¡Gracias por participar!`,
-          is_read: false,
-          data: {
-            budget_request_id: requestId,
-            business_id: rejectedQuote.business_id,
-            price: rejectedQuote.price,
-          },
-        })).filter(n => n.user_id); // Solo notificar si tiene owner_id
-
-        if (rejectedNotifications.length > 0) {
-          const { error: rejectedNotifError } = await supabase
-            .from('notifications')
-            .insert(rejectedNotifications);
-
-          if (rejectedNotifError) {
-          } else {
-          }
-        }
-      }
+      if (notifyError) throw notifyError;
 
       const rejectedCount = rejectedQuotes.length;
       const message = rejectedCount > 0
@@ -20860,11 +20831,16 @@ export default function App() {
   };
 
   // Completar onboarding
-  const completeOnboarding = (enableNotifications = false) => {
+  const completeOnboarding = async (enableNotifications = false) => {
     localStorage.setItem('hasSeenOnboarding', 'true');
     setHasSeenOnboarding(true);
 
     if (enableNotifications) {
+      const success = await requestPushPermission();
+      if (!success) return;
+
+      localStorage.setItem('push-asked', 'true');
+
       // Activar notificaciones
       setUserSettings(prev => ({
         ...prev,

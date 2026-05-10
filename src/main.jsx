@@ -6,3 +6,11 @@ import './index.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App />
 )
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.error('Error registrando service worker:', error);
+    });
+  });
+}

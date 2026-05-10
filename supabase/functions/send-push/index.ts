@@ -174,28 +174,37 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing: subscription, title, message' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
-    // Validar ownership solo para llamadas authenticated (cliente con JWT de usuario).
+    // Validar caller:
     // - service_role (triggers internos / edge functions con clave): bypass total.
-    // - anon (triggers SQL legacy con anon_key): bypass — no exponen identidad de
-    //   user, así que no podemos validar ownership sin migrarlos a service_role.
     // - authenticated (cliente): EXIGIMOS que la subscription pertenezca al sub del JWT.
+    // - anon/sin claims: bloqueado. Los triggers SQL deben llamar con service_role.
     const authHeader = req.headers.get('Authorization') || '';
     const callerJwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
     const claims = decodeJwtPayload(callerJwt);
 
-    if (claims?.role === 'authenticated') {
-      if (!claims.sub) {
+    if (claims?.role === 'service_role') {
+      if (!SERVICE_ROLE_KEY || callerJwt !== SERVICE_ROLE_KEY) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
+    } else if (claims?.role !== 'authenticated') {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+
+    if (claims.role === 'authenticated') {
       if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
         console.error('[PUSH] Missing SUPABASE_URL or SERVICE_ROLE_KEY for ownership check');
         return new Response(JSON.stringify({ error: 'Server misconfigured' }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
       const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+      const { data: verifiedUser, error: verifyErr } = await admin.auth.getUser(callerJwt);
+      const callerUserId = verifiedUser?.user?.id;
+      if (verifyErr || !callerUserId) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
       const { data: owned, error: ownErr } = await admin
         .from('push_subscriptions')
         .select('id')
-        .eq('user_id', claims.sub)
+        .eq('user_id', callerUserId)
         .filter('subscription->>endpoint', 'eq', subscription.endpoint)
         .limit(1)
         .maybeSingle();
@@ -204,8 +213,6 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
     }
-    // role==='anon' o sin claims: no bloqueamos para no romper triggers legacy.
-    // TODO: migrar triggers SQL a service_role y endurecer aquí.
 
     const payload = JSON.stringify({ title, body: message, url: url || '/', type: type || 'general', icon: icon || '/icons/icon-192x192.png', requireInteraction: !!requireInteraction, metadata: metadata || {}, timestamp: Date.now() });
 
@@ -239,6 +246,6 @@ serve(async (req) => {
 
   } catch (err: any) {
     console.error('[PUSH] Exception:', err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
   }
 });

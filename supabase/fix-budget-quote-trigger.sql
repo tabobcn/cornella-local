@@ -12,7 +12,7 @@ DECLARE
   app_url TEXT;
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    app_url := 'https://cornellalocal.vercel.app';
+    app_url := 'https://www.cornellalocal.es';
 
     SELECT
       br.user_id,

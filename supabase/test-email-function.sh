@@ -21,10 +21,11 @@ echo ""
 
 # Solicitar datos
 read -p "Project Ref (ej: abcdefghijklmnop): " PROJECT_REF
-read -p "Anon Key (ej: eyJhbGc...): " ANON_KEY
+read -sp "Service Role Key (se mantiene oculta): " SERVICE_ROLE_KEY
+echo ""
 read -p "Email destino (tu email): " EMAIL_TO
 
-if [ -z "$PROJECT_REF" ] || [ -z "$ANON_KEY" ] || [ -z "$EMAIL_TO" ]; then
+if [ -z "$PROJECT_REF" ] || [ -z "$SERVICE_ROLE_KEY" ] || [ -z "$EMAIL_TO" ]; then
     echo -e "${RED}❌ Todos los campos son requeridos${NC}"
     exit 1
 fi
@@ -39,7 +40,7 @@ echo ""
 echo -e "${YELLOW}1/5 Enviando: Nueva solicitud de presupuesto...${NC}"
 curl -X POST $FUNCTION_URL \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -d "{
     \"type\": \"new_budget_request\",
     \"to\": \"$EMAIL_TO\",
@@ -48,7 +49,7 @@ curl -X POST $FUNCTION_URL \
       \"category\": \"Reformas\",
       \"description\": \"Necesito pintar las paredes del local y cambiar el suelo\",
       \"urgency\": \"urgent\",
-      \"app_url\": \"https://cornellalocal.vercel.app\"
+      \"app_url\": \"https://www.cornellalocal.es\"
     }
   }"
 
@@ -59,7 +60,7 @@ sleep 2
 echo -e "${YELLOW}2/5 Enviando: Respuesta a presupuesto...${NC}"
 curl -X POST $FUNCTION_URL \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -d "{
     \"type\": \"budget_response\",
     \"to\": \"$EMAIL_TO\",
@@ -67,7 +68,7 @@ curl -X POST $FUNCTION_URL \
       \"business_name\": \"Reformas García\",
       \"estimated_price\": \"1,500\",
       \"notes\": \"Incluye materiales y mano de obra. Trabajo estimado: 3 días.\",
-      \"app_url\": \"https://cornellalocal.vercel.app\"
+      \"app_url\": \"https://www.cornellalocal.es\"
     }
   }"
 
@@ -78,7 +79,7 @@ sleep 2
 echo -e "${YELLOW}3/5 Enviando: Nueva candidatura...${NC}"
 curl -X POST $FUNCTION_URL \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -d "{
     \"type\": \"new_job_application\",
     \"to\": \"$EMAIL_TO\",
@@ -89,7 +90,7 @@ curl -X POST $FUNCTION_URL \
       \"candidate_email\": \"maria@example.com\",
       \"candidate_phone\": \"+34 666 777 888\",
       \"message\": \"Tengo 3 años de experiencia en hostelería y disponibilidad inmediata.\",
-      \"app_url\": \"https://cornellalocal.vercel.app\"
+      \"app_url\": \"https://www.cornellalocal.es\"
     }
   }"
 
@@ -100,7 +101,7 @@ sleep 2
 echo -e "${YELLOW}4/5 Enviando: Candidatura - Contratado...${NC}"
 curl -X POST $FUNCTION_URL \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -d "{
     \"type\": \"application_status_change\",
     \"to\": \"$EMAIL_TO\",
@@ -109,7 +110,7 @@ curl -X POST $FUNCTION_URL \
       \"job_title\": \"Dependiente\",
       \"business_name\": \"Librería Cervantes\",
       \"status\": \"hired\",
-      \"app_url\": \"https://cornellalocal.vercel.app\"
+      \"app_url\": \"https://www.cornellalocal.es\"
     }
   }"
 
@@ -120,7 +121,7 @@ sleep 2
 echo -e "${YELLOW}5/5 Enviando: Candidatura - Entrevista programada...${NC}"
 curl -X POST $FUNCTION_URL \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -d "{
     \"type\": \"application_status_change\",
     \"to\": \"$EMAIL_TO\",
@@ -130,7 +131,7 @@ curl -X POST $FUNCTION_URL \
       \"business_name\": \"Moda y Estilo\",
       \"status\": \"shortlisted\",
       \"interview_date\": \"2026-02-10T10:00:00Z\",
-      \"app_url\": \"https://cornellalocal.vercel.app\"
+      \"app_url\": \"https://www.cornellalocal.es\"
     }
   }"
 

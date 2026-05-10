@@ -9,7 +9,7 @@ DECLARE
   business_data RECORD;
   app_url TEXT;
 BEGIN
-  app_url := 'https://cornellalocal.vercel.app';
+  app_url := 'https://www.cornellalocal.es';
 
   -- Enviar push a los top 5 negocios de la categoría
   -- Ahora budget_requests.category almacena el nombre de subcategoría (ej. 'Fontanero')

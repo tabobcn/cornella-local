@@ -22,10 +22,16 @@ export default defineConfig(({ mode }) => {
       },
       rollupOptions: {
         output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom'],
-            'supabase': ['@supabase/supabase-js'],
-            'icons': ['lucide-react']
+          manualChunks(id) {
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+              return 'react-vendor'
+            }
+            if (id.includes('node_modules/@supabase/supabase-js')) {
+              return 'supabase'
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'icons'
+            }
           }
         }
       },

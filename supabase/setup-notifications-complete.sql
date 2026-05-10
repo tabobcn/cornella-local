@@ -132,14 +132,14 @@ CREATE TRIGGER trigger_notify_new_job
 
 
 -- =============================================
--- POLÍTICA RLS: Permitir inserts desde triggers
+-- POLÍTICA RLS: bloquear INSERT directo desde cliente
 -- =============================================
--- Los triggers usan SECURITY DEFINER para bypassear RLS,
--- pero añadimos esta política por si se necesita insertar manualmente
 DROP POLICY IF EXISTS "System can insert notifications" ON public.notifications;
-CREATE POLICY "System can insert notifications"
+DROP POLICY IF EXISTS "notifications_insert_system_only" ON public.notifications;
+CREATE POLICY "notifications_insert_system_only"
   ON public.notifications
   FOR INSERT
+  TO service_role
   WITH CHECK (true);
 
 

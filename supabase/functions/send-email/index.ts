@@ -6,16 +6,61 @@
 // ==============================================
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+const ALLOWED_EMAIL_TYPES = new Set([
+  'new_budget_request',
+  'budget_response',
+  'new_job_application',
+  'application_status_change',
+  'new_offer_favorite',
+]);
+
+const ALLOWED_APP_ORIGINS = new Set([
+  'https://cornellalocal.es',
+  'https://www.cornellalocal.es',
+]);
 
 interface EmailPayload {
   type: 'new_budget_request' | 'budget_response' | 'new_job_application' | 'application_status_change' | 'new_offer_favorite';
   to: string;
   data: any;
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char] || char));
+}
+
+function sanitizeData(value: any): any {
+  if (Array.isArray(value)) return value.map(sanitizeData);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sanitizeData(item)]));
+  }
+  if (typeof value === 'string') return escapeHtml(value);
+  return value;
+}
+
+function normalizeAppUrl(value: unknown): string {
+  try {
+    const url = new URL(String(value || 'https://cornellalocal.es'));
+    return ALLOWED_APP_ORIGINS.has(url.origin) ? url.origin : 'https://cornellalocal.es';
+  } catch {
+    return 'https://cornellalocal.es';
+  }
+}
+
+function isValidEmail(value: unknown): boolean {
+  return typeof value === 'string'
+    && value.length <= 254
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 // Templates de email
@@ -306,6 +351,16 @@ const getEmailSubject = (type: string, data: any) => {
 
 serve(async (req) => {
   try {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
     // Verificar método
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -314,15 +369,26 @@ serve(async (req) => {
       });
     }
 
+    const authHeader = req.headers.get('Authorization') || '';
+    const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!SUPABASE_SERVICE_KEY || bearer !== SUPABASE_SERVICE_KEY) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     // Parsear payload
     const payload: EmailPayload = await req.json();
-    const { type, to, data } = payload;
+    const { type, to } = payload;
+    const data = sanitizeData(payload.data || {});
+    data.app_url = normalizeAppUrl(payload.data?.app_url);
 
     console.log(`[SEND-EMAIL] Sending ${type} to ${to}`);
 
     // Validar
-    if (!to || !type) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: to, type' }), {
+    if (!isValidEmail(to) || !ALLOWED_EMAIL_TYPES.has(type)) {
+      return new Response(JSON.stringify({ error: 'Invalid email payload' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -360,8 +426,7 @@ serve(async (req) => {
     if (!resendResponse.ok) {
       console.error('[SEND-EMAIL] Resend API error:', resendData);
       return new Response(JSON.stringify({
-        error: 'Failed to send email',
-        details: resendData
+        error: 'Failed to send email'
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -381,8 +446,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[SEND-EMAIL] Unexpected error:', error);
     return new Response(JSON.stringify({
-      error: 'Internal server error',
-      message: error.message
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

@@ -16045,7 +16045,7 @@ const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, 
 };
 
 // Pantalla de Crear Nueva Oferta
-const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
+const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, user, showToast }) => {
   const [formData, setFormData] = useState({
     title: '',
     discountType: 'percentage', // 'percentage', '2x1', 'free'
@@ -16063,21 +16063,33 @@ const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer }) => {
 
   const uploadOfferImage = async (file) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast?.('La imagen no puede superar 5MB', 'error');
+      return;
+    }
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowed.includes(file.type)) return;
+    if (!allowed.includes(file.type)) {
+      showToast?.('Solo se permiten JPG, PNG o WebP', 'error');
+      return;
+    }
+    if (!user?.id) {
+      showToast?.('Debes iniciar sesión para subir imágenes', 'error');
+      return;
+    }
     setUploadingOfferImage(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id || businessData?.owner_id || 'unknown'}/offers/${businessData?.id || 'unknown'}-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/offers/${businessData?.id || 'unknown'}-${Date.now()}.${fileExt}`;
       const { error } = await supabase.storage
         .from('business-photos')
         .upload(fileName, file, { cacheControl: '3600', upsert: false });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
       handleChange('image', publicUrl);
+      showToast?.('Imagen subida correctamente', 'success');
     } catch (err) {
-      // silent fail - image is optional
+      console.error('Error subiendo imagen de oferta:', err);
+      showToast?.('Error al subir la imagen. Intenta de nuevo.', 'error');
     } finally {
       setUploadingOfferImage(false);
     }
@@ -20806,7 +20818,7 @@ export default function App() {
           incomingBudgetRequests={incomingBudgetRequests}
         />;
       case 'create-offer':
-        return <CreateOfferScreen onNavigate={navigate} businessData={businessData} onCreateOffer={createOffer} />;
+        return <CreateOfferScreen onNavigate={navigate} businessData={businessData} onCreateOffer={createOffer} user={user} showToast={showToast} />;
       case 'settings':
         return <SettingsScreen
           onNavigate={navigate}

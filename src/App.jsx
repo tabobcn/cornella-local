@@ -13169,7 +13169,7 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
         'Responsable: [NOMBRE Y APELLIDOS DEL RESPONSABLE]',
         'NIF: [NIF DEL RESPONSABLE]',
         'Localidad: Cornellà de Llobregat (Barcelona)',
-        'Email de contacto en materia de privacidad: privacidad@cornellalocal.es',
+        'Email de contacto en materia de privacidad: cornellalocal@gmail.com',
         'Web: https://www.cornellalocal.es'
       ]
     },
@@ -13228,7 +13228,7 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
         'Limitación: pedir que se restrinja el uso temporalmente.',
         'Portabilidad: recibir tus datos en formato estructurado y reutilizable.',
         'Retirar el consentimiento: cuando el tratamiento se base en él, sin afectar a la licitud previa.',
-        'Cómo ejercerlos: escribe a privacidad@cornellalocal.es indicando el derecho que quieres ejercer y adjuntando un documento que acredite tu identidad. Responderemos en el plazo máximo de un mes.',
+        'Cómo ejercerlos: escribe a cornellalocal@gmail.com indicando el derecho que quieres ejercer y adjuntando un documento que acredite tu identidad. Responderemos en el plazo máximo de un mes.',
         'Reclamar ante la AEPD: tienes derecho a presentar reclamación ante la Agencia Española de Protección de Datos (www.aepd.es) si consideras que el tratamiento no se ajusta a la normativa.'
       ]
     },
@@ -13263,9 +13263,9 @@ const PrivacyPolicyScreen = ({ onNavigate }) => {
       id: 8,
       icon: 'Mail',
       title: 'Contacto y modificaciones',
-      content: 'Para cualquier asunto relacionado con la privacidad o el ejercicio de tus derechos, escribe a privacidad@cornellalocal.es. Esta política puede actualizarse. La fecha de la última versión se muestra al inicio. Si los cambios son sustanciales, te informaremos.',
+      content: 'Para cualquier asunto relacionado con la privacidad o el ejercicio de tus derechos, escribe a cornellalocal@gmail.com. Esta política puede actualizarse. La fecha de la última versión se muestra al inicio. Si los cambios son sustanciales, te informaremos.',
       bullets: [
-        'Email: privacidad@cornellalocal.es',
+        'Email: cornellalocal@gmail.com',
         'Última actualización: mayo 2026'
       ]
     },
@@ -13373,7 +13373,7 @@ const LegalNoticeScreen = ({ onNavigate }) => {
         'Titular del sitio web: [NOMBRE Y APELLIDOS DEL RESPONSABLE]',
         'NIF: [NIF DEL RESPONSABLE]',
         'Domicilio: Cornellà de Llobregat (Barcelona)',
-        'Email de contacto: contacto@cornellalocal.es',
+        'Email de contacto: cornellalocal@gmail.com',
         'Sitio web: https://www.cornellalocal.es',
         'Naturaleza del proyecto: iniciativa personal sin ánimo de lucro orientada a apoyar al comercio local.'
       ]
@@ -13719,7 +13719,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
   const [submitted, setSubmitted] = useState(false);
 
   const contactOptions = [
-    { icon: 'Mail', label: 'Email', value: 'soporte@cornellalocal.es', action: 'mailto:soporte@cornellalocal.es' },
+    { icon: 'Mail', label: 'Email', value: 'cornellalocal@gmail.com', action: 'mailto:cornellalocal@gmail.com' },
     { icon: 'Clock', label: 'Horario', value: 'Lun-Vie 9:00-18:00', action: null },
   ];
 
@@ -19216,7 +19216,7 @@ export default function App() {
               supabase.auth.signOut();
               setUser(null);
               setCurrentPage('login');
-              showToast('Tu cuenta ha sido suspendida. Contacta con soporte: soporte@cornellalocal.es', 'error');
+              showToast('Tu cuenta ha sido suspendida. Contacta con soporte: cornellalocal@gmail.com', 'error');
               return;
             }
             // Perfil existe: actualizar estado con datos completos del perfil

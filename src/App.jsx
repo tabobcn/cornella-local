@@ -13532,7 +13532,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
 };
 
 // Pantalla de Notificaciones
-const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUpdateNotifications }) => {
+const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUpdateNotifications, showToast }) => {
   // Solo usamos notificaciones dinámicas de Supabase (no mockData)
   const [notificationsState, setNotificationsState] = useState(dynamicNotifications);
 
@@ -13569,12 +13569,15 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
   };
 
   const deleteReadNotifications = async () => {
-    // Eliminar leídas de state local y padre
-    const withoutRead = prev => prev.filter(n => !n.isRead);
+    // Backup para revertir si Supabase falla
+    const beforeDelete = notificationsState;
+
+    // Optimistic: eliminar leídas de state local y padre
+    const withoutRead = beforeDelete.filter(n => !n.isRead);
     setNotificationsState(withoutRead);
     if (onUpdateNotifications) onUpdateNotifications(withoutRead);
 
-    // Eliminar de Supabase
+    // Persistir en Supabase
     if (user?.id) {
       try {
         const { error } = await supabase
@@ -13585,7 +13588,11 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
 
         if (error) throw error;
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error borrando notificaciones leídas:', error);
+        // Revertir UI para no engañar al usuario
+        setNotificationsState(beforeDelete);
+        if (onUpdateNotifications) onUpdateNotifications(beforeDelete);
+        if (showToast) showToast('No se pudieron borrar las notificaciones', 'error');
       }
     }
   };
@@ -18327,13 +18334,14 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
     }
   }, [userSettings]);
 
-  // Verificar permisos de notificaciones al montar
-  if (typeof window !== 'undefined' && 'Notification' in window && pushPermissionStatus === 'default') {
-    // Solo actualizar si es diferente al estado actual
-    if (Notification.permission !== pushPermissionStatus) {
-      setPushPermissionStatus(Notification.permission);
+  // Verificar permisos de notificaciones al montar (en effect, no durante render)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission !== pushPermissionStatus) {
+        setPushPermissionStatus(Notification.permission);
+      }
     }
-  }
+  }, []);
 
   const handleToggle = (key) => {
     const newSettings = { ...settings, [key]: !settings[key] };
@@ -20803,7 +20811,7 @@ export default function App() {
       case 'terms-register':
         return <TermsScreen onNavigate={navigate} fromRegister={true} />;
       case 'notifications':
-        return <NotificationsScreen onNavigate={navigate} dynamicNotifications={dynamicNotifications} user={user} onUpdateNotifications={setDynamicNotifications} />;
+        return <NotificationsScreen onNavigate={navigate} dynamicNotifications={dynamicNotifications} user={user} onUpdateNotifications={setDynamicNotifications} showToast={showToast} />;
       case 'business-data':
         return <BusinessDataScreen onNavigate={navigate} onSaveBusinessData={setTempBusinessData} user={user} businessData={businessData} showToast={showToast} />;
       case 'business-verification':

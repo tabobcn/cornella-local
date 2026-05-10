@@ -18975,19 +18975,32 @@ export default function App() {
     if ('serviceWorker' in navigator) {
       const messageHandler = (event) => {
         if (event.data && event.data.type === 'NAVIGATE') {
-          // Navegar a la URL especificada
           const url = event.data.url;
-          if (url) {
-            let path = '';
-            try {
-              const parsed = new URL(url, window.location.origin);
-              path = (parsed.hash || '').replace(/^#\/?/, '') || parsed.pathname.replace(/^\/+/, '');
-            } catch {
-              path = String(url).replace(/^.*#\/?/, '').replace(/^\/+/, '');
+          if (!url) return;
+          try {
+            const parsed = new URL(url, window.location.origin);
+            const params = new URLSearchParams(parsed.search);
+
+            // Deep links canónicos de la app (?oferta, ?negocio, ?empleo)
+            if (params.get('oferta')) {
+              navigate('coupon-detail', { id: params.get('oferta') });
+              return;
             }
-            if (path) {
-              navigate(path, event.data.metadata || {});
+            if (params.get('negocio')) {
+              navigate('business', { id: parseInt(params.get('negocio')) });
+              return;
             }
+            if (params.get('empleo')) {
+              navigate('job-detail', { id: params.get('empleo') });
+              return;
+            }
+
+            // Fallback: hash legacy (#/page) o pathname
+            const hashPath = (parsed.hash || '').replace(/^#\/?/, '');
+            const path = hashPath || parsed.pathname.replace(/^\/+/, '');
+            if (path) navigate(path, event.data.metadata || {});
+          } catch (e) {
+            console.error('Error parsing notification URL:', e);
           }
         }
       };

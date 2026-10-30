@@ -1,7 +1,7 @@
 // Service Worker para Cornellà Local PWA
-const CACHE_NAME = 'cornella-local-v5';
-const STATIC_CACHE = 'cornella-static-v5';
-const DYNAMIC_CACHE = 'cornella-dynamic-v5';
+const CACHE_NAME = 'cornella-local-v6';
+const STATIC_CACHE = 'cornella-static-v6';
+const DYNAMIC_CACHE = 'cornella-dynamic-v6';
 
 // Recursos estáticos para cachear al instalar
 const STATIC_ASSETS = [

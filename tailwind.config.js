@@ -15,7 +15,7 @@ export default {
         "surface-dark": "#1a2235",
       },
       fontFamily: {
-        display: ["Inter", "Plus Jakarta Sans", "system-ui", "sans-serif"],
+        display: ["Inter", "system-ui", "sans-serif"],
         body: ["Inter", "system-ui", "sans-serif"],
       },
       borderRadius: {

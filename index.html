@@ -58,9 +58,6 @@
     <meta name="format-detection" content="telephone=no" />
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <title>CornellaLocal - Tu comercio local, más cerca | Cornellà de Llobregat</title>
 
@@ -114,6 +111,8 @@
       }
       #splash-screen .logo {
         height: 50px;
+        width: auto;
+        max-width: 80vw;
         margin-bottom: 24px;
         filter: brightness(0) invert(1);
         animation: pulse 2s ease-in-out infinite;
@@ -152,7 +151,7 @@
   <body>
     <!-- Splash Screen -->
     <div id="splash-screen">
-      <img src="/logo.png" alt="Cornellà Local" class="logo" />
+      <img src="/logo.png" alt="Cornellà Local" class="logo" width="600" height="105" />
       <div class="subtitle">Tu comercio local, más cerca</div>
       <div class="dots">
         <div class="dot"></div>

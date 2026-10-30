@@ -203,6 +203,25 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 
 ---
 
+## Cambios 2026-10-30 (auditoría + mejoras)
+
+- **Seguridad BD** — `supabase/security-hardening-v3.sql`: perfiles solo visibles para su dueño y admins (`is_admin()`),
+  buckets `verification-documents` y `job-applications` privados (URLs firmadas), trigger `businesses_protect_privileged`
+  (el propietario no puede autoverificarse ni tocar rating/contadores), cupones con `auth.uid()`, estadísticas solo
+  propietario/admin, `notify_budget_quote_result` creada (antes no existía), rating calculado por trigger, funciones de
+  email/push y de triggers sin EXECUTE para anon/authenticated. **Pendiente de aplicar si no se ha hecho.**
+- **Modo invitado** — sin sesión se entra a `home`. Páginas públicas en `GUEST_PAGES`; `business`/`coupon`/`job-detail`
+  muestran `GuestTeaser` (vista previa + pedir cuenta); el resto `GuestGate`. `saveAuthRedirect()` guarda adónde iba el
+  invitado y tras el login se le lleva allí (localStorage `post-login-redirect`, caduca en 1 h).
+- **Escritorio (≥1024px)** — grid `[1fr_28rem_1fr]`: `DesktopSidebar` | app | `DesktopAside`. La columna central queda
+  centrada para que las barras `fixed bottom-0 max-w-md mx-auto` sigan alineadas. `Navbar` inferior oculta en `lg`.
+- **SEO** — `npm run build` ejecuta `scripts/prerender-negocios.mjs`: genera `/negocio/<slug>-<id>`, `/negocios` y
+  `sitemap.xml` con los negocios aprobados y publicados (los nuevos aparecen en el siguiente despliegue).
+  La app también abre `/negocio/<slug>-<id>` como deep link.
+- **Datos falsos eliminados** — presupuestos de demo, valoraciones aleatorias en cotizaciones, `aggregateRating` inventado.
+
+---
+
 ## Reglas de Negocio Importantes
 
 | Regla | Descripción |

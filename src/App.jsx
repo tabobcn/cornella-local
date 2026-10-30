@@ -1612,6 +1612,151 @@ const AdvancedFiltersModal = ({
   );
 };
 
+// ==============================================
+// DISEÑO DE ESCRITORIO (≥1024px)
+// Tres columnas: navegación a la izquierda, la app en el centro y
+// información útil a la derecha. La columna central queda centrada
+// para que las barras fijas de cada pantalla sigan alineadas.
+// ==============================================
+
+const DESKTOP_NAV = [
+  { id: 'home', label: 'Inicio', icon: 'Home' },
+  { id: 'offers', label: 'Ofertas y empleo', icon: 'Tag' },
+  { id: 'budget-request', label: 'Pedir presupuesto', icon: 'ClipboardList' },
+  { id: 'favorites', label: 'Favoritos', icon: 'Heart' },
+  { id: 'notifications', label: 'Avisos', icon: 'Bell' },
+  { id: 'profile', label: 'Mi perfil', icon: 'User' },
+];
+
+const DesktopSidebar = ({ user, currentPage, onNavigate, onAuth }) => (
+  <aside className="hidden lg:flex justify-self-end w-60 sticky top-0 h-screen flex-col py-8 gap-6">
+    <button onClick={() => onNavigate('home')} className="px-3 text-left" aria-label="Ir al inicio">
+      <img src="/logo.png" alt="Cornellà Local" className="h-8 w-auto" />
+    </button>
+
+    <nav className="flex flex-col gap-1">
+      {DESKTOP_NAV.map(item => {
+        const active = currentPage === item.id;
+        return (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
+              active ? 'bg-primary/10 text-primary font-bold' : 'text-slate-700 hover:bg-white font-medium'
+            }`}
+          >
+            <Icon name={item.icon} size={20} className={active ? 'text-primary' : 'text-slate-500'} />
+            {item.label}
+          </button>
+        );
+      })}
+      {user?.is_admin && (
+        <button
+          onClick={() => onNavigate('admin-dashboard')}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
+            currentPage.startsWith('admin') ? 'bg-primary/10 text-primary font-bold' : 'text-slate-700 hover:bg-white font-medium'
+          }`}
+        >
+          <Icon name="Shield" size={20} className="text-slate-500" />
+          Administración
+        </button>
+      )}
+    </nav>
+
+    {user ? (
+      <button
+        onClick={() => onNavigate('profile')}
+        className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 text-left"
+      >
+        {user.avatar_url ? (
+          <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" referrerPolicy="no-referrer" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center">
+            {getInitials(user.full_name || user.email || 'U')}
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-slate-900 truncate">{user.full_name || 'Mi cuenta'}</p>
+          <p className="text-xs text-gray-500 truncate">{user.email}</p>
+        </div>
+      </button>
+    ) : (
+      <div className="p-4 rounded-2xl bg-white border border-gray-100 flex flex-col gap-3">
+        <p className="text-sm font-bold text-slate-900">Únete gratis</p>
+        <p className="text-xs text-gray-500 leading-relaxed">Guarda favoritos, consigue cupones y pide presupuestos a negocios del barrio.</p>
+        <button onClick={() => onAuth('register')} className="h-10 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold">Crear cuenta</button>
+        <button onClick={() => onAuth('login')} className="h-10 rounded-xl border border-gray-200 hover:bg-gray-50 text-sm font-semibold text-slate-900">Entrar</button>
+      </div>
+    )}
+
+    <div className="mt-auto px-3 flex flex-col gap-3">
+      <button
+        onClick={() => (user ? onNavigate('business-data') : onAuth('register', 'profile'))}
+        className="text-left text-sm font-semibold text-primary hover:underline"
+      >
+        ¿Tienes un negocio? Date de alta gratis →
+      </button>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+        <button onClick={() => onNavigate('legal-notice')} className="hover:text-primary">Aviso legal</button>
+        <button onClick={() => onNavigate('privacy-policy')} className="hover:text-primary">Privacidad</button>
+        <button onClick={() => onNavigate('cookies-policy')} className="hover:text-primary">Cookies</button>
+        <button onClick={() => onNavigate('terms')} className="hover:text-primary">Términos</button>
+        <button onClick={() => onNavigate('contact-support')} className="hover:text-primary">Contacto</button>
+      </div>
+    </div>
+  </aside>
+);
+
+const DesktopAside = ({ user, onNavigate, onAuth }) => (
+  <aside className="hidden lg:flex justify-self-start w-64 xl:w-72 sticky top-0 h-screen flex-col py-8 gap-4">
+    <a href="/negocios" className="p-5 rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white flex flex-col gap-2 hover:shadow-lg transition-shadow">
+      <Store size={22} />
+      <p className="font-bold leading-snug">Directorio de comercios de Cornellà</p>
+      <p className="text-sm text-white/80 leading-relaxed">Todos los negocios del barrio, por categorías.</p>
+    </a>
+
+    <div className="p-5 rounded-2xl bg-white border border-gray-100 flex flex-col gap-3">
+      <p className="font-bold text-slate-900">Cómo funciona</p>
+      {[
+        { icon: 'Search', text: 'Descubre comercios y servicios de tu barrio' },
+        { icon: 'Ticket', text: 'Consigue cupones y ofertas exclusivas' },
+        { icon: 'ClipboardList', text: 'Pide presupuestos gratis a profesionales' },
+      ].map(step => (
+        <div key={step.text} className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <Icon name={step.icon} size={16} className="text-primary" />
+          </div>
+          <p className="text-sm text-gray-600 leading-snug pt-1">{step.text}</p>
+        </div>
+      ))}
+    </div>
+
+    <div className="p-5 rounded-2xl bg-white border border-gray-100 flex flex-col gap-3">
+      <p className="font-bold text-slate-900">Llévala en el móvil</p>
+      <div className="flex items-center gap-3">
+        <img
+          src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=https%3A%2F%2Fwww.cornellalocal.es"
+          alt="Código QR de www.cornellalocal.es"
+          className="w-20 h-20 rounded-lg border border-gray-100"
+          loading="lazy"
+        />
+        <p className="text-xs text-gray-500 leading-relaxed">Escanéalo y pulsa «Añadir a pantalla de inicio» para tenerla como una app.</p>
+      </div>
+    </div>
+
+    <div className="p-5 rounded-2xl bg-amber-50 border border-amber-100 flex flex-col gap-2">
+      <p className="font-bold text-slate-900">Para negocios</p>
+      <p className="text-sm text-gray-600 leading-relaxed">Publica ofertas, recibe solicitudes de presupuesto y candidatos. Sin coste.</p>
+      <button
+        onClick={() => (user ? onNavigate('business-data') : onAuth('register', 'profile'))}
+        className="self-start text-sm font-bold text-amber-700 hover:underline"
+      >
+        Dar de alta mi negocio →
+      </button>
+    </div>
+  </aside>
+);
+
 // Navbar inferior reutilizable
 const Navbar = ({ currentPage, onNavigate }) => {
   const items = [
@@ -1623,7 +1768,7 @@ const Navbar = ({ currentPage, onNavigate }) => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 pb-6 pt-3 px-6">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 pb-6 pt-3 px-6">
       <div className="flex items-center justify-between">
         {items.map((item) => (
           <button
@@ -1903,6 +2048,275 @@ const barrios = [
   { id: 'sant-ildefons', name: 'Sant Ildefons' },
   { id: 'fontsanta-fatjo', name: 'Fontsanta-Fatjó' },
 ];
+
+// ==============================================
+// MODO INVITADO
+// Sin cuenta se pueden ver los listados (nombres de comercios y ofertas);
+// los detalles completos y las acciones piden crear una cuenta gratis.
+// ==============================================
+
+const GUEST_PAGES = new Set([
+  'home', 'offers', 'flash-offers', 'category', 'subcategory',
+  'login', 'register', 'forgot-password', 'reset-password',
+  'terms', 'terms-register', 'privacy-policy', 'legal-notice', 'cookies-policy', 'contact-support',
+]);
+const GUEST_TEASER_PAGES = new Set(['business', 'coupon', 'job-detail']);
+const AUTH_REDIRECT_KEY = 'post-login-redirect';
+
+// Guarda adónde quería ir el invitado para llevarle allí tras iniciar sesión
+// (sobrevive al viaje de ida y vuelta de Google OAuth y al email de confirmación)
+const saveAuthRedirect = (page, params = {}) => {
+  try {
+    localStorage.setItem(AUTH_REDIRECT_KEY, JSON.stringify({ page, params, ts: Date.now() }));
+  } catch (err) {
+    console.error('No se pudo guardar la redirección tras login:', err);
+  }
+};
+
+const takeAuthRedirect = () => {
+  try {
+    const raw = localStorage.getItem(AUTH_REDIRECT_KEY);
+    if (!raw) return null;
+    localStorage.removeItem(AUTH_REDIRECT_KEY);
+    const redirect = JSON.parse(raw);
+    if (!redirect?.page || Date.now() - (redirect.ts || 0) > 60 * 60 * 1000) return null;
+    return redirect;
+  } catch (err) {
+    console.error('No se pudo leer la redirección tras login:', err);
+    return null;
+  }
+};
+
+const formatNeighborhood = (value) => {
+  if (!value) return '';
+  const match = barrios.find(b => b.id === value || b.name.toLowerCase() === String(value).toLowerCase());
+  if (match) return match.name;
+  return String(value).replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
+const GUEST_GATE_COPY = {
+  favorites: {
+    icon: 'Heart',
+    title: 'Guarda tus comercios favoritos',
+    text: 'Crea tu cuenta gratis y te avisaremos cuando tus comercios favoritos publiquen ofertas o empleo.',
+  },
+  profile: {
+    icon: 'User',
+    title: 'Tu cuenta en Cornellà Local',
+    text: 'Guarda cupones, pide presupuestos, apúntate a ofertas de empleo y deja reseñas. Si tienes un negocio, también puedes darlo de alta gratis.',
+  },
+  'budget-request': {
+    icon: 'ClipboardList',
+    title: 'Pide presupuesto a profesionales del barrio',
+    text: 'Cuenta qué necesitas y recibe presupuestos de negocios verificados de Cornellà. Gratis y sin compromiso.',
+  },
+  notifications: {
+    icon: 'Bell',
+    title: 'Tus avisos',
+    text: 'Con una cuenta recibirás avisos de ofertas de tus comercios favoritos y respuestas a tus presupuestos.',
+  },
+};
+GUEST_GATE_COPY['direct-budget'] = GUEST_GATE_COPY['budget-request'];
+GUEST_GATE_COPY['my-budget-requests'] = GUEST_GATE_COPY['budget-request'];
+
+const GuestAuthButtons = ({ onAuth }) => (
+  <div className="flex flex-col gap-3 w-full">
+    <button
+      onClick={() => onAuth('register')}
+      className="w-full h-12 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+    >
+      Crear cuenta gratis
+    </button>
+    <button
+      onClick={() => onAuth('login')}
+      className="w-full h-12 bg-white border border-gray-200 hover:bg-gray-50 text-slate-900 font-semibold rounded-xl transition-colors"
+    >
+      Ya tengo cuenta
+    </button>
+  </div>
+);
+
+// Pantalla para secciones que solo tienen sentido con cuenta (favoritos, perfil, presupuestos...)
+const GuestGate = ({ page, onNavigate, onAuth }) => {
+  const copy = GUEST_GATE_COPY[page] || {
+    icon: 'Lock',
+    title: 'Esta sección es para usuarios registrados',
+    text: 'Crea tu cuenta gratis para usar todas las funciones de Cornellà Local.',
+  };
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50 font-display flex flex-col pb-28">
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-6 pt-16 gap-5">
+        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
+          <Icon name={copy.icon} size={36} className="text-primary" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 leading-tight">{copy.title}</h1>
+          <p className="text-gray-500 leading-relaxed">{copy.text}</p>
+        </div>
+        <GuestAuthButtons onAuth={(mode) => onAuth(mode, page, {})} />
+        <button onClick={() => onNavigate('home')} className="text-sm font-medium text-primary hover:underline">
+          Seguir explorando comercios
+        </button>
+      </div>
+      <Navbar currentPage={page} onNavigate={onNavigate} />
+    </div>
+  );
+};
+
+// Vista previa de un negocio, oferta o empleo: se ve el nombre y lo básico;
+// el resto (dirección, teléfono, horario, cupón, reseñas) pide cuenta
+const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
+  const [item, setItem] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        if (kind === 'business') {
+          const { data } = await supabase
+            .from('businesses')
+            .select('id, name, subcategory, neighborhood, cover_photo, images, rating, review_count, description')
+            .eq('id', id)
+            .maybeSingle();
+          if (active) setItem(data ? {
+            title: data.name,
+            subtitle: [data.subcategory, formatNeighborhood(data.neighborhood)].filter(Boolean).join(' · '),
+            image: data.cover_photo || data.images?.[0] || null,
+            rating: data.review_count > 0 ? Number(data.rating) : null,
+            reviews: data.review_count || 0,
+            description: data.description,
+          } : null);
+        } else {
+          const table = kind === 'coupon' ? 'offers' : 'jobs';
+          const { data } = await supabase.from(table).select('*').eq('id', id).maybeSingle();
+          let businessName = '';
+          if (data?.business_id) {
+            const { data: biz } = await supabase.from('businesses').select('name').eq('id', data.business_id).maybeSingle();
+            businessName = biz?.name || '';
+          }
+          if (active) setItem(data ? {
+            title: data.title,
+            subtitle: businessName,
+            image: kind === 'coupon' ? data.image || null : null,
+            badge: kind === 'coupon' ? (data.discount_label || (data.discount_value ? `-${data.discount_value}%` : '')) : '',
+            description: data.description,
+          } : null);
+        }
+      } catch (err) {
+        console.error('Error cargando vista previa para invitado:', err);
+        if (active) setItem(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => { active = false; };
+  }, [kind, id]);
+
+  const locked = {
+    business: [
+      { icon: 'MapPin', label: 'Dirección y cómo llegar' },
+      { icon: 'Phone', label: 'Teléfono y WhatsApp' },
+      { icon: 'Clock', label: 'Horario y cierres especiales' },
+      { icon: 'Tag', label: 'Ofertas y cupones' },
+      { icon: 'Star', label: 'Reseñas de vecinos' },
+    ],
+    coupon: [
+      { icon: 'Ticket', label: 'Tu código de descuento' },
+      { icon: 'Clock', label: 'Validez y condiciones' },
+      { icon: 'MapPin', label: 'Dónde canjearlo' },
+    ],
+    'job-detail': [
+      { icon: 'FileText', label: 'Descripción completa y requisitos' },
+      { icon: 'Briefcase', label: 'Salario y horario' },
+      { icon: 'Send', label: 'Enviar tu candidatura' },
+    ],
+  }[kind] || [];
+
+  const lead = {
+    business: 'Crea tu cuenta gratis para ver todos los datos de este comercio.',
+    coupon: 'Crea tu cuenta gratis para conseguir el código y canjear la oferta.',
+    'job-detail': 'Crea tu cuenta gratis para ver la oferta completa y apuntarte.',
+  }[kind];
+
+  const goBack = () => (params.returnTo ? onNavigate(params.returnTo, params.returnParams || {}) : onNavigate(kind === 'business' ? 'home' : 'offers'));
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md bg-white font-display flex flex-col">
+      <div className="relative w-full h-56 shrink-0 bg-gradient-to-br from-primary to-primary-dark">
+        {item?.image && <img src={item.image} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        <button
+          onClick={goBack}
+          aria-label="Volver"
+          className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow"
+        >
+          <ArrowLeft size={20} className="text-slate-900" />
+        </button>
+        {item?.badge && (
+          <span className="absolute top-4 right-4 px-3 py-1 rounded-full bg-orange-500 text-white text-sm font-bold shadow">{item.badge}</span>
+        )}
+        <div className="absolute bottom-4 left-5 right-5 text-white">
+          {loading ? (
+            <div className="h-7 w-2/3 bg-white/40 rounded animate-pulse" />
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold leading-tight drop-shadow">{item?.title || 'No disponible'}</h1>
+              {item?.subtitle && <p className="text-sm text-white/90 mt-1">{item.subtitle}</p>}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 px-5 py-6 flex flex-col gap-6">
+        {!loading && !item && (
+          <p className="text-gray-500">Este contenido ya no está disponible o no existe.</p>
+        )}
+        {item?.rating != null && (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Star size={16} className="text-yellow-500 fill-yellow-500" />
+            <span className="font-semibold text-slate-900">{item.rating.toFixed(1)}</span>
+            <span>({item.reviews} {item.reviews === 1 ? 'reseña' : 'reseñas'})</span>
+          </div>
+        )}
+        {item?.description && (
+          <p className="text-gray-600 leading-relaxed line-clamp-3">{item.description}</p>
+        )}
+
+        <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 flex flex-col gap-3">
+          {locked.map(row => (
+            <div key={row.label} className="flex items-center gap-3 text-gray-500">
+              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                <Icon name={row.icon} size={18} className="text-primary" />
+              </div>
+              <span className="flex-1 text-sm font-medium text-slate-700">{row.label}</span>
+              <Lock size={16} className="text-gray-400" />
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-3 items-center text-center">
+          <p className="text-sm text-gray-600">{lead}</p>
+          <GuestAuthButtons onAuth={(mode) => onAuth(mode, kind, { id, ...params })} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Franja superior para invitados en las pantallas públicas (en escritorio va en la barra lateral)
+const GuestBanner = ({ onAuth }) => (
+  <div className="lg:hidden mx-auto w-full max-w-md bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between gap-3">
+    <p className="text-xs leading-snug text-white/80">Estás viendo Cornellà Local como invitado</p>
+    <div className="flex items-center gap-2 shrink-0">
+      <button onClick={() => onAuth('login')} className="text-xs font-semibold text-white/90 hover:text-white px-2 py-1">Entrar</button>
+      <button onClick={() => onAuth('register')} className="text-xs font-bold bg-white text-slate-900 rounded-full px-3 py-1.5 hover:bg-gray-100">Crear cuenta</button>
+    </div>
+  </div>
+);
+
 
 const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, userOffers = [], notifications = [], params = {} }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -17945,7 +18359,7 @@ const LoginScreen = ({ onNavigate, setUser }) => {
         </div>
 
         {/* Register link */}
-        <div className="text-center pt-4">
+        <div className="text-center pt-4 flex flex-col gap-3">
           <p className="text-gray-500 text-sm">
             ¿No tienes cuenta?{' '}
             <button
@@ -17955,6 +18369,12 @@ const LoginScreen = ({ onNavigate, setUser }) => {
               Regístrate
             </button>
           </p>
+          <button
+            onClick={() => onNavigate('home')}
+            className="text-sm font-medium text-gray-500 hover:text-primary transition-colors"
+          >
+            Explorar comercios sin cuenta →
+          </button>
         </div>
 
         {/* Footer legal — accesible sin login (LSSI-CE / RGPD) */}
@@ -19210,7 +19630,7 @@ export default function App() {
     // Timeout de seguridad (15s) — si onAuthStateChange no dispara, mostrar login
     const authTimeout = setTimeout(() => {
       setLoadingAuth(false);
-      setCurrentPage('login');
+      if (currentPageRef.current === 'login') setCurrentPage('home');
     }, 15000);
 
     // Helper: cargar o crear perfil a partir de una sesión
@@ -19278,14 +19698,24 @@ export default function App() {
         try {
           if (session) {
             await loadOrCreateProfile(session);
-            // Solo navegar a home si estamos en una página de autenticación
-            // Evita interrumpir al usuario si está navegando dentro de la app
-            if (authOnlyPages.includes(currentPageRef.current)) {
+            // Si venía de una pantalla que pedía cuenta (modo invitado), volver allí
+            const redirect = takeAuthRedirect();
+            if (redirect) {
+              setCurrentPage(redirect.page);
+              setPageParams(redirect.params || {});
+              window.history.replaceState({ page: redirect.page, params: redirect.params || {} }, '', `#${redirect.page}`);
+            } else if (authOnlyPages.includes(currentPageRef.current)) {
+              // Solo navegar a home si estamos en una página de autenticación
+              // Evita interrumpir al usuario si está navegando dentro de la app
               setCurrentPage('home');
             }
           } else if (event === 'INITIAL_SESSION') {
-            // INITIAL_SESSION sin sesión = no hay usuario logueado
-            setCurrentPage('login');
+            // Sin sesión: se entra como invitado (listados visibles, detalles piden cuenta).
+            // Se respeta el deep link (?negocio=, ?oferta=, ?empleo=) si lo hay.
+            if (currentPageRef.current === 'login') {
+              setCurrentPage('home');
+              window.history.replaceState({ page: 'home', params: {} }, '', window.location.pathname === '/' ? '/' : window.location.pathname);
+            }
           }
           // Si SIGNED_IN sin sesión (no debería pasar), no hacer nada
         } catch (e) {
@@ -19300,8 +19730,8 @@ export default function App() {
             if (authOnlyPages.includes(currentPageRef.current)) {
               setCurrentPage('home');
             }
-          } else {
-            setCurrentPage('login');
+          } else if (currentPageRef.current === 'login') {
+            setCurrentPage('home');
           }
         } finally {
           clearTimeout(authTimeout);
@@ -19313,7 +19743,7 @@ export default function App() {
         setCurrentPage('reset-password');
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
-        setCurrentPage('login');
+        setCurrentPage('home');
         setLoadingAuth(false);
       }
       // TOKEN_REFRESHED: ignorar
@@ -20447,7 +20877,9 @@ export default function App() {
   // Detectar parámetro de URL para abrir perfil de negocio, oferta, empleo o pantalla directa
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const negocioId = urlParams.get('negocio');
+    // También /negocio/<nombre>-<id> (fichas para Google) por si se abre dentro de la app
+    const negocioPath = window.location.pathname.match(/^\/negocio\/(?:[^/]*-)?(\d+)\/?$/);
+    const negocioId = urlParams.get('negocio') || (negocioPath ? negocioPath[1] : null);
     const ofertaId = urlParams.get('oferta');
     const empleoId = urlParams.get('empleo');
     const navTo = urlParams.get('nav');
@@ -21082,7 +21514,8 @@ export default function App() {
   // Función para toggle de favoritos con persistencia en Supabase
   const toggleFavorite = async (businessId) => {
     if (!user?.id) {
-      showToast(ERROR_MESSAGES.unauthorized, 'warning');
+      showToast('Crea tu cuenta gratis para guardar favoritos', 'info');
+      handleGuestAuth('register', currentPage, pageParams);
       return;
     }
 
@@ -21177,7 +21610,23 @@ export default function App() {
 
   };
 
+  // Invitado: lleva a login/registro y recuerda adónde quería ir
+  function handleGuestAuth(mode, page, params = {}) {
+    if (page && !['login', 'register', 'forgot-password', 'reset-password'].includes(page)) {
+      saveAuthRedirect(page, params);
+    }
+    navigate(mode === 'register' ? 'register' : 'login');
+  }
+
   const renderPage = () => {
+    if (!user) {
+      if (GUEST_TEASER_PAGES.has(currentPage)) {
+        return <GuestTeaser kind={currentPage} id={pageParams.id} params={pageParams} onNavigate={navigate} onAuth={handleGuestAuth} />;
+      }
+      if (!GUEST_PAGES.has(currentPage)) {
+        return <GuestGate page={currentPage} onNavigate={navigate} onAuth={handleGuestAuth} />;
+      }
+    }
     switch (currentPage) {
       case 'home':
         return <HomePage onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} userOffers={userOffers} notifications={dynamicNotifications} params={pageParams} />;
@@ -21410,7 +21859,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 lg:bg-[#eef2f8]">
       <Toast
         message={toast.message}
         type={toast.type}
@@ -21464,13 +21913,23 @@ export default function App() {
         </div>
       )}
 
-      {/* Contenido de la página con animación */}
-      <div
-        className={`transition-opacity duration-150 ease-out ${
-          isPageTransitioning ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        {renderPage()}
+      {/* Escritorio: navegación | app | información. En móvil solo la columna central */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_28rem_minmax(0,1fr)] lg:gap-8">
+        <DesktopSidebar user={user} currentPage={currentPage} onNavigate={navigate} onAuth={(mode, page) => handleGuestAuth(mode, page || currentPage, page ? {} : pageParams)} />
+
+        {/* Contenido de la página con animación */}
+        <div
+          className={`min-w-0 lg:min-h-screen lg:bg-white lg:shadow-[0_0_40px_rgba(15,23,42,0.08)] transition-opacity duration-150 ease-out ${
+            isPageTransitioning ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          {!user && GUEST_PAGES.has(currentPage) && !['login', 'register', 'forgot-password', 'reset-password'].includes(currentPage) && (
+            <GuestBanner onAuth={(mode) => handleGuestAuth(mode, currentPage, pageParams)} />
+          )}
+          {renderPage()}
+        </div>
+
+        <DesktopAside user={user} onNavigate={navigate} onAuth={(mode, page) => handleGuestAuth(mode, page || currentPage, page ? {} : pageParams)} />
       </div>
       <CookieBanner onNavigate={navigate} />
     </div>

@@ -4718,45 +4718,44 @@ const AdminDashboard = ({ onNavigate, user }) => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        // Negocios pendientes
-        const { count: pendingBiz } = await supabase
-          .from('businesses')
-          .select('*', { count: 'exact', head: true })
-          .eq('verification_status', 'pending');
-
-        // Reportes pendientes
-        const { count: pendingRep } = await supabase
-          .from('reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending');
-
-        // Total usuarios
-        const { count: totalUsr } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
-
-        // Total negocios
-        const { count: totalBiz } = await supabase
-          .from('businesses')
-          .select('*', { count: 'exact', head: true });
-
-        // Ofertas activas
-        const { count: activeOff } = await supabase
-          .from('offers')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'active');
-
-        // Empleos activos
-        const { count: activeJb } = await supabase
-          .from('jobs')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'active');
-
-        // Soporte pendiente
-        const { count: pendingSupp } = await supabase
-          .from('support_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending');
+        // Los 7 contadores son independientes entre sí: se lanzan en paralelo
+        // (antes iban en serie, 7 viajes encadenados a Supabase)
+        const [
+          { count: pendingBiz },   // Negocios pendientes
+          { count: pendingRep },   // Reportes pendientes
+          { count: totalUsr },     // Total usuarios
+          { count: totalBiz },     // Total negocios
+          { count: activeOff },    // Ofertas activas
+          { count: activeJb },     // Empleos activos
+          { count: pendingSupp },  // Soporte pendiente
+        ] = await Promise.all([
+          supabase
+            .from('businesses')
+            .select('*', { count: 'exact', head: true })
+            .eq('verification_status', 'pending'),
+          supabase
+            .from('reports')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'pending'),
+          supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true }),
+          supabase
+            .from('businesses')
+            .select('*', { count: 'exact', head: true }),
+          supabase
+            .from('offers')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'active'),
+          supabase
+            .from('jobs')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'active'),
+          supabase
+            .from('support_requests')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'pending'),
+        ]);
 
         setStats({
           pendingBusinesses: pendingBiz || 0,
@@ -4943,25 +4942,38 @@ const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
   const handleDelete = async (business) => {
     setDeletingId(business.id);
     try {
-      // Obtener IDs de ofertas y empleos para borrar sus relaciones primero
-      const { data: offerIds } = await supabase.from('offers').select('id').eq('business_id', business.id);
-      const { data: jobIds } = await supabase.from('jobs').select('id').eq('business_id', business.id);
+      // Borrado por fases: dentro de cada fase no hay dependencias de FK,
+      // así que van en paralelo. Antes eran ~10 viajes encadenados; ahora 4.
+
+      // Fase 1 — obtener IDs de ofertas y empleos (independientes entre sí)
+      const [{ data: offerIds }, { data: jobIds }] = await Promise.all([
+        supabase.from('offers').select('id').eq('business_id', business.id),
+        supabase.from('jobs').select('id').eq('business_id', business.id),
+      ]);
       const oIds = (offerIds || []).map(o => o.id);
       const jIds = (jobIds || []).map(j => j.id);
 
-      if (oIds.length > 0) {
-        await supabase.from('offer_redemptions').delete().in('offer_id', oIds);
-        await supabase.from('offer_fires').delete().in('offer_id', oIds);
-      }
-      if (jIds.length > 0) {
-        await supabase.from('job_applications').delete().in('job_id', jIds);
-      }
-      await supabase.from('offers').delete().eq('business_id', business.id);
-      await supabase.from('jobs').delete().eq('business_id', business.id);
-      await supabase.from('reviews').delete().eq('business_id', business.id);
-      await supabase.from('favorites').delete().eq('business_id', business.id);
-      await supabase.from('notifications').delete().eq('data->>business_id', String(business.id));
+      // Fase 2 — hijos de offers/jobs + tablas que solo cuelgan de businesses
+      await Promise.all([
+        ...(oIds.length > 0 ? [
+          supabase.from('offer_redemptions').delete().in('offer_id', oIds),
+          supabase.from('offer_fires').delete().in('offer_id', oIds),
+        ] : []),
+        ...(jIds.length > 0 ? [
+          supabase.from('job_applications').delete().in('job_id', jIds),
+        ] : []),
+        supabase.from('reviews').delete().eq('business_id', business.id),
+        supabase.from('favorites').delete().eq('business_id', business.id),
+        supabase.from('notifications').delete().eq('data->>business_id', String(business.id)),
+      ]);
 
+      // Fase 3 — ya sin hijos que los referencien
+      await Promise.all([
+        supabase.from('offers').delete().eq('business_id', business.id),
+        supabase.from('jobs').delete().eq('business_id', business.id),
+      ]);
+
+      // Fase 4 — el negocio, cuando nada le apunta
       const { error } = await supabase.from('businesses').delete().eq('id', business.id);
       if (error) throw error;
       setBusinesses(prev => prev.filter(b => b.id !== business.id));

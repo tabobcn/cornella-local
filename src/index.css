@@ -237,3 +237,13 @@ body {
 ::selection {
   background-color: rgba(86, 122, 199, 0.2);
 }
+
+/* Ahora se permite hacer zoom (accesibilidad). Para que iOS no amplíe
+   la pantalla al tocar un campo, los campos usan al menos 16px en móvil. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}

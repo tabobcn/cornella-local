@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /?nav=
+
+Sitemap: https://www.cornellalocal.es/sitemap.xml

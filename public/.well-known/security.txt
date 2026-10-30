@@ -1,0 +1,4 @@
+Contact: mailto:cornellalocal@gmail.com
+Expires: 2027-10-31T23:00:00.000Z
+Preferred-Languages: es, ca, en
+Canonical: https://www.cornellalocal.es/.well-known/security.txt

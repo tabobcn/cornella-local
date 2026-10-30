@@ -7133,11 +7133,9 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         .eq('business_id', businessId);
 
       if (allReviews?.length > 0) {
+        // La media y el contador los recalcula la base de datos (trigger update_business_rating);
+        // aquí solo actualizamos la vista sin esperar a recargar
         const avgRating = (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1);
-        await supabase
-          .from('businesses')
-          .update({ rating: avgRating, review_count: allReviews.length })
-          .eq('id', businessId);
 
         // Actualizar estado local del negocio
         setBusiness(prev => prev ? { ...prev, rating: avgRating, review_count: allReviews.length } : prev);
@@ -7914,6 +7912,10 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
       if (data?.error === 'max_uses_reached') {
         // La oferta se agotó justo ahora (race condition) — actualizar UI
         showToast?.('Esta oferta ya está agotada', 'error');
+        return;
+      }
+      if (data?.error) {
+        showToast?.(data.error === 'offer_unavailable' ? 'Esta oferta ya no está disponible' : 'No se pudo obtener el código. Inténtalo de nuevo.', 'error');
         return;
       }
       setRedemptionCode(data.code);
@@ -10262,75 +10264,6 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
     return Math.max(0, diffHours);
   };
 
-  // Mock data para demo - solicitudes con presupuestos recibidos
-  const mockRequests = [
-    {
-      id: 1,
-      category: 'plumbing',
-      categoryName: 'Fontanería',
-      categoryIcon: 'Droplet',
-      description: 'Fuga de agua en el baño principal, parece que viene de debajo del lavabo.',
-      urgency: 'urgent',
-      urgencyLabel: 'Urgente',
-      status: 'with-quotes', // pending, with-quotes, accepted, completed, rated, expired
-      createdAt: '2026-01-21T10:00:00', // Hace 2 días
-      photos: ['https://picsum.photos/200/200?random=1'],
-      address: 'C/ Mayor 45, Cornellà',
-      quotes: [
-        { id: 1, businessId: 1, businessName: 'Fontanería Martínez', price: 85, message: 'Puedo ir mañana por la tarde. Incluye mano de obra y materiales básicos.', phone: '612345678', rating: 4.8, reviews: 32, verified: true, respondedAt: '2026-01-21T14:00:00' },
-        { id: 2, businessId: 2, businessName: 'Servicios García', price: 95, message: 'Disponible hoy mismo si es urgente. Presupuesto sin compromiso.', phone: '623456789', rating: 4.5, reviews: 18, verified: true, respondedAt: '2026-01-21T15:30:00' },
-        { id: 3, businessId: 3, businessName: 'Fontaneros Express', price: 75, message: 'Precio económico. Puedo ir el viernes.', phone: '634567890', rating: 4.2, reviews: 8, verified: false, respondedAt: '2026-01-21T16:00:00' },
-      ],
-    },
-    {
-      id: 2,
-      category: 'electrical',
-      categoryName: 'Electricidad',
-      categoryIcon: 'Lightbulb',
-      description: 'Instalar 3 enchufes nuevos en el salón.',
-      urgency: 'this-week',
-      urgencyLabel: 'Esta semana',
-      status: 'accepted',
-      createdAt: '2026-01-10T09:00:00',
-      acceptedQuote: { businessId: 4, businessName: 'Electricidad López', price: 120, phone: '645678901' },
-      acceptedAt: '2026-01-10T18:00:00', // Hace más de 1 semana - necesita valoración
-      needsRating: true,
-      photos: [],
-      address: 'C/ Industria 12, Cornellà',
-      quotes: [],
-    },
-    {
-      id: 3,
-      category: 'cleaning',
-      categoryName: 'Limpieza',
-      categoryIcon: 'Sparkles',
-      description: 'Limpieza profunda de piso de 80m2 después de obras.',
-      urgency: 'next-week',
-      urgencyLabel: 'Próxima semana',
-      status: 'completed',
-      createdAt: '2026-01-18T11:00:00',
-      acceptedQuote: { businessId: 5, businessName: 'Limpiezas Rosa', price: 150, phone: '656789012' },
-      completedAt: '2026-01-20T16:00:00',
-      needsRating: true,
-      photos: [],
-      address: 'Av. Barcelona 88, Cornellà',
-      quotes: [],
-    },
-    {
-      id: 4,
-      category: 'renovation',
-      categoryName: 'Reformas',
-      categoryIcon: 'Hammer',
-      description: 'Cambiar suelo del baño (5m2).',
-      urgency: 'next-week',
-      urgencyLabel: 'Próxima semana',
-      status: 'pending',
-      createdAt: '2026-01-22T08:00:00', // Hace 1 día
-      photos: ['https://picsum.photos/200/200?random=2', 'https://picsum.photos/200/200?random=3'],
-      address: 'C/ Riera 23, Cornellà',
-      quotes: [],
-    },
-  ];
 
   // Mapeo de iconos para las categorías de servicios
   const serviceCategoryIcons = {
@@ -10373,7 +10306,10 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
     categoryName: r.categoryName || serviceCategoryNames[r.category] || 'Servicio',
     categoryIcon: r.categoryIcon || serviceCategoryIcons[r.category] || 'Wrench',
     urgencyLabel: r.urgency === 'urgent' ? 'Urgente' : r.urgency === 'this-week' ? 'Esta semana' : 'Próxima semana',
-    status: acceptedRequests[r.id] ? 'accepted' : (r.responses && r.responses.length > 0) ? 'with-quotes' : 'pending',
+    status: (acceptedRequests[r.id] || r.status === 'accepted' || (r.responses || []).some(q => q.status === 'accepted'))
+      ? 'accepted'
+      : (r.responses && r.responses.length > 0) ? 'with-quotes' : 'pending',
+    // Valoración y verificación reales del negocio (antes eran números aleatorios)
     quotes: (r.responses || []).map(resp => ({
       id: resp.id,
       businessId: resp.businessId,
@@ -10381,12 +10317,14 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
       price: resp.price,
       message: resp.message,
       phone: resp.phone,
-      rating: parseFloat((4.0 + Math.random() * 0.9).toFixed(1)), // Rating con 1 decimal
-      reviews: Math.floor(5 + Math.random() * 30),
-      verified: Math.random() > 0.3, // 70% verificados
+      status: resp.status,
+      rating: resp.rating,
+      reviews: resp.reviews || 0,
+      verified: !!resp.verified,
       respondedAt: resp.respondedAt,
     })),
-  })), ...mockRequests];
+    acceptedQuote: r.acceptedQuote || (r.responses || []).find(q => q.status === 'accepted') || null,
+  }))];
 
   // Filtrar solicitudes expiradas (más de 3 días sin aceptar)
   const allRequests = allRequestsRaw.filter(r => {
@@ -10756,11 +10694,11 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                         >
                           {acceptedQuote.businessName}
                         </button>
-                        {acceptedQuote.rating && (
+                        {acceptedQuote.reviews > 0 && (
                           <div className="flex items-center gap-1 text-sm text-gray-500">
                             <Star className="text-yellow-500 fill-yellow-500" size={14} />
-                            <span>{typeof acceptedQuote.rating === 'number' ? acceptedQuote.rating.toFixed(1) : acceptedQuote.rating}</span>
-                            {acceptedQuote.reviews && <span>({acceptedQuote.reviews} reseñas)</span>}
+                            <span>{Number(acceptedQuote.rating || 0).toFixed(1)}</span>
+                            <span>({acceptedQuote.reviews} {acceptedQuote.reviews === 1 ? 'reseña' : 'reseñas'})</span>
                           </div>
                         )}
                       </div>
@@ -10910,9 +10848,15 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                         {isAccepted && <span className="px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full">ELEGIDO</span>}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <Star className="text-yellow-500 fill-yellow-500" size={12} />
-                        <span>{typeof quote.rating === 'number' ? quote.rating.toFixed(1) : quote.rating}</span>
-                        <span>({quote.reviews} reseñas)</span>
+                        {quote.reviews > 0 ? (
+                          <>
+                            <Star className="text-yellow-500 fill-yellow-500" size={12} />
+                            <span>{Number(quote.rating || 0).toFixed(1)}</span>
+                            <span>({quote.reviews} {quote.reviews === 1 ? 'reseña' : 'reseñas'})</span>
+                          </>
+                        ) : (
+                          <span>Sin reseñas todavía</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -20401,7 +20345,7 @@ export default function App() {
         // 1. Cargar solicitudes + cotizaciones (sin JOIN anidado a businesses)
         const { data: requests, error } = await supabase
           .from('budget_requests')
-          .select('*, budget_quotes(id, price, description, business_id)')
+          .select('*, budget_quotes(id, price, description, business_id, status)')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(100);
@@ -20415,12 +20359,13 @@ export default function App() {
 
         // 3. Cargar nombres de negocios en una sola query separada
         let businessNames = {};
+        let businessInfo = {};
         if (businessIds.length > 0) {
           const { data: businesses } = await supabase
             .from('businesses')
-            .select('id, name')
+            .select('id, name, phone, rating, review_count, is_verified')
             .in('id', businessIds);
-          (businesses || []).forEach(b => { businessNames[b.id] = b.name; });
+          (businesses || []).forEach(b => { businessNames[b.id] = b.name; businessInfo[b.id] = b; });
         }
 
         // 4. Transformar al formato esperado por MyBudgetRequestsScreen
@@ -20440,6 +20385,11 @@ export default function App() {
             businessName: businessNames[quote.business_id] || 'Negocio',
             price: quote.price,
             message: quote.description,
+            status: quote.status,
+            phone: businessInfo[quote.business_id]?.phone || '',
+            rating: businessInfo[quote.business_id]?.rating != null ? Number(businessInfo[quote.business_id].rating) : null,
+            reviews: businessInfo[quote.business_id]?.review_count || 0,
+            verified: !!businessInfo[quote.business_id]?.is_verified,
           })),
         }));
 

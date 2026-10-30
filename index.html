@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#567ac7" />
@@ -11,23 +11,23 @@
     <meta name="keywords" content="Cornellà de Llobregat, comercio local, ofertas, descuentos, presupuestos, empleo local, negocios Cornellà, Barcelona, Catalunya" />
     <meta name="author" content="CornellaLocal" />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://cornellalocal.es/" />
+    <link rel="canonical" href="https://www.cornellalocal.es/" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://cornellalocal.es/" />
+    <meta property="og:url" content="https://www.cornellalocal.es/" />
     <meta property="og:title" content="CornellaLocal - Tu comercio local, más cerca" />
     <meta property="og:description" content="Conecta con comercios locales de Cornellà de Llobregat. Descubre ofertas flash, solicita presupuestos y encuentra empleo local. ¡Gratis!" />
-    <meta property="og:image" content="https://cornellalocal.es/icons/icon-512x512.png" />
+    <meta property="og:image" content="https://www.cornellalocal.es/icons/icon-512x512.png" />
     <meta property="og:locale" content="es_ES" />
     <meta property="og:site_name" content="CornellaLocal" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://cornellalocal.es/" />
+    <meta name="twitter:url" content="https://www.cornellalocal.es/" />
     <meta name="twitter:title" content="CornellaLocal - Tu comercio local, más cerca" />
     <meta name="twitter:description" content="Conecta con comercios locales de Cornellà de Llobregat. Descubre ofertas flash, solicita presupuestos y encuentra empleo local." />
-    <meta name="twitter:image" content="https://cornellalocal.es/icons/icon-512x512.png" />
+    <meta name="twitter:image" content="https://www.cornellalocal.es/icons/icon-512x512.png" />
 
     <!-- Geo Tags -->
     <meta name="geo.region" content="ES-CT" />
@@ -39,18 +39,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Cornellà Local" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
 
     <!-- Android/Chrome Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="/manifest.json" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
-    <link rel="icon" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
 
     <!-- Splash screens para iOS -->
     <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
@@ -71,7 +70,7 @@
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "CornellaLocal",
-      "url": "https://cornellalocal.es",
+      "url": "https://www.cornellalocal.es/",
       "description": "Conecta con comercios locales de Cornellà de Llobregat. Descubre ofertas flash, solicita presupuestos y encuentra empleo local.",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web, iOS, Android",
@@ -79,11 +78,6 @@
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "EUR"
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "ratingCount": "127"
       },
       "areaServed": {
         "@type": "City",
@@ -170,17 +164,19 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Ocultar splash cuando carga la app -->
+    <!-- Ocultar splash en cuanto React pinta la app (main.jsx dispara 'app-ready');
+         la carga completa de la ventana queda solo como red de seguridad -->
     <script>
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const splash = document.getElementById('splash-screen');
-          if (splash) {
-            splash.classList.add('hidden');
-            setTimeout(() => splash.remove(), 300);
-          }
-        }, 500);
-      });
+      (function () {
+        function hideSplash() {
+          var splash = document.getElementById('splash-screen');
+          if (!splash) return;
+          splash.classList.add('hidden');
+          setTimeout(function () { splash.remove(); }, 300);
+        }
+        window.addEventListener('app-ready', hideSplash, { once: true });
+        window.addEventListener('load', function () { setTimeout(hideSplash, 1500); }, { once: true });
+      })();
     </script>
   </body>
 </html>

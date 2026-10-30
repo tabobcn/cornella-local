@@ -5,7 +5,15 @@
       "destination": "/negocios/index.html"
     },
     {
+      "source": "/negocios/",
+      "destination": "/negocios/index.html"
+    },
+    {
       "source": "/negocio/:slug",
+      "destination": "/negocio/:slug/index.html"
+    },
+    {
+      "source": "/negocio/:slug/",
       "destination": "/negocio/:slug/index.html"
     },
     {

@@ -19703,7 +19703,7 @@ export default function App() {
             if (redirect) {
               setCurrentPage(redirect.page);
               setPageParams(redirect.params || {});
-              window.history.replaceState({ page: redirect.page, params: redirect.params || {} }, '', `#${redirect.page}`);
+              window.history.replaceState({ page: redirect.page, params: redirect.params || {} }, '', buildUrlFor(redirect.page, redirect.params || {}));
             } else if (authOnlyPages.includes(currentPageRef.current)) {
               // Solo navegar a home si estamos en una página de autenticación
               // Evita interrumpir al usuario si está navegando dentro de la app
@@ -20687,26 +20687,45 @@ export default function App() {
         const allCategoryVariants = [...new Set([...subcategoryNames, ...legacyIds])];
 
         // 3. Cargar presupuestos de TODAS esas categorías (nombres + IDs legacy)
+        // El teléfono del cliente NO se descarga aquí: solo se pide (RPC) cuando
+        // el cliente ha aceptado el presupuesto de uno de mis negocios
         const { data, error } = await supabase
           .from('budget_requests')
           .select(`
-            *,
-            budget_quotes(id, price, description, business_id)
+            id, user_id, category, description, photos, urgency, address, status, created_at, updated_at,
+            budget_quotes(id, price, description, business_id, status)
           `)
           .in('category', allCategoryVariants)
-          .in('status', ['pending', 'quoted'])
+          .in('status', ['pending', 'quoted', 'accepted'])
           .order('created_at', { ascending: false })
           .limit(100);
 
         if (error) throw error;
 
+        // Las aceptadas solo interesan si el elegido es uno de mis negocios
+        const visibleRequests = (data || []).filter(request => {
+          if (request.status !== 'accepted') return true;
+          return (request.budget_quotes || []).some(q => businessIds.includes(q.business_id) && q.status === 'accepted');
+        });
+
+        // Teléfono del cliente solo para presupuestos aceptados conmigo
+        const contactPhones = {};
+        await Promise.all(visibleRequests
+          .filter(r => r.status === 'accepted')
+          .map(async r => {
+            const { data: phone, error: phoneError } = await supabase.rpc('get_budget_request_contact', { p_request_id: r.id });
+            if (phoneError) console.error('Error cargando contacto del presupuesto:', phoneError);
+            contactPhones[r.id] = phone || '';
+          }));
+
 
         // 4. Transformar al formato esperado
-        const transformedRequests = (data || []).map(request => {
+        const transformedRequests = visibleRequests.map(request => {
           // Buscar si ALGUNO de mis negocios ya respondió
           const myQuote = request.budget_quotes?.find(
             q => businessIds.includes(q.business_id)
           );
+          const acceptedWithMe = request.status === 'accepted' && myQuote?.status === 'accepted';
 
           return {
             id: request.id,
@@ -20719,10 +20738,10 @@ export default function App() {
             urgencyLabel: request.urgency === 'urgent' ? 'Urgente' :
                          request.urgency === 'this-week' ? 'Esta semana' : 'Próxima semana',
             address: request.address || 'Cornellà de Llobregat',
-            phone: request.phone,
+            phone: contactPhones[request.id] || '',
             photos: request.photos || [],
             createdAt: request.created_at,
-            status: myQuote ? 'replied' : 'new',
+            status: acceptedWithMe ? 'accepted' : myQuote ? 'replied' : 'new',
             myQuote: myQuote ? { price: myQuote.price, message: myQuote.description } : null,
           };
         });
@@ -20775,7 +20794,7 @@ export default function App() {
         // 1. Cargar solicitudes + cotizaciones (sin JOIN anidado a businesses)
         const { data: requests, error } = await supabase
           .from('budget_requests')
-          .select('*, budget_quotes(id, price, description, business_id, status)')
+          .select('id, user_id, category, description, photos, urgency, address, status, created_at, updated_at, budget_quotes(id, price, description, business_id, status)')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(100);
@@ -20805,7 +20824,6 @@ export default function App() {
           description: request.description,
           urgency: request.urgency,
           address: request.address,
-          phone: request.phone,
           photos: request.photos || [],
           status: request.status,
           createdAt: request.created_at,
@@ -21425,11 +21443,8 @@ export default function App() {
       if (error) throw error;
 
 
-      // 3. Actualizar estado del budget_request a 'quoted'
-      const { error: updateError } = await supabase
-        .from('budget_requests')
-        .update({ status: 'quoted' })
-        .eq('id', requestId);
+      // 3. El estado de la solicitud lo gestiona el cliente; el negocio solo
+      //    añade su cotización (antes aquí había un UPDATE que RLS bloqueaba en silencio)
 
 
       // 5. Actualizar estado local
@@ -21578,7 +21593,7 @@ export default function App() {
           phone: requestData.phone,
           status: 'pending'
         })
-        .select()
+        .select('id')
         .single();
 
       if (error) throw error;

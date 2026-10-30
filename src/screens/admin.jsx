@@ -97,23 +97,23 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
       <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
         <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
           <div className="flex items-center px-4 py-4">
-            <button onClick={() => onNavigate('admin-dashboard')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+            <button aria-label="Volver" onClick={() => onNavigate('admin-dashboard')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
               <ArrowLeft size={24} />
             </button>
             <div className="flex-1 text-center pr-10">
               <h2 className="text-slate-900 text-lg font-bold">Usuarios</h2>
-              {!loading && <p className="text-xs text-gray-400">{filtered.length} de {users.length} registrados</p>}
+              {!loading && <p className="text-xs text-gray-500">{filtered.length} de {users.length} registrados</p>}
             </div>
           </div>
           <div className="px-4 pb-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por nombre o email..."
-                className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+                className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none"
               />
             </div>
           </div>
@@ -121,9 +121,9 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
 
         <div className="p-4 pb-24 space-y-2">
           {loading ? (
-            <div className="text-center text-gray-400 py-10">Cargando...</div>
+            <div className="text-center text-gray-500 py-10">Cargando...</div>
           ) : filtered.length === 0 ? (
-            <div className="text-center text-gray-400 py-10">Sin resultados</div>
+            <div className="text-center text-gray-500 py-10">Sin resultados</div>
           ) : filtered.map(u => (
             <div key={u.id} className={`bg-white rounded-xl p-4 shadow-sm flex items-center gap-3 ${u.is_banned ? 'opacity-60 border border-red-200' : ''}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${u.is_banned ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary'}`}>
@@ -135,7 +135,7 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
                   {u.is_admin && <span className="text-[10px] bg-primary/10 text-primary font-semibold px-1.5 py-0.5 rounded-full">Admin</span>}
                   {u.is_banned && <span className="text-[10px] bg-red-100 text-red-600 font-semibold px-1.5 py-0.5 rounded-full">Baneado</span>}
                 </div>
-                <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                <p className="text-xs text-gray-500 truncate">{u.email}</p>
                 <p className="text-[10px] text-gray-300">{new Date(u.created_at).toLocaleDateString('es-ES')}</p>
               </div>
               {!u.is_admin && (
@@ -197,8 +197,8 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
                 onClick={() => confirmAction.type === 'delete' ? handleDelete(confirmAction.user) : handleBanToggle(confirmAction.user)}
                 disabled={actionLoading}
                 className={`flex-1 h-12 rounded-xl text-white font-semibold flex items-center justify-center gap-2 ${
-                  confirmAction.type === 'delete' ? 'bg-red-500 hover:bg-red-600' :
-                  confirmAction.type === 'ban' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'
+                  confirmAction.type === 'delete' ? 'bg-red-600 hover:bg-red-700' :
+                  confirmAction.type === 'ban' ? 'bg-amber-700 hover:bg-amber-800' : 'bg-green-700 hover:bg-green-800'
                 }`}
               >
                 {actionLoading ? <RefreshCw size={16} className="animate-spin" /> :
@@ -259,7 +259,7 @@ export const AdminSupportScreen = ({ onNavigate }) => {
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
-          <button onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+          <button aria-label="Volver" onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
             <ArrowLeft size={24} />
           </button>
           <div className="flex-1 text-center pr-10">
@@ -293,9 +293,9 @@ export const AdminSupportScreen = ({ onNavigate }) => {
       </header>
       <div className="p-4 space-y-3">
         {loading ? (
-          <div className="text-center text-gray-400 py-10">Cargando...</div>
+          <div className="text-center text-gray-500 py-10">Cargando...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center text-gray-400 py-10">No hay mensajes en este filtro</div>
+          <div className="text-center text-gray-500 py-10">No hay mensajes en este filtro</div>
         ) : filtered.map(m => {
           const isNoBiz = isNoBusinessMsg(m);
           return (
@@ -308,7 +308,7 @@ export const AdminSupportScreen = ({ onNavigate }) => {
                     <p className="font-semibold text-slate-800 text-sm">{m.name}</p>
                     {isNoBiz && <span className="text-[10px] bg-orange-100 text-orange-600 font-bold px-1.5 py-0.5 rounded-full">SIN EMPRESAS</span>}
                   </div>
-                  <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                  <p className="text-xs text-gray-500 truncate">{m.email}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
                   m.status === 'resolved' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
@@ -324,7 +324,7 @@ export const AdminSupportScreen = ({ onNavigate }) => {
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-300">{new Date(m.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                 {m.status !== 'resolved' && (
-                  <button onClick={() => markResolved(m.id)} className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 transition-colors">
+                  <button onClick={() => markResolved(m.id)} className="text-xs bg-green-700 text-white px-3 py-1 rounded-lg hover:bg-green-800 transition-colors">
                     Marcar resuelto
                   </button>
                 )}
@@ -518,7 +518,7 @@ export const AdminDashboard = ({ onNavigate, user }) => {
                 <div className={`w-12 h-12 rounded-xl ${colorClasses[action.color]} flex items-center justify-center shrink-0 relative`}>
                   <action.icon size={24} />
                   {action.badge > 0 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
                       {action.badge > 99 ? '99+' : action.badge}
                     </div>
                   )}
@@ -527,7 +527,7 @@ export const AdminDashboard = ({ onNavigate, user }) => {
                   <div className="font-semibold text-slate-900">{action.title}</div>
                   <div className="text-sm text-gray-500">{action.description}</div>
                 </div>
-                <ChevronRight className="text-gray-400" size={20} />
+                <ChevronRight className="text-gray-500" size={20} />
               </button>
             );
           })}
@@ -649,7 +649,7 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
         {/* Header */}
         <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-4">
           <div className="flex items-center gap-3 mb-3">
-            <button onClick={() => onNavigate('admin-dashboard')} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+            <button aria-label="Volver" onClick={() => onNavigate('admin-dashboard')} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
               <ArrowLeft size={20} className="text-gray-700" />
             </button>
             <div>
@@ -659,13 +659,13 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
           </div>
           {/* Buscador */}
           <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por nombre, categoría, barrio..."
-              className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-400 focus:outline-none focus:border-primary"
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-500 focus:outline-none focus:border-primary"
             />
           </div>
           {/* Filtros */}
@@ -694,7 +694,7 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
               </div>
             ))
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16 text-gray-500">
               <Store size={40} className="mx-auto mb-3 opacity-40" />
               <p className="text-sm">No hay negocios</p>
             </div>
@@ -710,7 +710,7 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
                     <p className="text-xs text-gray-500 truncate">
                       {business.category}{business.neighborhood ? ` · ${business.neighborhood}` : ''}
                     </p>
-                    <p className="text-[10px] text-gray-400 mt-1">
+                    <p className="text-[10px] text-gray-500 mt-1">
                       ID: {business.id} · Creado: {new Date(business.created_at).toLocaleDateString('es-ES')}
                     </p>
                   </div>
@@ -762,7 +762,7 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
               </button>
               <button
                 onClick={() => handleDelete(confirmDelete)}
-                className="flex-1 h-12 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+                className="flex-1 h-12 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
               >
                 Eliminar
               </button>
@@ -931,7 +931,7 @@ export const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
           onClick={() => setFilter('appeals')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
             filter === 'appeals'
-              ? 'bg-amber-500 text-white'
+              ? 'bg-amber-700 text-white'
               : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
           }`}
         >
@@ -1055,7 +1055,7 @@ export const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
                       <button
                         onClick={() => openApproveModal(business)}
                         disabled={actionLoading}
-                        className="flex-1 h-10 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex-1 h-10 bg-green-700 text-white rounded-lg font-medium hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {actionLoading ? (
                           <RefreshCw size={16} className="animate-spin" />
@@ -1069,7 +1069,7 @@ export const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
                       <button
                         onClick={() => openRejectModal(business)}
                         disabled={actionLoading}
-                        className="flex-1 h-10 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex-1 h-10 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         <X size={16} />
                         Rechazar
@@ -1151,7 +1151,7 @@ export const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
               <button
                 onClick={handleApprove}
                 disabled={actionLoading}
-                className="flex-1 py-3 rounded-xl bg-green-500 text-white font-semibold text-sm hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-3 rounded-xl bg-green-700 text-white font-semibold text-sm hover:bg-green-800 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {actionLoading ? <RefreshCw size={16} className="animate-spin" /> : <Check size={16} />}
                 {actionLoading ? 'Aprobando...' : 'Aprobar'}
@@ -1176,7 +1176,7 @@ export const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
                   <p className="text-xs text-white/80">Documentos de verificación</p>
                 </div>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => {
                   setShowDocumentsModal(false);
                   setSelectedBusiness(null);
@@ -1252,7 +1252,7 @@ export const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
                 <button
                   onClick={handleReject}
                   disabled={actionLoading || !rejectReason.trim()}
-                  className="flex-1 h-11 px-4 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 h-11 px-4 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {actionLoading ? (
                     <>
@@ -1546,7 +1546,7 @@ export const BusinessAnalyticsScreen = ({ onNavigate, user, businessData }) => {
                             </div>
                           </div>
                           <span className={`text-[9px] font-medium ${
-                            isPeak ? 'text-amber-600' : 'text-gray-400'
+                            isPeak ? 'text-amber-600' : 'text-gray-500'
                           }`}>
                             {i}h
                           </span>
@@ -1595,7 +1595,7 @@ export const BusinessAnalyticsScreen = ({ onNavigate, user, businessData }) => {
               <div className="text-center py-12">
                 <BarChart3 className="mx-auto mb-3 text-gray-300" size={64} />
                 <p className="text-gray-500 mb-2 font-medium">Aún no hay datos suficientes</p>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-500">
                   Las estadísticas aparecerán cuando los usuarios visiten tu negocio
                 </p>
               </div>
@@ -1794,7 +1794,7 @@ export const ReportsScreen = ({ onNavigate, user, showToast }) => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleResolve(report.id)}
-                      className="flex-1 h-9 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600"
+                      className="flex-1 h-9 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800"
                     >
                       ✅ Resolver
                     </button>

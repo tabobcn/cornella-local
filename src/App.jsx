@@ -22,7 +22,7 @@ import {
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
   Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick, Flag,
-  ShieldAlert, UserCog, BarChart3, XCircle, UserX, ShieldOff, CheckCircle
+  ShieldAlert, UserCog, BarChart3, XCircle, UserX, ShieldOff, CheckCircle, AlertTriangle, Cookie, Percent, Scale
 } from 'lucide-react';
 
 import {
@@ -183,12 +183,12 @@ export const VerificationDocumentCard = ({ documentRef, index, onRemove, layout 
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={!signedUrl}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${signedUrl ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-gray-100 text-gray-400 pointer-events-none'}`}
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${signedUrl ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-gray-100 text-gray-500 pointer-events-none'}`}
           >
             <ExternalLink size={16} />
           </a>
           {onRemove && (
-            <button
+            <button aria-label="Eliminar"
               onClick={() => onRemove(documentRef)}
               className="w-9 h-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors"
             >
@@ -221,7 +221,7 @@ export const VerificationDocumentCard = ({ documentRef, index, onRemove, layout 
           target="_blank"
           rel="noopener noreferrer"
           aria-disabled={!signedUrl}
-          className={`h-10 px-4 rounded-lg font-medium transition-colors flex items-center gap-2 ${signedUrl ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-200 text-gray-400 pointer-events-none'}`}
+          className={`h-10 px-4 rounded-lg font-medium transition-colors flex items-center gap-2 ${signedUrl ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-500 pointer-events-none'}`}
         >
           <ExternalLink size={16} />
           Abrir
@@ -414,7 +414,8 @@ const iconMap = {
   ExternalLink, PartyPopper, Image, FileUp, CircleDot, LayoutDashboard, CreditCard,
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
-  Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick
+  Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick,
+  AlertTriangle, Cookie, Percent, Scale, SlidersHorizontal,
 };
 
 export const Icon = ({ name, className = "", size = 24 }) => {
@@ -467,19 +468,23 @@ const Toast = ({ message, type = 'success', isVisible, onClose }) => {
   if (!isVisible) return null;
 
   const types = {
-    success: { bg: 'bg-green-500', icon: 'CheckCircle2' },
-    error: { bg: 'bg-red-500', icon: 'AlertCircle' },
-    info: { bg: 'bg-blue-500', icon: 'Info' },
-    warning: { bg: 'bg-orange-500', icon: 'AlertCircle' },
+    success: { bg: 'bg-green-700', icon: 'CheckCircle2' },
+    error: { bg: 'bg-red-600', icon: 'AlertCircle' },
+    info: { bg: 'bg-blue-600', icon: 'Info' },
+    warning: { bg: 'bg-orange-700', icon: 'AlertCircle' },
   };
   const t = types[type] || types.success;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-md w-[calc(100%-32px)] animate-in slide-in-from-top fade-in duration-300">
+    <div
+      role={type === 'error' ? 'alert' : 'status'}
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-md w-[calc(100%-32px)] animate-in slide-in-from-top fade-in duration-300"
+    >
       <div className={`${t.bg} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3`}>
         <Icon name={t.icon} size={20} className="shrink-0" />
         <span className="text-sm font-medium flex-1">{message}</span>
-        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+        <button aria-label="Cerrar" onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
           <X size={16} />
         </button>
       </div>
@@ -725,7 +730,7 @@ const OnboardingScreen = ({ onComplete, onCompleteWithNotifications }) => {
       {currentSlide < slides.length - 1 && (
         <button
           onClick={handleSkip}
-          className="absolute top-6 right-6 z-10 text-gray-400 hover:text-gray-600 text-sm font-medium transition-colors"
+          className="absolute top-6 right-6 z-10 text-gray-500 hover:text-gray-600 text-sm font-medium transition-colors"
         >
           Saltar
         </button>
@@ -814,7 +819,7 @@ const OnboardingScreen = ({ onComplete, onCompleteWithNotifications }) => {
         </div>
 
         {/* Cornellà branding */}
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-gray-500 mt-6">
           Hecho con ❤️ para Cornellà de Llobregat
         </p>
       </div>
@@ -965,7 +970,7 @@ const PullToRefreshIndicator = ({ pullDistance, isRefreshing, threshold = 80 }) 
         )}
       </div>
       <span className={`text-xs font-medium mt-2 transition-all duration-200 ${
-        isRefreshing ? 'text-primary' : isReady ? 'text-primary' : 'text-gray-400'
+        isRefreshing ? 'text-primary' : isReady ? 'text-primary' : 'text-gray-500'
       }`}>
         {isRefreshing ? 'Actualizando...' : isReady ? 'Suelta para actualizar' : 'Tira hacia abajo'}
       </span>
@@ -989,7 +994,7 @@ const StarRating = ({ rating = 0, onRate, size = 24, readonly = false, showValue
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
-          <button
+          <button aria-label={`${star} ${star === 1 ? 'estrella' : 'estrellas'}`}
             key={star}
             type="button"
             onClick={() => handleClick(star)}
@@ -1066,7 +1071,7 @@ const RateBusinessModal = ({ isOpen, onClose, business, onSubmitRating }) => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900">Valorar negocio</h3>
-          <button
+          <button aria-label="Cerrar"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -1106,7 +1111,7 @@ const RateBusinessModal = ({ isOpen, onClose, business, onSubmitRating }) => {
           <label className="text-sm font-medium text-slate-700 mb-2 block">
             Comentario (opcional)
           </label>
-          <textarea
+          <textarea aria-label="Comentario"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Cuéntanos tu experiencia..."
@@ -1122,7 +1127,7 @@ const RateBusinessModal = ({ isOpen, onClose, business, onSubmitRating }) => {
           className={`w-full h-12 font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
             rating > 0
               ? 'bg-primary text-white hover:bg-blue-700'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
           <Star size={18} />
@@ -1236,7 +1241,7 @@ const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport, 
               <p className="text-xs text-gray-500">{business?.name}</p>
             </div>
           </div>
-          <button
+          <button aria-label="Cerrar"
             onClick={handleClose}
             disabled={isSubmitting}
             className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50"
@@ -1306,7 +1311,7 @@ const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport, 
             <label className="block text-sm font-bold text-slate-900 mb-2">
               Describe el problema <span className="text-red-500">*</span>
             </label>
-            <textarea
+            <textarea aria-label="Describe el problema"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               disabled={isSubmitting}
@@ -1318,7 +1323,7 @@ const ReportBusinessModal = ({ isOpen, onClose, business, user, onSubmitReport, 
               <p className="text-xs text-gray-500">
                 💡 Sé específico para que podamos actuar rápidamente
               </p>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-500">
                 {message.length}/500
               </span>
             </div>
@@ -1401,7 +1406,7 @@ const AdvancedFiltersModal = ({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 p-5 flex items-center justify-between z-10">
           <h3 className="text-lg font-bold text-slate-900">Filtros avanzados</h3>
-          <button
+          <button aria-label="Cerrar"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -1429,7 +1434,7 @@ const AdvancedFiltersModal = ({
                     <Icon
                       name={option.icon}
                       size={18}
-                      className={sortBy === option.id ? 'text-primary' : 'text-gray-400'}
+                      className={sortBy === option.id ? 'text-primary' : 'text-gray-500'}
                     />
                     {sortBy === option.id && (
                       <CheckCircle2 size={16} className="text-primary ml-auto" />
@@ -1484,7 +1489,7 @@ const AdvancedFiltersModal = ({
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 mb-1 block">Mínimo</label>
-                  <input
+                  <input aria-label="Mínimo"
                     type="range"
                     min="0"
                     max="100"
@@ -1495,7 +1500,7 @@ const AdvancedFiltersModal = ({
                 </div>
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 mb-1 block">Máximo</label>
-                  <input
+                  <input aria-label="Máximo"
                     type="range"
                     min="0"
                     max="100"
@@ -1639,23 +1644,24 @@ const DESKTOP_NAV = [
 ];
 
 const DesktopSidebar = ({ user, currentPage, onNavigate, onAuth }) => (
-  <aside className="hidden lg:flex justify-self-end w-60 sticky top-0 h-screen flex-col py-8 gap-6">
+  <aside aria-label="Menú lateral" className="hidden lg:flex justify-self-end w-60 sticky top-0 h-screen flex-col py-8 gap-6">
     <button onClick={() => onNavigate('home')} className="px-3 text-left" aria-label="Ir al inicio">
       <img src="/logo.png" alt="Cornellà Local" width="183" height="32" className="h-8 w-auto" />
     </button>
 
-    <nav className="flex flex-col gap-1">
+    <nav aria-label="Secciones" className="flex flex-col gap-1">
       {DESKTOP_NAV.map(item => {
         const active = currentPage === item.id;
         return (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
+            aria-current={active ? 'page' : undefined}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
-              active ? 'bg-primary/10 text-primary font-bold' : 'text-slate-700 hover:bg-white font-medium'
+              active ? 'bg-primary/10 text-primary-dark font-bold' : 'text-slate-700 hover:bg-white font-medium'
             }`}
           >
-            <Icon name={item.icon} size={20} className={active ? 'text-primary' : 'text-slate-500'} />
+            <Icon name={item.icon} size={20} className={active ? 'text-primary-dark' : 'text-slate-600'} />
             {item.label}
           </button>
         );
@@ -1664,10 +1670,10 @@ const DesktopSidebar = ({ user, currentPage, onNavigate, onAuth }) => (
         <button
           onClick={() => onNavigate('admin-dashboard')}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
-            currentPage.startsWith('admin') ? 'bg-primary/10 text-primary font-bold' : 'text-slate-700 hover:bg-white font-medium'
+            currentPage.startsWith('admin') ? 'bg-primary/10 text-primary-dark font-bold' : 'text-slate-700 hover:bg-white font-medium'
           }`}
         >
-          <Icon name="Shield" size={20} className="text-slate-500" />
+          <Icon name="Shield" size={20} className="text-slate-600" />
           Administración
         </button>
       )}
@@ -1681,19 +1687,19 @@ const DesktopSidebar = ({ user, currentPage, onNavigate, onAuth }) => (
         {user.avatar_url ? (
           <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" referrerPolicy="no-referrer" />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary-dark font-bold flex items-center justify-center">
             {getInitials(user.full_name || user.email || 'U')}
           </div>
         )}
         <div className="min-w-0">
           <p className="text-sm font-bold text-slate-900 truncate">{user.full_name || 'Mi cuenta'}</p>
-          <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          <p className="text-xs text-gray-600 truncate">{user.email}</p>
         </div>
       </button>
     ) : (
       <div className="p-4 rounded-2xl bg-white border border-gray-100 flex flex-col gap-3">
         <p className="text-sm font-bold text-slate-900">Únete gratis</p>
-        <p className="text-xs text-gray-500 leading-relaxed">Guarda favoritos, consigue cupones y pide presupuestos a negocios del barrio.</p>
+        <p className="text-xs text-gray-600 leading-relaxed">Guarda favoritos, consigue cupones y pide presupuestos a negocios del barrio.</p>
         <button onClick={() => onAuth('register')} className="h-10 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold">Crear cuenta</button>
         <button onClick={() => onAuth('login')} className="h-10 rounded-xl border border-gray-200 hover:bg-gray-50 text-sm font-semibold text-slate-900">Entrar</button>
       </div>
@@ -1702,23 +1708,23 @@ const DesktopSidebar = ({ user, currentPage, onNavigate, onAuth }) => (
     <div className="mt-auto px-3 flex flex-col gap-3">
       <button
         onClick={() => (user ? onNavigate('business-data') : onAuth('register', 'profile'))}
-        className="text-left text-sm font-semibold text-primary hover:underline"
+        className="text-left text-sm font-semibold text-primary-dark hover:underline"
       >
         ¿Tienes un negocio? Date de alta gratis →
       </button>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
-        <button onClick={() => onNavigate('legal-notice')} className="hover:text-primary">Aviso legal</button>
-        <button onClick={() => onNavigate('privacy-policy')} className="hover:text-primary">Privacidad</button>
-        <button onClick={() => onNavigate('cookies-policy')} className="hover:text-primary">Cookies</button>
-        <button onClick={() => onNavigate('terms')} className="hover:text-primary">Términos</button>
-        <button onClick={() => onNavigate('contact-support')} className="hover:text-primary">Contacto</button>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600">
+        <button onClick={() => onNavigate('legal-notice')} className="hover:text-primary-dark hover:underline">Aviso legal</button>
+        <button onClick={() => onNavigate('privacy-policy')} className="hover:text-primary-dark hover:underline">Privacidad</button>
+        <button onClick={() => onNavigate('cookies-policy')} className="hover:text-primary-dark hover:underline">Cookies</button>
+        <button onClick={() => onNavigate('terms')} className="hover:text-primary-dark hover:underline">Términos</button>
+        <button onClick={() => onNavigate('contact-support')} className="hover:text-primary-dark hover:underline">Contacto</button>
       </div>
     </div>
   </aside>
 );
 
 const DesktopAside = ({ user, onNavigate, onAuth }) => (
-  <aside className="hidden lg:flex justify-self-start w-64 xl:w-72 sticky top-0 h-screen flex-col py-8 gap-4">
+  <aside aria-label="Cómo funciona Cornellà Local" className="hidden lg:flex justify-self-start w-64 xl:w-72 sticky top-0 h-screen flex-col py-8 gap-4">
     <a href="/negocios" className="p-5 rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white flex flex-col gap-2 hover:shadow-lg transition-shadow">
       <Store size={22} />
       <p className="font-bold leading-snug">Directorio de comercios de Cornellà</p>
@@ -1750,7 +1756,7 @@ const DesktopAside = ({ user, onNavigate, onAuth }) => (
           className="w-20 h-20 rounded-lg border border-gray-100"
           loading="lazy"
         />
-        <p className="text-xs text-gray-500 leading-relaxed">Escanéalo y pulsa «Añadir a pantalla de inicio» para tenerla como una app.</p>
+        <p className="text-xs text-gray-600 leading-relaxed">Escanéalo y pulsa «Añadir a pantalla de inicio» para tenerla como una app.</p>
       </div>
     </div>
 
@@ -1778,16 +1784,17 @@ export const Navbar = ({ currentPage, onNavigate }) => {
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 pb-6 pt-3 px-6">
+    <nav aria-label="Navegación principal" className="lg:hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 pb-6 pt-3 px-6">
       <div className="flex items-center justify-between">
         {items.map((item) => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
+            aria-current={currentPage === item.id ? 'page' : undefined}
             className={`flex flex-col items-center gap-1 transition-colors ${
               currentPage === item.id
                 ? 'text-primary'
-                : 'text-gray-400 hover:text-gray-600'
+                : 'text-gray-500 hover:text-gray-600'
             }`}
           >
             <Icon
@@ -1830,7 +1837,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
           ) : (
             <div className="h-full w-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-primary/10 to-primary/20">
               <Store className="text-primary/50" size={28} />
-              <span className="text-[10px] font-bold text-primary/60 text-center px-1 leading-tight truncate w-full text-center">{business.name?.charAt(0).toUpperCase()}</span>
+              <span className="text-[10px] font-bold text-primary text-center px-1 leading-tight truncate w-full text-center">{business.name?.charAt(0).toUpperCase()}</span>
             </div>
           )}
           {business.isOpen !== undefined && (
@@ -1847,7 +1854,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
               <h2 className="font-bold leading-tight text-slate-900 text-lg">{business.name}</h2>
               <p className="text-sm font-medium text-gray-500 mt-1">{business.category}</p>
             </div>
-            <button
+            <button aria-label="Guardar en favoritos"
               onClick={handleFavoriteClick}
               className="group/heart relative p-2 active:scale-90 transition-transform -mr-1 -mt-1"
             >
@@ -1858,7 +1865,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
             <div className="flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1">
               <Star className="text-yellow-400 fill-yellow-400" size={16} />
               <span className="text-xs font-bold text-slate-700">{business.rating}</span>
-              <span className="text-[10px] text-gray-400">({business.review_count || business.reviews || 0})</span>
+              <span className="text-[10px] text-gray-500">({business.review_count || business.reviews || 0})</span>
             </div>
             <div className="flex items-center gap-1 text-gray-500">
               <MapPin size={16} />
@@ -1894,7 +1901,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
           </span>
         )}
         <div className="absolute top-3 right-3">
-          <button
+          <button aria-label="Guardar en favoritos"
             onClick={handleFavoriteClick}
             className={`p-2 backdrop-blur-md rounded-full transition-colors ${
               isFavorite ? 'bg-white/90 text-red-500' : 'bg-white/20 text-white hover:bg-white/40'
@@ -1994,13 +2001,13 @@ const FlashOfferCard = ({ offer, onClick, onExpire }) => {
           alt={offer.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <div className={`absolute top-2 left-2 ${isExpired ? 'bg-red-500' : 'bg-slate-900/80'} backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1`}>
+        <div className={`absolute top-2 left-2 ${isExpired ? 'bg-red-600' : 'bg-slate-900/80'} backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1`}>
           <Clock size={12} />
           <span>{timeLeft}</span>
         </div>
-        <button
+        <button aria-label="WhatsApp"
           onClick={handleShareWhatsApp}
-          className="absolute top-2 right-2 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-md"
+          className="absolute top-2 right-2 w-8 h-8 bg-green-700 text-white rounded-full flex items-center justify-center hover:bg-green-800 transition-colors shadow-md"
         >
           <MessageCircle size={14} />
         </button>
@@ -2012,14 +2019,14 @@ const FlashOfferCard = ({ offer, onClick, onExpire }) => {
         <h3 className="font-semibold text-sm truncate">{offer.title}</h3>
         <div className="flex items-center justify-between mt-2">
           <div className="flex flex-col">
-            <span className="text-[10px] text-gray-400 line-through">{formatCurrency(offer.originalPrice || 0)}</span>
+            <span className="text-[10px] text-gray-500 line-through">{formatCurrency(offer.originalPrice || 0)}</span>
             <span className="text-base font-bold text-primary">
               {offer.discountType === 'free' || offer.discountedPrice === 0
                 ? 'GRATIS'
                 : formatCurrency(offer.discountedPrice || 0)}
             </span>
           </div>
-          <button
+          <button aria-label="Añadir"
             onClick={(e) => e.stopPropagation()}
             className="bg-gray-100 p-1.5 rounded-lg hover:bg-primary hover:text-white transition-colors"
           >
@@ -2071,6 +2078,35 @@ const GUEST_PAGES = new Set([
   'terms', 'terms-register', 'privacy-policy', 'legal-notice', 'cookies-policy', 'contact-support',
 ]);
 const GUEST_TEASER_PAGES = new Set(['business', 'coupon', 'job-detail']);
+
+// Título de la pestaña (y H1 para lectores de pantalla en las pantallas que no lo tienen)
+const DEFAULT_DOC_TITLE = typeof document !== 'undefined' ? document.title : 'Cornellà Local';
+const PAGE_TITLES = {
+  offers: 'Ofertas', 'flash-offers': 'Ofertas flash', category: 'Categorías', subcategory: 'Comercios',
+  business: 'Comercio', coupon: 'Cupón', 'job-detail': 'Oferta de empleo', 'user-jobs': 'Empleo',
+  favorites: 'Favoritos', profile: 'Mi perfil', notifications: 'Notificaciones', settings: 'Ajustes',
+  'edit-profile': 'Editar perfil', 'user-reviews': 'Mis reseñas', 'budget-request': 'Pedir presupuesto',
+  'direct-budget': 'Pedir presupuesto', 'my-budget-requests': 'Mis presupuestos',
+  login: 'Iniciar sesión', register: 'Crear cuenta', 'forgot-password': 'Recuperar contraseña',
+  'reset-password': 'Nueva contraseña', 'registration-success': 'Cuenta creada',
+  terms: 'Términos y condiciones', 'terms-register': 'Términos y condiciones', 'privacy-policy': 'Política de privacidad',
+  'legal-notice': 'Aviso legal', 'cookies-policy': 'Política de cookies', 'contact-support': 'Contacto y soporte',
+  'owner-dashboard': 'Panel de mi negocio', 'business-stats': 'Estadísticas', 'business-offers': 'Mis ofertas',
+  'create-offer': 'Crear oferta', 'business-jobs': 'Mis ofertas de empleo', 'create-job-offer': 'Publicar empleo',
+  'business-candidates': 'Candidatos', 'incoming-budget-requests': 'Presupuestos recibidos',
+  'business-budget': 'Presupuestos recibidos', 'business-data': 'Datos del negocio',
+  'business-verification': 'Verificación del negocio', 'business-appeal': 'Apelación', 'edit-business': 'Editar negocio',
+  'validate-code': 'Validar cupón', 'admin-dashboard': 'Administración', 'admin-all-businesses': 'Todos los negocios',
+  'admin-approve-businesses': 'Aprobar negocios', 'admin-users': 'Usuarios', 'admin-support': 'Soporte',
+  'business-analytics': 'Analítica', 'admin-reports': 'Denuncias',
+};
+// Pantallas cuyo componente ya pinta su propio <h1>
+const PAGES_WITH_OWN_H1 = new Set([
+  'favorites', 'profile', 'business', 'coupon', 'job-detail', 'category', 'subcategory', 'login', 'register',
+  'forgot-password', 'reset-password', 'edit-profile', 'settings', 'direct-budget', 'registration-success',
+  'admin-dashboard', 'admin-all-businesses', 'admin-approve-businesses', 'business-analytics', 'admin-reports',
+  'business-candidates', 'business-data', 'business-verification', 'validate-code', 'business-stats',
+]);
 const AUTH_REDIRECT_KEY = 'post-login-redirect';
 
 // Guarda adónde quería ir el invitado para llevarle allí tras iniciar sesión
@@ -2180,6 +2216,10 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (item?.title) document.title = `${item.title} | Cornellà Local`;
+  }, [item?.title]);
+
+  useEffect(() => {
     let active = true;
     const load = async () => {
       setLoading(true);
@@ -2266,7 +2306,7 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
           <ArrowLeft size={20} className="text-slate-900" />
         </button>
         {item?.badge && (
-          <span className="absolute top-4 right-4 px-3 py-1 rounded-full bg-orange-500 text-white text-sm font-bold shadow">{item.badge}</span>
+          <span className="absolute top-4 right-4 px-3 py-1 rounded-full bg-orange-700 text-white text-sm font-bold shadow">{item.badge}</span>
         )}
         <div className="absolute bottom-4 left-5 right-5 text-white">
           {loading ? (
@@ -2302,7 +2342,7 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
                 <Icon name={row.icon} size={18} className="text-primary" />
               </div>
               <span className="flex-1 text-sm font-medium text-slate-700">{row.label}</span>
-              <Lock size={16} className="text-gray-400" />
+              <Lock size={16} className="text-gray-500" />
             </div>
           ))}
         </div>
@@ -2833,13 +2873,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             className="h-9 w-auto object-contain"
           />
         </div>
-        <button
+        <button aria-label="Notificaciones"
           onClick={() => onNavigate('notifications')}
           className="relative p-2 text-slate-800 hover:bg-gray-100 rounded-full transition-colors"
         >
           <Bell size={24} />
           {(notifications?.filter(n => !n.isRead).length || 0) > 0 && (
-            <span className="absolute top-1 right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 border-2 border-white text-[10px] font-bold text-white">
+            <span className="absolute top-1 right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-600 border-2 border-white text-[10px] font-bold text-white">
               {notifications?.filter(n => !n.isRead).length || 0}
             </span>
           )}
@@ -2849,7 +2889,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       <div className="px-4 pb-4">
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="text-gray-400 group-focus-within:text-primary transition-colors" size={20} />
+            <Search className="text-gray-500 group-focus-within:text-primary transition-colors" size={20} />
           </div>
           <input
             className="block w-full p-3 pl-10 pr-20 text-sm text-gray-900 border-none rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-primary placeholder-gray-400 transition-all"
@@ -2871,7 +2911,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             {(searchQuery || selectedBarrio || hasActiveFilters) && (
               <button
                 onClick={clearAllFiltersAndSearch}
-                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-600 transition-colors"
                 title="Limpiar todo"
               >
                 <X size={18} />
@@ -2879,7 +2919,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             )}
             <button
               onClick={() => setShowBarrioFilter(true)}
-              className={`p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative ${selectedBarrio ? 'text-primary bg-primary/10' : 'text-gray-400'}`}
+              className={`p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative ${selectedBarrio ? 'text-primary bg-primary/10' : 'text-gray-500'}`}
               title="Filtrar por barrio"
             >
               <MapPin size={20} />
@@ -2889,7 +2929,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             </button>
             <button
               onClick={() => setShowAdvancedFilters(true)}
-              className={`p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative ${hasActiveFilters ? 'text-primary bg-primary/10' : 'text-gray-400'}`}
+              className={`p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative ${hasActiveFilters ? 'text-primary bg-primary/10' : 'text-gray-500'}`}
               title="Filtros avanzados"
             >
               <SlidersHorizontal size={20} />
@@ -2915,7 +2955,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                 <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                   <MapPin size={14} />
                   {barrios.find(b => b.id === selectedBarrio)?.name}
-                  <button
+                  <button aria-label="Cerrar"
                     onClick={clearBarrioFilter}
                     className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
                   >
@@ -2958,13 +2998,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             {recentSearches.length > 0 && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                     <History size={14} />
                     Búsquedas recientes
                   </h4>
                   <button
                     onClick={clearRecentSearches}
-                    className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                    className="text-xs text-gray-500 hover:text-red-500 transition-colors"
                   >
                     Borrar
                   </button>
@@ -2976,7 +3016,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                       onClick={() => handleSearchSubmit(term)}
                       className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
                     >
-                      <History size={16} className="text-gray-400" />
+                      <History size={16} className="text-gray-500" />
                       <span className="text-sm text-slate-700">{term}</span>
                     </button>
                   ))}
@@ -2986,7 +3026,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
             {/* Búsquedas populares */}
             <div>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                 <TrendingUp size={14} />
                 Búsquedas populares
               </h4>
@@ -3007,7 +3047,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
         ) : !hasResults ? (
           <div className="p-6 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="text-gray-400" size={28} />
+              <Search className="text-gray-500" size={28} />
             </div>
             <h3 className="text-lg font-bold text-slate-800 mb-1">Sin resultados</h3>
             <p className="text-sm text-gray-500">
@@ -3016,14 +3056,14 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                 : `No encontramos "${searchQuery}"`
               }
             </p>
-            <p className="text-xs text-gray-400 mt-2">Prueba con otros términos o barrios</p>
+            <p className="text-xs text-gray-500 mt-2">Prueba con otros términos o barrios</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {/* Categorías encontradas */}
             {filteredCategories.length > 0 && (
               <div className="p-4">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Categorías</h4>
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Categorías</h4>
                 <div className="flex flex-wrap gap-2">
                   {filteredCategories.map(category => (
                     <button
@@ -3045,7 +3085,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             {/* Ofertas encontradas */}
             {filteredOffers.length > 0 && (
               <div className="p-4">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Ofertas</h4>
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Ofertas</h4>
                 <div className="space-y-2">
                   {filteredOffers.slice(0, 3).map(offer => (
                     <button
@@ -3063,7 +3103,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                         <p className="text-sm font-semibold text-slate-800 truncate">{offer.title}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs font-bold text-primary">{offer.discount}</span>
-                          <span className="text-xs text-gray-400">• {offer.timeLeft}</span>
+                          <span className="text-xs text-gray-500">• {offer.timeLeft}</span>
                         </div>
                       </div>
                       <ChevronRight className="text-gray-300" size={20} />
@@ -3076,7 +3116,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             {/* Negocios encontrados */}
             {filteredBusinesses.length > 0 && (
               <div className="p-4">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Negocios ({filteredBusinesses.length})</h4>
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Negocios ({filteredBusinesses.length})</h4>
                 <div className="space-y-2">
                   {filteredBusinesses.map(business => (
                     <button
@@ -3111,7 +3151,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                         {business.isOpen && (
                           <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">ABIERTO</span>
                         )}
-                        <span className="text-xs text-gray-400">{business.distance}</span>
+                        <span className="text-xs text-gray-500">{business.distance}</span>
                       </div>
                     </button>
                   ))}
@@ -3123,7 +3163,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
       </div>
     )}
 
-    <main className="flex flex-col gap-6 pt-4">
+    <div className="flex flex-col gap-6 pt-4">
       {/* Indicadores de filtros activos */}
       {(showOnlyOpen || (sortByDistance && userLocation)) && (
         <div className="px-4 flex gap-2 flex-wrap">
@@ -3131,7 +3171,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
               <Circle size={8} className="fill-green-500 animate-pulse" />
               Abiertos ahora
-              <button onClick={() => setShowOnlyOpen(false)} className="ml-1 hover:text-green-900">
+              <button aria-label="Cerrar" onClick={() => setShowOnlyOpen(false)} className="ml-1 hover:text-green-900">
                 <X size={12} />
               </button>
             </div>
@@ -3140,7 +3180,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
               <Navigation size={12} className="fill-blue-500" />
               Por distancia
-              <button onClick={() => { setSortByDistance(false); setUserLocation(null); }} className="ml-1 hover:text-blue-900">
+              <button aria-label="Cerrar" onClick={() => { setSortByDistance(false); setUserLocation(null); }} className="ml-1 hover:text-blue-900">
                 <X size={12} />
               </button>
             </div>
@@ -3248,10 +3288,9 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           <h2 className="text-xl font-bold tracking-tight mb-4">Nuevos en el barrio</h2>
           <div className="flex flex-col gap-4">
             {newBusinesses.map(business => (
-              <button
+              <div
                 key={business.id}
-                onClick={() => onNavigate('business', { id: business.id })}
-                className="w-full bg-white rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden group text-left"
+                className="relative w-full bg-white rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden group text-left"
               >
                 {/* Image */}
                 <div className="relative h-44 bg-gradient-to-br from-blue-400 to-blue-600 overflow-hidden">
@@ -3264,7 +3303,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     />
                   )}
                   {/* Badge "NUEVO" */}
-                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-lg">
+                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-green-700 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-lg">
                     <Sparkles size={14} />
                     NUEVO
                   </div>
@@ -3273,10 +3312,10 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                   {(() => {
                     const status = getBusinessStatus(business.opening_hours);
                     const statusStyles = {
-                      open: 'bg-green-500 text-white',
+                      open: 'bg-green-700 text-white',
                       closed: 'bg-gray-600 text-white',
-                      closing_soon: 'bg-orange-500 text-white',
-                      unknown: 'bg-gray-400 text-white'
+                      closing_soon: 'bg-orange-700 text-white',
+                      unknown: 'bg-gray-600 text-white'
                     };
                     return (
                       <div className={`absolute bottom-3 left-3 px-3 py-1.5 ${statusStyles[status.status]} text-xs font-bold rounded-full shadow-lg backdrop-blur-sm`}>
@@ -3286,12 +3325,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                   })()}
 
                   {/* Favorite button */}
-                  <button
+                  <button aria-label="Guardar en favoritos"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleToggleFavoriteInList(business.id);
                     }}
-                    className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-lg"
+                    aria-pressed={!!(isFavorite && isFavorite(business.id))}
+                    className="absolute z-10 top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-lg"
                   >
                     <Heart
                       size={20}
@@ -3303,7 +3343,16 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                 <div className="px-4 pt-3.5 pb-4 flex flex-col gap-2">
                   {/* Nombre + Badge Verificado — centrado */}
                   <div className="flex items-center justify-center gap-1.5">
-                    <h3 className="font-bold text-slate-900 text-xl leading-tight text-center">{business.name}</h3>
+                    <h3 className="font-bold text-slate-900 text-xl leading-tight text-center">
+                      {/* Botón "estirado": toda la tarjeta es clicable sin anidar botones */}
+                      <button
+                        type="button"
+                        onClick={() => onNavigate('business', { id: business.id })}
+                        className="text-center focus:outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-2 focus-visible:after:ring-primary"
+                      >
+                        {business.name}
+                      </button>
+                    </h3>
                     {business.is_verified && (
                       <BadgeCheck className="text-white fill-primary shrink-0" size={22} />
                     )}
@@ -3311,12 +3360,12 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
                   {/* Fila 1: Categoría | Rating */}
                   <div className="flex items-center justify-center gap-2">
-                    <p className="text-sm font-medium text-primary/80">{business.subcategory || business.category}</p>
+                    <p className="text-sm font-medium text-primary">{business.subcategory || business.category}</p>
                     <span className="text-gray-300 text-sm">│</span>
                     <div className="flex items-center gap-1">
                       <Star className="text-yellow-500 fill-yellow-500" size={15} />
                       <span className="font-bold text-slate-900 text-sm">{business.rating || '—'}</span>
-                      <span className="text-gray-400 text-xs">({business.review_count || business.reviews || 0})</span>
+                      <span className="text-gray-500 text-xs">({business.review_count || business.reviews || 0})</span>
                     </div>
                   </div>
 
@@ -3333,12 +3382,12 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                     </div>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </section>
       )}
-    </main>
+    </div>
 
     {/* Navbar */}
     <Navbar currentPage="home" onNavigate={onNavigate} />
@@ -3356,7 +3405,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           {/* Header */}
           <div className="flex items-center justify-between px-5 pb-4 border-b border-gray-100">
             <h3 className="text-lg font-bold text-slate-900">Filtrar por Barrio</h3>
-            <button
+            <button aria-label="Cerrar"
               onClick={() => setShowBarrioFilter(false)}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
             >
@@ -3578,7 +3627,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => paso > 1 ? setPaso(paso - 1) : onNavigate('home')}
             className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full"
           >
@@ -3600,7 +3649,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
                   }`}>
                     {paso > step ? <Check size={16} /> : step}
                   </div>
-                  <span className={`text-[10px] mt-1 font-medium ${paso >= step ? 'text-primary' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] mt-1 font-medium ${paso >= step ? 'text-primary' : 'text-gray-500'}`}>
                     {step === 1 ? 'SERVICIO' : step === 2 ? 'DETALLES' : 'CONTACTO'}
                   </span>
                 </div>
@@ -3637,7 +3686,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
                     <Icon name={cat.icon} size={20} className={formData.category === cat.id ? 'text-primary' : 'text-gray-500'} />
                   </div>
                   <span className="text-xs font-bold text-slate-900 text-center">{cat.name}</span>
-                  <span className={"text-[10px] font-medium mt-1 " + (cat.businessCount === 0 ? "text-gray-400" : "text-primary")}>{cat.businessCount === 0 ? "Sin empresas" : `${cat.businessCount} empresa${cat.businessCount !== 1 ? "s" : ""}`}</span>
+                  <span className={"text-[10px] font-medium mt-1 " + (cat.businessCount === 0 ? "text-gray-500" : "text-primary")}>{cat.businessCount === 0 ? "Sin empresas" : `${cat.businessCount} empresa${cat.businessCount !== 1 ? "s" : ""}`}</span>
                 </button>
               ))}
             </div>
@@ -3661,12 +3710,12 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
               <label className="block text-sm font-bold text-slate-900 mb-2">
                 Describe el trabajo que necesitas * <span className="text-xs text-gray-500 font-normal">(mínimo 20 caracteres)</span>
               </label>
-              <textarea
+              <textarea aria-label="Describe el trabajo que necesitas"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Ej: Necesito arreglar una fuga en el baño, debajo del lavabo. Gotea constantemente y se está mojando el suelo..."
                 rows={5}
-                className={`w-full px-4 py-3 rounded-xl border bg-white text-slate-900 placeholder:text-gray-400 ${
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-slate-900 placeholder:text-gray-500 ${
                   formData.description && formData.description.trim().length < LIMITS.budgetRequest.descriptionMinLength
                     ? 'border-red-300 focus:border-red-400'
                     : 'border-gray-200 focus:border-primary'
@@ -3674,11 +3723,11 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
               />
               <div className="mt-1 flex justify-between items-center">
                 <span className={`text-xs ${
-                  formData.description.trim().length >= LIMITS.budgetRequest.descriptionMinLength ? 'text-green-600' : 'text-gray-400'
+                  formData.description.trim().length >= LIMITS.budgetRequest.descriptionMinLength ? 'text-green-600' : 'text-gray-500'
                 }`}>
                   {formData.description.trim().length >= 20 ? '✓ Descripción válida' : `${formData.description.trim().length}/20 caracteres`}
                 </span>
-                <span className="text-xs text-gray-400">{formData.description.length}/500</span>
+                <span className="text-xs text-gray-500">{formData.description.length}/500</span>
               </div>
             </div>
 
@@ -3690,7 +3739,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
                 {formData.photos.map((photo, i) => (
                   <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden">
                     <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${photo}")` }} />
-                    <button
+                    <button aria-label="Cerrar"
                       onClick={() => setFormData(prev => ({ ...prev, photos: prev.photos.filter((_, idx) => idx !== i) }))}
                       className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
                     >
@@ -3699,7 +3748,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
                   </div>
                 ))}
                 {formData.photos.length < LIMITS.budgetRequest.maxPhotos && (
-                  <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:border-primary hover:text-primary transition-colors">
+                  <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:border-primary hover:text-primary transition-colors">
                     {uploadingBudgetPhoto ? <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Plus size={24} />}
                     <span className="text-[10px]">{uploadingBudgetPhoto ? '...' : 'Añadir'}</span>
                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
@@ -3761,12 +3810,12 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
 
             <div>
               <label className="block text-sm font-bold text-slate-900 mb-2">Dirección del servicio *</label>
-              <input
+              <input aria-label="Dirección del servicio"
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                 placeholder="C/ Mayor 45, Cornellà de Llobregat"
-                className={`w-full h-12 px-4 rounded-xl border bg-white text-slate-900 placeholder:text-gray-400 ${
+                className={`w-full h-12 px-4 rounded-xl border bg-white text-slate-900 placeholder:text-gray-500 ${
                   formData.address && !addressValidation.isValid
                     ? 'border-red-300 focus:border-red-400'
                     : formData.address ? 'border-green-300 focus:border-green-400' : 'border-gray-200 focus:border-primary'
@@ -3781,12 +3830,12 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
               <label className="block text-sm font-bold text-slate-900 mb-2">
                 Teléfono de contacto * <span className="text-xs text-gray-500 font-normal">(ej: 612345678)</span>
               </label>
-              <input
+              <input aria-label="Teléfono de contacto"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="612 345 678"
-                className={`w-full h-12 px-4 rounded-xl border bg-white text-slate-900 placeholder:text-gray-400 ${
+                className={`w-full h-12 px-4 rounded-xl border bg-white text-slate-900 placeholder:text-gray-500 ${
                   formData.phone && !phoneValidation.isValid
                     ? 'border-red-300 focus:border-red-400'
                     : formData.phone && phoneValidation.isValid ? 'border-green-300 focus:border-green-400' : 'border-gray-200 focus:border-primary'
@@ -3814,7 +3863,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
             <button
               onClick={notifyAdmin}
               disabled={loading || !canPaso3}
-              className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 bg-amber-500 text-white disabled:opacity-60"
+              className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 bg-amber-700 text-white disabled:opacity-60"
             >
               {loading ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : null}
               {loading ? 'Enviando...' : 'Avisar al administrador'}
@@ -3871,7 +3920,7 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
               className={`w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 ${
                 ((paso === 1 ? canPaso1 : paso === 2 ? canPaso2 : canPaso3) && !loading)
                   ? 'bg-primary text-white'
-                  : 'bg-gray-200 text-gray-400'
+                  : 'bg-gray-200 text-gray-500'
               }`}
             >
               {loading ? (
@@ -4018,7 +4067,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('business', { id: businessId })}
             className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -4053,13 +4102,13 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
           <label className="block text-sm font-bold text-slate-900 mb-2">
             Describe qué necesitas <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <textarea aria-label="Describe qué necesitas"
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
             placeholder="Ej: Necesito pintar el salón y dos habitaciones. Las paredes están en buen estado..."
             className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
-          <p className="text-xs text-gray-400 mt-1">Mínimo 10 caracteres ({formData.description.length})</p>
+          <p className="text-xs text-gray-500 mt-1">Mínimo 10 caracteres ({formData.description.length})</p>
         </div>
 
         {/* Photos */}
@@ -4069,7 +4118,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
             {formData.photos.map((photo, index) => (
               <div key={index} className="relative w-20 h-20 rounded-xl overflow-hidden">
                 <img src={photo} alt="" className="w-full h-full object-cover" />
-                <button
+                <button aria-label="Cerrar"
                   onClick={() => setFormData(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }))}
                   className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
                 >
@@ -4079,8 +4128,8 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
             ))}
             {formData.photos.length < 3 && (
               <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
-                {uploadingDPhoto ? <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Camera className="text-gray-400" size={20} />}
-                <span className="text-[10px] text-gray-400">{uploadingDPhoto ? '...' : 'Añadir'}</span>
+                {uploadingDPhoto ? <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Camera className="text-gray-500" size={20} />}
+                <span className="text-[10px] text-gray-500">{uploadingDPhoto ? '...' : 'Añadir'}</span>
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAddPhoto(e.target.files?.[0])} />
               </label>
             )}
@@ -4125,7 +4174,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
           <label className="block text-sm font-bold text-slate-900 mb-2">
             Dirección del servicio <span className="text-red-500">*</span>
           </label>
-          <input
+          <input aria-label="Dirección del servicio"
             type="text"
             value={formData.address}
             onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
@@ -4139,7 +4188,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
           <label className="block text-sm font-bold text-slate-900 mb-2">
             Teléfono de contacto <span className="text-red-500">*</span>
           </label>
-          <input
+          <input aria-label="Teléfono de contacto"
             type="tel"
             value={formData.phone}
             onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
@@ -4160,7 +4209,7 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
           onClick={handleSubmit}
           disabled={!canSubmit || loading}
           className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-            canSubmit && !loading ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary-dark active:scale-[0.98]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            canSubmit && !loading ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary-dark active:scale-[0.98]' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
           {loading ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Send size={20} />}
@@ -4266,7 +4315,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('home')}
             className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -4296,7 +4345,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
       </div>
 
       {/* Offers List */}
-      <main className="px-4 py-4 pb-8 space-y-4">
+      <div className="px-4 py-4 pb-8 space-y-4">
         {allFlashOffers.length === 0 ? (
           <EmptyState
             icon="Zap"
@@ -4326,13 +4375,13 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
                   {/* Position Badge */}
                   {index < 3 && (
                     <div className={`absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                      index === 0 ? 'bg-red-500' : index === 1 ? 'bg-orange-500' : 'bg-yellow-500'
+                      index === 0 ? 'bg-red-600' : index === 1 ? 'bg-orange-700' : 'bg-yellow-700'
                     }`}>
                       {index + 1}
                     </div>
                   )}
                   {/* Discount Badge */}
-                  <div className="absolute bottom-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                  <div className="absolute bottom-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-lg">
                     {offer.discount}
                   </div>
                 </div>
@@ -4352,7 +4401,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
                     </div>
                     <div className="text-right">
                       {offer.originalPrice > 0 && (
-                        <span className="text-xs text-gray-400 line-through mr-1">{formatCurrency(offer.originalPrice)}</span>
+                        <span className="text-xs text-gray-500 line-through mr-1">{formatCurrency(offer.originalPrice)}</span>
                       )}
                       <span className="text-sm font-bold text-primary">
                         {offer.discountType === 'free' || offer.discountedPrice === 0
@@ -4388,7 +4437,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
           )}
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 };
@@ -4408,9 +4457,9 @@ const OfferCard = ({ offer, isFired, onFire, onNavigate }) => (
       <div className="absolute top-3 left-3 bg-white text-slate-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
         {offer.discount}
       </div>
-      <button
+      <button aria-label="WhatsApp"
         onClick={(e) => { e.stopPropagation(); const url = `${window.location.origin}${window.location.pathname}?oferta=${offer.id}`; window.open(`https://wa.me/?text=${encodeURIComponent(`¡Oferta en Cornellà! 🛍️\n\n*${offer.title}*\n🏪 ${offer.business}\n💰 ${offer.discount}\n\n👉 ${url}`)}`, '_blank', 'noopener,noreferrer'); }}
-        className="absolute top-3 right-3 w-9 h-9 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg"
+        className="absolute top-3 right-3 w-9 h-9 bg-green-700 text-white rounded-full flex items-center justify-center hover:bg-green-800 transition-colors shadow-lg"
       >
         <MessageCircle size={16} />
       </button>
@@ -4435,7 +4484,7 @@ const OfferCard = ({ offer, isFired, onFire, onNavigate }) => (
           🔥 <span>{offer.fireCount > 0 ? offer.fireCount : ''}</span>
         </button>
         {offer.expiresIn && (
-          <span className="text-slate-400 text-xs">{offer.expiresIn}</span>
+          <span className="text-slate-500 text-xs">{offer.expiresIn}</span>
         )}
       </div>
       <button className="bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors shadow-lg shadow-primary/20 shrink-0">
@@ -4549,13 +4598,13 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
         <div className="flex items-center px-4 py-4 justify-between">
           <div className="w-10"></div>
           <h2 className="text-slate-900 text-[18px] font-bold tracking-tight text-center">Ofertas y Empleo</h2>
-          <button
+          <button aria-label="Notificaciones"
             onClick={() => onNavigate('notifications')}
             className="relative text-slate-900 p-2 -mr-2 rounded-full hover:bg-slate-50 transition"
           >
             <Bell size={26} />
             {(notifications?.filter(n => !n.isRead).length || 0) > 0 && (
-              <span className="absolute top-1 right-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 border-2 border-white text-[10px] font-bold text-white">
+              <span className="absolute top-1 right-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-600 border-2 border-white text-[10px] font-bold text-white">
                 {notifications?.filter(n => !n.isRead).length || 0}
               </span>
             )}
@@ -4585,7 +4634,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
       </div>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 no-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-24 no-scrollbar">
         {activeTab === 'offers' ? (
           <div className="w-full pb-6">
             {loadingOffers ? (
@@ -4594,7 +4643,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
               <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                 <Tag size={48} className="text-slate-300 mb-3" />
                 <p className="text-slate-500 font-medium">No hay ofertas disponibles</p>
-                <p className="text-slate-400 text-sm mt-1">Vuelve más tarde para ver nuevas ofertas</p>
+                <p className="text-slate-500 text-sm mt-1">Vuelve más tarde para ver nuevas ofertas</p>
               </div>
             ) : (
               <>
@@ -4645,7 +4694,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Briefcase size={48} className="text-slate-300 mb-3" />
                   <p className="text-slate-500 font-medium">No hay empleos disponibles</p>
-                  <p className="text-slate-400 text-sm mt-1">Vuelve más tarde para ver nuevas ofertas</p>
+                  <p className="text-slate-500 text-sm mt-1">Vuelve más tarde para ver nuevas ofertas</p>
                 </div>
               ) : activeJobs.slice(0, jobsDisplayCount).map(job => {
                 const daysRemaining = getJobDaysRemaining ? getJobDaysRemaining(job) : 60;
@@ -4715,7 +4764,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
                       </div>
                     </div>
                     <div className="mt-2 pt-3 border-t border-slate-100 flex justify-end">
-                      <span className="text-primary text-sm font-semibold flex items-center hover:text-primary/80 transition-colors">
+                      <span className="text-primary text-sm font-semibold flex items-center hover:text-primary transition-colors">
                         Ver Empleo <ChevronRight size={18} className="ml-1" />
                       </span>
                     </div>
@@ -4734,7 +4783,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/* Navbar */}
       <Navbar currentPage="offers" onNavigate={onNavigate} />
@@ -4786,7 +4835,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
     </header>
 
     {/* Content */}
-    <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 no-scrollbar">
+    <div className="flex-1 overflow-y-auto px-4 pb-24 pt-2 no-scrollbar">
       <div className="flex flex-col gap-4">
         {loading ? (
           <BusinessListSkeleton count={3} />
@@ -4813,7 +4862,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
         )}
 
       </div>
-    </main>
+    </div>
 
     {/* Navbar */}
     <Navbar currentPage="favorites" onNavigate={onNavigate} />
@@ -4873,7 +4922,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
       <div className="flex items-center justify-between px-4 py-3">
         <div className="w-10"></div>
         <h1 className="text-lg font-bold text-slate-900">Mi Perfil</h1>
-        <button
+        <button aria-label="Ajustes"
           onClick={() => onNavigate('settings')}
           className="flex size-10 items-center justify-center rounded-full hover:bg-black/5 transition-colors text-slate-800"
         >
@@ -4882,7 +4931,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
       </div>
     </header>
 
-    <main className="flex-1 flex flex-col gap-6 pb-28">
+    <div className="flex-1 flex flex-col gap-6 pb-28">
       {/* Avatar y nombre */}
       <section className="flex flex-col items-center px-6 pt-4">
         <div
@@ -4937,12 +4986,12 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                     <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
                       {coupon.code}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-500">
                       Válido hasta {coupon.validUntil}
                     </span>
                   </div>
                 </div>
-                <ChevronRight className="text-gray-400 shrink-0" size={20} />
+                <ChevronRight className="text-gray-500 shrink-0" size={20} />
               </button>
             ))}
           </div>
@@ -4967,7 +5016,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 <span className="text-xs text-slate-500">Ver mis reseñas</span>
               </div>
             </div>
-            <ChevronRight className="text-slate-400" size={20} />
+            <ChevronRight className="text-slate-500" size={20} />
           </button>
           <button
             onClick={() => onNavigate('user-jobs')}
@@ -4982,7 +5031,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 <span className="text-xs text-slate-500">{userJobApplications.length} activas</span>
               </div>
             </div>
-            <ChevronRight className="text-slate-400" size={20} />
+            <ChevronRight className="text-slate-500" size={20} />
           </button>
           <button
             onClick={() => onNavigate('my-budget-requests')}
@@ -4997,7 +5046,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 <span className="text-xs text-slate-500">Solicitudes y respuestas</span>
               </div>
             </div>
-            <ChevronRight className="text-slate-400" size={20} />
+            <ChevronRight className="text-slate-500" size={20} />
           </button>
         </div>
       </section>
@@ -5150,7 +5199,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 <div className="bg-green-100 p-2 rounded-lg text-green-600 group-hover:text-green-700 transition-colors relative">
                   <ClipboardList size={20} />
                   {incomingBudgetRequests.filter(r => r.status === 'new').length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
                       {incomingBudgetRequests.filter(r => r.status === 'new').length}
                     </span>
                   )}
@@ -5164,7 +5213,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                   </span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('business-offers')}
@@ -5179,7 +5228,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                   <span className="text-xs text-slate-500">{userOffers.filter(o => o.status === 'active').length} ofertas activas</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('business-jobs')}
@@ -5194,7 +5243,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                   <span className="text-xs text-slate-500">{pluralize(userJobOffers.filter(j => j.status === 'active').length, 'empleo activo', 'empleos activos')}</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('business-stats')}
@@ -5209,7 +5258,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                   <span className="text-xs text-slate-500">Visualizaciones y clics</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('validate-code')}
@@ -5224,7 +5273,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                   <span className="text-xs text-slate-500">Canjear descuento de cliente</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('edit-business')}
@@ -5239,7 +5288,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                   <span className="text-xs text-slate-500">Modifica los datos de tu comercio</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
           </div>
 
@@ -5306,7 +5355,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                   className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-colors ${
                     deleteBusinessText === 'ELIMINAR' && !deletingBusiness
                       ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : 'bg-slate-100 text-slate-500 cursor-not-allowed'
                   }`}
                 >
                   {deletingBusiness ? 'Eliminando...' : 'Eliminar definitivamente'}
@@ -5334,7 +5383,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 <span className="text-xs text-slate-500">Perfil, notificaciones, privacidad</span>
               </div>
             </div>
-            <ChevronRight className="text-slate-400" size={20} />
+            <ChevronRight className="text-slate-500" size={20} />
           </button>
           <button
             onClick={() => onNavigate('terms')}
@@ -5346,7 +5395,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
               </div>
               <span className="font-medium text-slate-700">Términos y Condiciones</span>
             </div>
-            <ChevronRight className="text-slate-400" size={20} />
+            <ChevronRight className="text-slate-500" size={20} />
           </button>
           <button
             onClick={() => onNavigate('login')}
@@ -5361,7 +5410,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
           </button>
         </div>
       </section>
-    </main>
+    </div>
 
     {/* Navbar */}
     <Navbar currentPage="profile" onNavigate={onNavigate} />
@@ -5373,6 +5422,10 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
 const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, userFavorites = [], toggleFavorite, isFavorite, user, trackAnalyticsEvent, showToast }) => {
   const [business, setBusiness] = useState(null);
   const [loadingBusiness, setLoadingBusiness] = useState(true);
+
+  useEffect(() => {
+    if (business?.name) document.title = `${business.name} | Cornellà Local`;
+  }, [business?.name]);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
@@ -5606,7 +5659,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
     return (
       <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Store className="text-gray-400 mx-auto mb-4" size={60} />
+          <Store className="text-gray-500 mx-auto mb-4" size={60} />
           <h2 className="text-xl font-bold text-gray-900 mb-2">Negocio no encontrado</h2>
           <button
             onClick={() => onNavigate('home')}
@@ -5862,7 +5915,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         {/* Hero Image */}
         <div className="relative w-full h-80 shrink-0">
           <div className="absolute top-0 left-0 w-full z-20 flex items-center justify-between p-4 pt-12 bg-gradient-to-b from-white/90 via-white/20 to-transparent pb-20">
-            <button
+            <button aria-label="Volver"
               onClick={() => returnTo ? onNavigate(returnTo, returnParams) : onNavigate('home')}
               className="flex items-center justify-center size-10 rounded-full bg-white/80 backdrop-blur-md text-gray-900 shadow-sm hover:bg-white transition-all"
             >
@@ -5871,22 +5924,22 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
             <div className="flex gap-3">
               <button
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center justify-center size-10 rounded-full bg-orange-500 text-white shadow-sm hover:bg-orange-600 transition-all"
+                className="flex items-center justify-center size-10 rounded-full bg-orange-700 text-white shadow-sm hover:bg-orange-800 transition-all"
                 title="Reportar problema"
               >
                 <Flag size={18} />
               </button>
-              <button
+              <button aria-label="WhatsApp"
                 onClick={handleShareWhatsApp}
-                className="flex items-center justify-center size-10 rounded-full bg-green-500 text-white shadow-sm hover:bg-green-600 transition-all"
+                className="flex items-center justify-center size-10 rounded-full bg-green-700 text-white shadow-sm hover:bg-green-800 transition-all"
               >
                 <MessageCircle size={20} />
               </button>
-              <button
+              <button aria-label="Guardar en favoritos"
                 onClick={() => toggleFavorite && toggleFavorite(business.id)}
                 className={`flex items-center justify-center size-10 rounded-full backdrop-blur-md shadow-sm transition-all ${
                   isFavorite && isFavorite(business.id)
-                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    ? 'bg-red-600 text-white hover:bg-red-700'
                     : 'bg-white/80 text-gray-900 hover:bg-white'
                 }`}
               >
@@ -5937,13 +5990,13 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                 >
                   <span className="text-gray-900 font-bold">{business.rating}</span>
                   <Star className="text-yellow-500 fill-yellow-500" size={16} />
-                  <span className="text-gray-400 text-xs">({business.review_count || business.reviews || 0})</span>
+                  <span className="text-gray-500 text-xs">({business.review_count || business.reviews || 0})</span>
                 </button>
                 {/* Contador de favoritos/seguidores */}
                 <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                   <Heart className="text-red-500 fill-red-500" size={16} />
                   <span className="text-gray-900 font-bold">{loadingFavorites ? '...' : favoriteCount}</span>
-                  <span className="text-gray-400 text-xs">
+                  <span className="text-gray-500 text-xs">
                     {favoriteCount === 1 ? 'seguidor' : 'seguidores'}
                   </span>
                 </div>
@@ -5955,7 +6008,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                     }
                     setShowWriteReview(true);
                   }}
-                  className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 bg-amber-700 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-amber-800 transition-colors cursor-pointer"
                 >
                   <Star size={14} className="fill-white" />
                   <span className="font-semibold text-xs">Valorar</span>
@@ -6001,7 +6054,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
               </button>
             )}
             {business?.website && (
-              <button
+              <button aria-label="Sitio web"
                 onClick={handleWebClick}
                 className="size-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
               >
@@ -6061,21 +6114,21 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                 </div>
                 {showGallery && (
                   <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center" onClick={() => setShowGallery(false)}>
-                    <button
+                    <button aria-label="Cerrar"
                       className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
                       onClick={() => setShowGallery(false)}
                     >
                       <X className="text-white" size={20} />
                     </button>
                     <div className="flex items-center justify-center w-full h-full px-4" onClick={e => e.stopPropagation()}>
-                      <button
+                      <button aria-label="Volver"
                         className="absolute left-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
                         onClick={() => setGalleryActivePhoto(p => (p - 1 + allPhotos.length) % allPhotos.length)}
                       >
                         <ChevronLeft className="text-white" size={20} />
                       </button>
                       <img src={allPhotos[galleryActivePhoto]} alt="" className="max-w-full max-h-[80vh] object-contain rounded-xl" />
-                      <button
+                      <button aria-label="Siguiente"
                         className="absolute right-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
                         onClick={() => setGalleryActivePhoto(p => (p + 1) % allPhotos.length)}
                       >
@@ -6147,12 +6200,12 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                       <span className="text-xs text-gray-500">Lunes a Domingo</span>
                     </div>
                   </div>
-                  <ChevronDown className={`text-gray-400 transition-transform ${scheduleOpen ? 'rotate-180' : ''}`} size={20} />
+                  <ChevronDown className={`text-gray-500 transition-transform ${scheduleOpen ? 'rotate-180' : ''}`} size={20} />
                 </button>
                 {scheduleOpen && (
                   <div className="mt-4 pt-4 border-t border-gray-100 space-y-2.5">
                     {formattedSchedule.map((item, i) => (
-                      <div key={i} className={`flex justify-between items-center ${item.closed ? 'text-gray-400' : 'text-gray-700'}`}>
+                      <div key={i} className={`flex justify-between items-center ${item.closed ? 'text-gray-500' : 'text-gray-700'}`}>
                         <span className="font-medium text-sm">{item.day}</span>
                         <span className={`text-sm ${item.closed ? 'italic' : 'font-medium text-gray-900'}`}>{item.hours}</span>
                       </div>
@@ -6238,7 +6291,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   <span className="text-xs text-yellow-600">({reviews.length})</span>
                 </div>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => { setShowReviews(false); setShowWriteReview(false); }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
@@ -6257,7 +6310,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-semibold text-gray-900 text-sm">{review.user}</span>
-                        <span className="text-xs text-gray-400">{review.date}</span>
+                        <span className="text-xs text-gray-500">{review.date}</span>
                       </div>
                       <div className="mb-2">
                         <StarRating rating={review.rating} readonly size={14} showValue={false} />
@@ -6279,7 +6332,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           <div className="bg-white w-full max-w-md rounded-t-3xl animate-slide-up">
             <div className="shrink-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-3xl">
               <h3 className="text-lg font-bold text-gray-900">Escribir reseña</h3>
-              <button onClick={() => { setShowWriteReview(false); setNewReviewText(''); setNewReviewRating(5); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <button aria-label="Cerrar" onClick={() => { setShowWriteReview(false); setNewReviewText(''); setNewReviewRating(5); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
@@ -6352,7 +6405,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
         className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center"
         onClick={() => setShowGallery(false)}
       >
-        <button
+        <button aria-label="Cerrar"
           className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
           onClick={() => setShowGallery(false)}
         >
@@ -6362,7 +6415,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
           {galleryActivePhoto + 1} / {galleryPhotos.length}
         </span>
         <div className="flex items-center justify-center w-full h-full px-16" onClick={e => e.stopPropagation()}>
-          <button
+          <button aria-label="Volver"
             className="absolute left-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
             onClick={() => setGalleryActivePhoto(p => (p - 1 + galleryPhotos.length) % galleryPhotos.length)}
           >
@@ -6373,7 +6426,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
             alt=""
             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
           />
-          <button
+          <button aria-label="Siguiente"
             className="absolute right-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
             onClick={() => setGalleryActivePhoto(p => (p + 1) % galleryPhotos.length)}
           >
@@ -6475,7 +6528,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
     return (
       <div className="mx-auto min-h-screen w-full max-w-md flex items-center justify-center bg-white">
         <div className="text-center px-6">
-          <Tag className="mx-auto mb-4 text-gray-400" size={48} />
+          <Tag className="mx-auto mb-4 text-gray-500" size={48} />
           <h2 className="text-xl font-bold text-gray-900 mb-2">Oferta no encontrada</h2>
           <p className="text-gray-600 mb-6">Esta oferta no existe o ha expirado.</p>
           <button
@@ -6584,16 +6637,16 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
           </div>
           <div className="absolute top-0 left-0 right-0 p-4 pt-12 flex justify-between items-center z-10">
-            <button
+            <button aria-label="Volver"
               onClick={() => onNavigate('offers')}
               className="flex items-center justify-center size-10 rounded-full bg-white/20 backdrop-blur-md border border-white/10 text-white hover:bg-white/30 transition-colors"
             >
               <ArrowLeft size={24} />
             </button>
             <div className="flex gap-3">
-              <button
+              <button aria-label="WhatsApp"
                 onClick={handleShareWhatsApp}
-                className="flex items-center justify-center size-10 rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors shadow-lg"
+                className="flex items-center justify-center size-10 rounded-full bg-green-700 text-white hover:bg-green-800 transition-colors shadow-lg"
               >
                 <MessageCircle size={20} />
               </button>
@@ -6627,7 +6680,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
             <Clock className="text-primary" size={20} />
             <p className="text-primary font-medium text-sm">Válido hasta el {coupon.validUntil}</p>
             <span className="w-1 h-1 rounded-full bg-gray-300 mx-1"></span>
-            <p className="text-gray-400 text-sm">{coupon.type}</p>
+            <p className="text-gray-500 text-sm">{coupon.type}</p>
           </div>
 
           {/* Sección de código de redención */}
@@ -6651,7 +6704,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
                 <Check className="text-green-600" size={24} />
               </div>
               <p className="font-bold text-gray-700">Descuento ya canjeado</p>
-              <p className="text-sm text-gray-400 font-mono">{redemptionCode}</p>
+              <p className="text-sm text-gray-500 font-mono">{redemptionCode}</p>
             </div>
           ) : redemptionCode ? (
             /* Código obtenido, pendiente de canjear */
@@ -6697,7 +6750,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
             </button>
             <button
               onClick={handleShareWhatsApp}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors text-sm"
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-700 text-white font-semibold hover:bg-green-800 transition-colors text-sm"
             >
               <MessageCircle size={18} />
               Compartir
@@ -6730,7 +6783,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
               <p className="text-xs text-gray-500 truncate">{coupon.location.city}</p>
               <p className="text-xs text-primary font-semibold mt-1">A {coupon.location.distance} de ti</p>
             </div>
-            <button className="size-10 flex items-center justify-center rounded-full bg-primary text-white shadow-md hover:bg-primary/90 transition-colors">
+            <button aria-label="Cómo llegar" className="size-10 flex items-center justify-center rounded-full bg-primary text-white shadow-md hover:bg-primary/90 transition-colors">
               <Navigation size={20} />
             </button>
           </div>
@@ -6986,7 +7039,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
       <div className="bg-gray-50 font-display antialiased text-slate-900 min-h-screen">
         <div className="relative flex min-h-screen w-full max-w-md mx-auto flex-col overflow-x-hidden shadow-2xl bg-white">
           <header className="sticky top-0 z-30 flex items-center bg-white/95 backdrop-blur-md px-4 py-4 justify-between border-b border-gray-100">
-            <button
+            <button aria-label="Volver"
               onClick={() => onNavigate('offers')}
               className="text-slate-800 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
             >
@@ -7007,14 +7060,14 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
       <div className="relative flex min-h-screen w-full max-w-md mx-auto flex-col overflow-x-hidden shadow-2xl bg-white">
         {/* Header */}
         <header className="sticky top-0 z-30 flex items-center bg-white/95 backdrop-blur-md px-4 py-4 justify-between border-b border-gray-100">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('offers')}
             className="text-slate-800 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
           >
             <ArrowLeft size={24} />
           </button>
           <div className="flex-1"></div>
-          <button
+          <button aria-label="Compartir"
             onClick={handleShare}
             className="text-slate-800 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
           >
@@ -7023,7 +7076,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
         </header>
 
         {/* Content */}
-        <main className="flex-1 pb-32">
+        <div className="flex-1 pb-32">
           {/* Título y empresa */}
           <div className="px-5 pt-6 pb-4">
             <h1 className="text-2xl font-bold text-slate-900 leading-tight mb-2">
@@ -7033,7 +7086,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
               {job.company}
             </button>
             <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-              <MapPin size={16} className="text-gray-400" />
+              <MapPin size={16} className="text-gray-500" />
               <span>{job.location}</span>
               <span className="text-gray-300">•</span>
               <span>Hace {job.postedAgo}</span>
@@ -7139,7 +7192,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
               </div>
             </div>
           </div>
-        </main>
+        </div>
 
         {/* Footer fijo */}
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-4 pb-8 z-40">
@@ -7176,7 +7229,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
               {!job.hired && !isExpired && (
                 <button
                   onClick={() => markJobAsHired && markJobAsHired(job.id)}
-                  className="flex-1 h-12 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 h-12 rounded-xl bg-green-700 text-white font-semibold hover:bg-green-800 transition-colors flex items-center justify-center gap-2"
                 >
                   <UserCheck size={18} />
                   Contratado
@@ -7191,7 +7244,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                   Renovar 60 días
                 </button>
               )}
-              <button
+              <button aria-label="Eliminar"
                 onClick={() => {
                   if (deleteJob) {
                     deleteJob(job.id);
@@ -7245,13 +7298,13 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                 Tu solicitud para <span className="font-semibold text-slate-700">{job.title}</span> en <span className="font-semibold text-slate-700">{job.company}</span> ha sido enviada correctamente.
               </p>
 
-              <p className="text-sm text-gray-400 mb-8">
+              <p className="text-sm text-gray-500 mb-8">
                 La empresa revisará tu perfil y se pondrá en contacto contigo si tu candidatura encaja con el puesto.
               </p>
 
               {/* Resumen */}
               <div className="bg-gray-50 rounded-2xl p-5 mb-8 text-left">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tu candidatura incluye</p>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Tu candidatura incluye</p>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
@@ -7336,7 +7389,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                     ) : (
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
-                          <Upload className="text-gray-400" size={24} />
+                          <Upload className="text-gray-500" size={24} />
                         </div>
                         <div className="flex-1 text-left">
                           <p className="font-semibold text-slate-700">Subir CV</p>
@@ -7350,7 +7403,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                 {/* 2. Carta de presentación */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-2">
-                    2. Carta de presentación <span className="text-gray-400 font-normal">(opcional)</span>
+                    2. Carta de presentación <span className="text-gray-500 font-normal">(opcional)</span>
                   </label>
                   <p className="text-xs text-gray-500 mb-3">
                     Escribe unas líneas presentándote y explicando por qué te interesa este puesto
@@ -7364,8 +7417,8 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                   />
                   <div className="flex justify-between items-center mt-2">
-                    <p className="text-xs text-gray-400">Preséntate brevemente a la empresa</p>
-                    <p className={`text-xs ${coverLetter.length > 450 ? 'text-amber-500' : 'text-gray-400'}`}>
+                    <p className="text-xs text-gray-500">Preséntate brevemente a la empresa</p>
+                    <p className={`text-xs ${coverLetter.length > 450 ? 'text-amber-500' : 'text-gray-500'}`}>
                       {coverLetter.length}/500
                     </p>
                   </div>
@@ -7392,7 +7445,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                           <Check size={14} /> {coverLetter.trim().split(/\s+/).length} palabras
                         </span>
                       ) : (
-                        <span className="text-sm text-gray-400">No incluida</span>
+                        <span className="text-sm text-gray-500">No incluida</span>
                       )}
                     </div>
                   </div>
@@ -7416,7 +7469,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                   className={`flex-1 h-12 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${
                     cvUploaded
                       ? 'bg-primary text-white hover:bg-blue-700'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                   }`}
                 >
                   <Send size={18} />
@@ -7483,7 +7536,7 @@ const CategoryDetailPage = ({ categoryId, onNavigate }) => {
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center gap-3 px-4 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('home')}
             className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
           >
@@ -7540,7 +7593,7 @@ const CategoryDetailPage = ({ categoryId, onNavigate }) => {
                 <h3 className="font-semibold text-slate-900">{sub.name}</h3>
                 <p className="text-sm text-gray-500">{subcategoryCounts[sub.name] ?? sub.count} comercios</p>
               </div>
-              <ChevronRight size={20} className="text-gray-400" />
+              <ChevronRight size={20} className="text-gray-500" />
             </button>
           ))}
         </div>
@@ -7670,7 +7723,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center gap-3 px-4 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('category', { id: categoryId })}
             className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
           >
@@ -7704,7 +7757,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
           onClick={() => setActiveFilter('abierto')}
           className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors flex items-center gap-1.5 ${
             activeFilter === 'abierto'
-              ? 'bg-green-500 text-white'
+              ? 'bg-green-700 text-white'
               : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
           }`}
         >
@@ -7715,7 +7768,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
           onClick={() => setActiveFilter('valorados')}
           className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors flex items-center gap-1.5 ${
             activeFilter === 'valorados'
-              ? 'bg-amber-500 text-white'
+              ? 'bg-amber-700 text-white'
               : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
           }`}
         >
@@ -7729,7 +7782,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
         {displayBusinesses.length === 0 && (
           <div className="py-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Store className="text-gray-400" size={32} />
+              <Store className="text-gray-500" size={32} />
             </div>
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
               {activeFilter === 'abierto' ? 'No hay comercios abiertos ahora' : 'No hay resultados'}
@@ -7764,7 +7817,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
                 {/* Badges */}
                 <div className="absolute top-3 left-3 flex gap-2">
                   {isBusinessOpenNow(business) && (
-                    <span className="px-2.5 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                    <span className="px-2.5 py-1 bg-green-700 text-white text-xs font-bold rounded-full">
                       Abierto
                     </span>
                   )}
@@ -7774,14 +7827,14 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
                     </span>
                   )}
                   {business.isVerified && (
-                    <span className="px-2.5 py-1 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
+                    <span className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center gap-1">
                       <BadgeCheck size={12} /> Verificado
                     </span>
                   )}
                 </div>
 
                 {/* Favorito */}
-                <button
+                <button aria-label="Guardar en favoritos"
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleFavorite && toggleFavorite(business.id);
@@ -7810,7 +7863,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
                     <div className="flex items-center gap-1">
                       <Star className="text-yellow-500 fill-yellow-500" size={16} />
                       <span className="font-bold text-slate-900">{business.rating}</span>
-                      <span className="text-gray-400 text-sm">({business.review_count || business.reviews || 0})</span>
+                      <span className="text-gray-500 text-sm">({business.review_count || business.reviews || 0})</span>
                     </div>
                     {business.distance && (
                       <div className="flex items-center gap-1 text-gray-500 text-sm">
@@ -7894,7 +7947,7 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
 
   const renderStars = (rating, interactive = false, onSelect = null) => {
     return Array(5).fill(0).map((_, i) => (
-      <button
+      <button aria-label={`${i + 1} ${i === 0 ? 'estrella' : 'estrellas'}`}
         key={i}
         onClick={() => interactive && onSelect && onSelect(i + 1)}
         disabled={!interactive}
@@ -7950,7 +8003,7 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center bg-white/95 backdrop-blur-md p-4 pb-2 border-b border-gray-100 justify-between">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('profile')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
         >
@@ -7977,7 +8030,7 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
       </div>
 
       {/* Reviews List */}
-      <main className="flex-1 px-4 py-2 space-y-4 pb-8">
+      <div className="flex-1 px-4 py-2 space-y-4 pb-8">
         {reviews.length === 0 ? (
           <EmptyState
             icon="Star"
@@ -8017,17 +8070,17 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
                   {(review.edit_count || 0) < 1 ? (
                     <button
                       onClick={() => handleEdit(review)}
-                      className="p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-primary/5"
+                      className="p-2 text-gray-500 hover:text-primary transition-colors rounded-full hover:bg-primary/5"
                       title="Editar reseña (solo 1 vez)"
                     >
                       <Edit2 size={18} />
                     </button>
                   ) : (
-                    <span className="text-[10px] text-gray-400 px-2">Editada</span>
+                    <span className="text-[10px] text-gray-500 px-2">Editada</span>
                   )}
                   <button
                     onClick={() => setDeleteConfirm(review)}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full hover:bg-red-50"
+                    className="p-2 text-gray-500 hover:text-red-500 transition-colors rounded-full hover:bg-red-50"
                     title="Eliminar reseña"
                   >
                     <Trash2 size={18} />
@@ -8043,7 +8096,7 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
             </article>
           ))
         )}
-      </main>
+      </div>
 
       {/* Modal de Editar */}
       {editingReview && (
@@ -8051,7 +8104,7 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
           <div className="bg-white w-full max-w-md rounded-t-3xl p-6 animate-slideUp">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-900">Editar reseña</h3>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => setEditingReview(null)}
                 className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"
               >
@@ -8080,7 +8133,7 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Tu opinión</label>
-              <textarea
+              <textarea aria-label="Tu opinión"
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
                 rows={4}
@@ -8136,7 +8189,7 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm.id)}
-                className="flex-1 h-12 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors"
+                className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors"
               >
                 Eliminar
               </button>
@@ -8214,7 +8267,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
           return {
             id: app.id,
             company: business.name,
-            companyLogo: business.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(business.name)}&background=567ac7&color=fff`,
+            companyLogo: business.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(business.name)}&background=4b71c3&color=fff`,
             position: job.title,
             location: job.location || 'Cornellà',
             salary: job.salary_min && job.salary_max
@@ -8361,7 +8414,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-white">
       {/* Header */}
       <div className="flex items-center bg-white px-6 py-4 justify-between sticky top-0 z-20 border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('profile')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors -ml-2"
         >
@@ -8388,7 +8441,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
         </div>
         <div className="flex min-w-[140px] flex-1 flex-col gap-1 rounded-xl p-4 border border-gray-200 bg-white shadow-sm">
           <div className="flex items-center gap-2">
-            <Archive className="text-gray-400" size={20} />
+            <Archive className="text-gray-500" size={20} />
             <p className="text-gray-500 text-sm font-medium">Finalizadas</p>
           </div>
           <p className="text-slate-900 text-2xl font-bold leading-tight">{stats.finished}</p>
@@ -8447,7 +8500,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                   {getStatusBadge(app.status)}
                 </div>
                 <p className="text-gray-500 text-sm font-normal leading-normal mt-1 truncate">{app.company}</p>
-                <p className="text-gray-400 text-xs mt-2">{app.appliedDate}</p>
+                <p className="text-gray-500 text-xs mt-2">{app.appliedDate}</p>
               </div>
             </div>
 
@@ -8469,13 +8522,13 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => acceptInterview(app.id)}
-                      className="flex-1 h-10 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors text-sm"
+                      className="flex-1 h-10 bg-green-700 text-white font-semibold rounded-lg hover:bg-green-800 transition-colors text-sm"
                     >
                       ✓ Confirmar
                     </button>
                     <button
                       onClick={() => setShowProposeModal(app)}
-                      className="flex-1 h-10 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition-colors text-sm"
+                      className="flex-1 h-10 bg-amber-700 text-white font-semibold rounded-lg hover:bg-amber-800 transition-colors text-sm"
                     >
                       ↻ Proponer otra
                     </button>
@@ -8543,7 +8596,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                       </div>
                       <div className="flex flex-col">
                         <p className={`text-sm font-medium leading-none ${
-                          step.current ? 'text-primary font-bold' : step.pending ? 'text-gray-400' : 'text-slate-900'
+                          step.current ? 'text-primary font-bold' : step.pending ? 'text-gray-500' : 'text-slate-900'
                         }`}>
                           {step.step}
                         </p>
@@ -8619,15 +8672,15 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
 
               <div className="space-y-3">
                 <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="text-gray-400" size={18} />
+                  <MapPin className="text-gray-500" size={18} />
                   <span className="text-gray-600">Presencial en oficinas de {showInterviewDetails.company}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <Clock className="text-gray-400" size={18} />
+                  <Clock className="text-gray-500" size={18} />
                   <span className="text-gray-600">Duración estimada: 30-45 minutos</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <Users className="text-gray-400" size={18} />
+                  <Users className="text-gray-500" size={18} />
                   <span className="text-gray-600">Entrevista con RRHH</span>
                 </div>
               </div>
@@ -8652,7 +8705,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                     </button>
                     <button
                       onClick={() => handleInterviewResponse(showInterviewDetails.id, 'accepted', showInterviewDetails.company)}
-                      className="flex-1 h-10 bg-green-500 text-white font-medium rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 h-10 bg-green-700 text-white font-medium rounded-xl hover:bg-green-800 transition-colors flex items-center justify-center gap-2"
                     >
                       <Check size={16} />
                       Confirmar asistencia
@@ -8732,7 +8785,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                 : `Hemos notificado a ${showResponseConfirmation.company} que no podrás asistir.`
               }
             </p>
-            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
               <Bell size={14} />
               <span>Notificación enviada a la empresa</span>
             </div>
@@ -8767,7 +8820,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                 <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Propón una nueva fecha <span className="text-red-500">*</span>
                 </label>
-                <input
+                <input aria-label="Propón una nueva fecha"
                   type="date"
                   value={proposedDate}
                   onChange={(e) => setProposedDate(e.target.value)}
@@ -8780,7 +8833,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                 <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Hora propuesta <span className="text-red-500">*</span>
                 </label>
-                <input
+                <input aria-label="Hora propuesta"
                   type="time"
                   value={proposedTime}
                   onChange={(e) => setProposedTime(e.target.value)}
@@ -8793,7 +8846,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                 <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Mensaje (opcional)
                 </label>
-                <textarea
+                <textarea aria-label="Mensaje"
                   value={proposedMessage}
                   onChange={(e) => setProposedMessage(e.target.value)}
                   placeholder="Ej: Esa hora me viene mejor porque..."
@@ -8801,7 +8854,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
                   maxLength={200}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                 />
-                <p className="text-xs text-gray-400 mt-1">{proposedMessage.length}/200</p>
+                <p className="text-xs text-gray-500 mt-1">{proposedMessage.length}/200</p>
               </div>
 
               {/* Botones */}
@@ -9115,7 +9168,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <div className="flex items-center justify-between bg-white/95 backdrop-blur-sm p-4 z-20 sticky top-0 border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => selectedRequest ? setSelectedRequest(null) : onNavigate('profile')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
         >
@@ -9132,7 +9185,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
           {allRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <ClipboardList className="text-gray-400" size={32} />
+                <ClipboardList className="text-gray-500" size={32} />
               </div>
               <h3 className="font-bold text-slate-900 mb-2">Sin solicitudes</h3>
               <p className="text-sm text-gray-500 mb-4">Aún no has solicitado ningún presupuesto</p>
@@ -9185,7 +9238,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                     </div>
                   </div>
                   {(request.status === 'with-quotes' || request.status === 'completed' || request.status === 'accepted' || acceptedRequests[request.id]) && (
-                    <ChevronRight className="text-gray-400 shrink-0" size={20} />
+                    <ChevronRight className="text-gray-500 shrink-0" size={20} />
                   )}
                 </div>
 
@@ -9225,13 +9278,13 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                             No realizado
                           </span>
                         )}
-                        <button
+                        <button aria-label="WhatsApp"
                           onClick={(e) => { e.stopPropagation(); handleContactWhatsApp(request.acceptedQuote.phone, request.acceptedQuote.businessName); }}
-                          className="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600"
+                          className="w-10 h-10 bg-green-700 text-white rounded-full flex items-center justify-center hover:bg-green-800"
                         >
                           <MessageCircle size={18} />
                         </button>
-                        <button
+                        <button aria-label="Llamar"
                           onClick={(e) => { e.stopPropagation(); handleCall(request.acceptedQuote.phone); }}
                           className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-blue-700"
                         >
@@ -9378,7 +9431,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleContactWhatsApp(acceptedQuote.phone, acceptedQuote.businessName)}
-                      className="flex-1 h-12 bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
+                      className="flex-1 h-12 bg-green-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-800 transition-colors"
                     >
                       <MessageCircle size={20} />
                       WhatsApp
@@ -9490,7 +9543,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                           {quote.businessName}
                         </button>
                         {quote.verified && <BadgeCheck className="text-primary fill-primary" size={16} />}
-                        {isAccepted && <span className="px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full">ELEGIDO</span>}
+                        {isAccepted && <span className="px-2 py-0.5 bg-green-700 text-white text-[10px] font-bold rounded-full">ELEGIDO</span>}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         {quote.reviews > 0 ? (
@@ -9555,12 +9608,12 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                     <>
                       <button
                         onClick={() => handleContactWhatsApp(quote.phone, quote.businessName)}
-                        className="flex-1 h-11 bg-green-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-green-600"
+                        className="flex-1 h-11 bg-green-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-green-800"
                       >
                         <MessageCircle size={18} />
                         WhatsApp
                       </button>
-                      <button
+                      <button aria-label="Llamar"
                         onClick={() => handleCall(quote.phone)}
                         className="w-11 h-11 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-200"
                       >
@@ -9594,7 +9647,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
 
           {selectedRequest.quotes?.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              <Clock className="mx-auto mb-2 text-gray-400" size={32} />
+              <Clock className="mx-auto mb-2 text-gray-500" size={32} />
               <p>Esperando presupuestos...</p>
             </div>
           )}
@@ -9674,7 +9727,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
             {/* Stars */}
             <div className="flex justify-center gap-2 mb-6">
               {[1, 2, 3, 4, 5].map(star => (
-                <button
+                <button aria-label={`${star} ${star === 1 ? 'estrella' : 'estrellas'}`}
                   key={star}
                   onClick={() => setRatingValue(star)}
                   className="p-1 transition-transform hover:scale-110"
@@ -9693,7 +9746,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
               onChange={(e) => setRatingComment(e.target.value)}
               placeholder="Cuéntanos tu experiencia (opcional)"
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none mb-4"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none mb-4"
             />
 
             <div className="flex gap-3">
@@ -9808,7 +9861,7 @@ const CookieBanner = ({ onNavigate }) => {
   };
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-[100] mx-auto max-w-md p-3">
+    <div role="region" aria-label="Aviso de cookies" className="fixed bottom-0 inset-x-0 z-[100] mx-auto max-w-md p-3">
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-4">
         <div className="flex items-start gap-3 mb-3">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -9918,7 +9971,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <div className="sticky top-0 z-20 flex items-center bg-white px-4 py-4 border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('settings')}
           className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-900 hover:bg-gray-100 transition-colors"
         >
@@ -9929,7 +9982,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
         </h2>
       </div>
 
-      <main className="pb-8">
+      <div className="pb-8">
         {/* Contact Options */}
         <div className="p-4">
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
@@ -9944,7 +9997,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
                     <Icon name={option.icon} size={20} className="text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-gray-400">{option.label}</p>
+                    <p className="text-xs text-gray-500">{option.label}</p>
                     {option.action ? (
                       <a href={option.action} className="text-sm font-semibold text-primary">
                         {option.value}
@@ -9971,7 +10024,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
                 <details key={idx} className="group">
                   <summary className="flex items-center justify-between cursor-pointer py-2 text-sm font-medium text-slate-800 hover:text-primary transition-colors">
                     {item.q}
-                    <ChevronDown size={16} className="text-gray-400 group-open:rotate-180 transition-transform" />
+                    <ChevronDown size={16} className="text-gray-500 group-open:rotate-180 transition-transform" />
                   </summary>
                   <p className="text-sm text-gray-500 pb-2 pl-0">{item.a}</p>
                 </details>
@@ -9990,7 +10043,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Nombre *</label>
-                <input
+                <input aria-label="Nombre"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -10000,7 +10053,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Email *</label>
-                <input
+                <input aria-label="Email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -10010,7 +10063,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Asunto</label>
-                <select
+                <select aria-label="Asunto"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   className="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all bg-white"
@@ -10025,7 +10078,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Mensaje *</label>
-                <textarea
+                <textarea aria-label="Mensaje"
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   rows={4}
@@ -10043,7 +10096,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };
@@ -10123,14 +10176,14 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
 
   const getTimeColor = (time) => {
     if (time.includes('min') || time.includes('hora')) return 'text-primary';
-    return 'text-gray-400';
+    return 'text-gray-500';
   };
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center bg-white/95 backdrop-blur-md px-4 py-4 border-b border-gray-100 justify-between">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('home')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
         >
@@ -10154,7 +10207,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
       </header>
 
       {/* Notifications List */}
-      <main className="flex-1 pb-8">
+      <div className="flex-1 pb-8">
         {notificationsState.length === 0 ? (
           <EmptyState
             icon="Bell"
@@ -10200,7 +10253,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
                     </div>
 
                     {/* Arrow */}
-                    <ChevronRight className="text-gray-400 shrink-0 mt-3" size={18} />
+                    <ChevronRight className="text-gray-500 shrink-0 mt-3" size={18} />
                   </button>
                 ))}
               </>
@@ -10229,7 +10282,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
                         <h4 className="text-sm font-semibold text-slate-700 leading-tight">
                           {notification.title}
                         </h4>
-                        <span className="text-xs text-gray-400 shrink-0">
+                        <span className="text-xs text-gray-500 shrink-0">
                           {notification.time}
                         </span>
                       </div>
@@ -10246,7 +10299,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
             )}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 };
@@ -10458,8 +10511,8 @@ const LoginScreen = ({ onNavigate, setUser }) => {
           {/* Email */}
           <div className="flex flex-col gap-2">
             <label className="text-slate-900 text-sm font-semibold ml-1">Email</label>
-            <input
-              className="form-input flex w-full rounded-lg text-slate-900 border-0 bg-gray-100 focus:ring-2 focus:ring-primary/20 h-14 placeholder:text-gray-400 p-4 text-base font-normal transition-all"
+            <input aria-label="Email"
+              className="form-input flex w-full rounded-lg text-slate-900 border-0 bg-gray-100 focus:ring-2 focus:ring-primary/20 h-14 placeholder:text-gray-500 p-4 text-base font-normal transition-all"
               placeholder="ejemplo@correo.com"
               type="email"
               value={email}
@@ -10473,8 +10526,8 @@ const LoginScreen = ({ onNavigate, setUser }) => {
           <div className="flex flex-col gap-2">
             <label className="text-slate-900 text-sm font-semibold ml-1">Contraseña</label>
             <div className="flex w-full items-stretch rounded-lg bg-gray-100 focus-within:ring-2 focus-within:ring-primary/20 transition-all overflow-hidden">
-              <input
-                className="form-input flex w-full min-w-0 flex-1 resize-none border-0 bg-transparent text-slate-900 focus:outline-0 focus:ring-0 h-14 placeholder:text-gray-400 p-4 pr-2 text-base font-normal"
+              <input aria-label="Contraseña"
+                className="form-input flex w-full min-w-0 flex-1 resize-none border-0 bg-transparent text-slate-900 focus:outline-0 focus:ring-0 h-14 placeholder:text-gray-500 p-4 pr-2 text-base font-normal"
                 placeholder="********"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
@@ -10482,7 +10535,7 @@ const LoginScreen = ({ onNavigate, setUser }) => {
                 required
                 disabled={loading}
               />
-              <button
+              <button aria-label="Mostrar u ocultar contraseña"
                 className="flex items-center justify-center px-4 text-gray-500 hover:text-primary transition-colors cursor-pointer bg-transparent border-none"
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -10518,7 +10571,7 @@ const LoginScreen = ({ onNavigate, setUser }) => {
         <div className="flex flex-col gap-6 pt-2">
           <div className="relative flex py-1 items-center">
             <div className="flex-grow border-t border-gray-100"></div>
-            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">O continúa con</span>
+            <span className="flex-shrink-0 mx-4 text-gray-500 text-sm font-medium">O continúa con</span>
             <div className="flex-grow border-t border-gray-100"></div>
           </div>
           {/* Google - ancho completo y centrado */}
@@ -10554,7 +10607,7 @@ const LoginScreen = ({ onNavigate, setUser }) => {
 
         {/* Footer legal — accesible sin login (LSSI-CE / RGPD) */}
         <div className="pt-6 pb-2 border-t border-gray-100 mt-4">
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-gray-400">
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-gray-500">
             <button onClick={() => onNavigate('legal-notice')} className="hover:text-primary hover:underline">Aviso legal</button>
             <span>·</span>
             <button onClick={() => onNavigate('privacy-policy')} className="hover:text-primary hover:underline">Privacidad</button>
@@ -10670,7 +10723,7 @@ const RegisterScreen = ({ onNavigate }) => {
       <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto shadow-sm">
         {/* Header */}
         <div className="flex items-center p-4 pb-2 justify-between">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('login')}
             className="text-slate-900 flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
           >
@@ -10775,7 +10828,7 @@ const RegisterScreen = ({ onNavigate }) => {
                 minLength={8}
                 disabled={loading || success}
               />
-              <button
+              <button aria-label="Mostrar u ocultar contraseña"
                 className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-primary transition-colors"
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -10802,7 +10855,7 @@ const RegisterScreen = ({ onNavigate }) => {
                 required
                 disabled={loading || success}
               />
-              <button
+              <button aria-label="Mostrar u ocultar contraseña"
                 className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-primary transition-colors"
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -10893,7 +10946,7 @@ const ForgotPasswordScreen = ({ onNavigate, showToast }) => {
     <div className="bg-gray-50 font-display antialiased text-slate-900">
       <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-gray-50 shadow-sm">
         <div className="flex items-center p-4 justify-between sticky top-0 z-10 bg-gray-50/90 backdrop-blur-md">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('login')}
             className="text-slate-900 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-black/5 transition-colors"
           >
@@ -10939,8 +10992,8 @@ const ForgotPasswordScreen = ({ onNavigate, showToast }) => {
                     Correo electrónico
                   </label>
                   <div className="relative">
-                    <input
-                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-400 px-4 text-base font-normal transition-all shadow-sm"
+                    <input aria-label="Correo electrónico"
+                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-500 px-4 text-base font-normal transition-all shadow-sm"
                       placeholder="tu@email.com"
                       type="email"
                       value={email}
@@ -10948,7 +11001,7 @@ const ForgotPasswordScreen = ({ onNavigate, showToast }) => {
                       required
                       autoComplete="email"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                       <Mail size={20} />
                     </div>
                   </div>
@@ -10970,7 +11023,7 @@ const ForgotPasswordScreen = ({ onNavigate, showToast }) => {
               <div className="mt-auto pt-8 pb-4 text-center">
                 <button
                   onClick={() => onNavigate('login')}
-                  className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-2 mx-auto"
+                  className="text-sm font-medium text-primary hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto"
                 >
                   <ArrowLeft size={16} />
                   Volver al login
@@ -11043,8 +11096,8 @@ const ResetPasswordScreen = ({ onNavigate, showToast }) => {
                 <div className="flex flex-col gap-2">
                   <label className="text-slate-900 text-sm font-medium leading-normal ml-1">Nueva contraseña</label>
                   <div className="relative">
-                    <input
-                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-400 px-4 pr-12 text-base font-normal transition-all shadow-sm"
+                    <input aria-label="Nueva contraseña"
+                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-500 px-4 pr-12 text-base font-normal transition-all shadow-sm"
                       type={showPass ? 'text' : 'password'}
                       placeholder="Mínimo 6 caracteres"
                       value={password}
@@ -11052,7 +11105,7 @@ const ResetPasswordScreen = ({ onNavigate, showToast }) => {
                       required
                       autoComplete="new-password"
                     />
-                    <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <button aria-label="Mostrar u ocultar contraseña" type="button" onClick={() => setShowPass(p => !p)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600">
                       {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
@@ -11061,8 +11114,8 @@ const ResetPasswordScreen = ({ onNavigate, showToast }) => {
                 <div className="flex flex-col gap-2">
                   <label className="text-slate-900 text-sm font-medium leading-normal ml-1">Confirmar contraseña</label>
                   <div className="relative">
-                    <input
-                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-400 px-4 text-base font-normal transition-all shadow-sm"
+                    <input aria-label="Confirmar contraseña"
+                      className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 bg-white focus:border-primary h-14 placeholder:text-gray-500 px-4 text-base font-normal transition-all shadow-sm"
                       type={showPass ? 'text' : 'password'}
                       placeholder="Repite la contraseña"
                       value={confirmPassword}
@@ -11165,7 +11218,7 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
     <div className="bg-gray-50 text-slate-900 font-display antialiased min-h-screen flex flex-col max-w-md mx-auto shadow-2xl">
       <header className="sticky top-0 z-50 bg-gray-50/95 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between px-4 py-3">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('settings')}
             className="flex size-10 items-center justify-center rounded-full hover:bg-black/5 transition-colors text-slate-800"
           >
@@ -11176,7 +11229,7 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
         </div>
       </header>
 
-      <main className="flex-1 px-4 pt-6 pb-8 space-y-4">
+      <div className="flex-1 px-4 pt-6 pb-8 space-y-4">
         {/* Avatar upload */}
         <div className="flex flex-col items-center gap-3 py-2">
           <div className="relative">
@@ -11192,14 +11245,14 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarUpload(e.target.files?.[0])} disabled={uploadingAvatar} />
             </label>
           </div>
-          <p className="text-xs text-gray-400">Toca la cámara para cambiar tu foto</p>
+          <p className="text-xs text-gray-500">Toca la cámara para cambiar tu foto</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
           {/* Nombre */}
           <div className="p-4">
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nombre completo</label>
-            <input
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nombre completo</label>
+            <input aria-label="Nombre completo"
               type="text"
               value={fullName}
               onChange={e => setFullName(e.target.value)}
@@ -11210,21 +11263,21 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
 
           {/* Email */}
           <div className="p-4">
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Correo electrónico</label>
-            <input
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Correo electrónico</label>
+            <input aria-label="Correo electrónico"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="tu@email.com"
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-slate-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
             />
-            <p className="text-xs text-gray-400 mt-1.5">Si cambias el correo recibirás un email de confirmación.</p>
+            <p className="text-xs text-gray-500 mt-1.5">Si cambias el correo recibirás un email de confirmación.</p>
           </div>
 
           {/* Fecha de nacimiento */}
           <div className="p-4">
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Fecha de nacimiento</label>
-            <input
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Fecha de nacimiento</label>
+            <input aria-label="Fecha de nacimiento"
               type="date"
               value={birthDate}
               onChange={e => setBirthDate(e.target.value)}
@@ -11240,7 +11293,7 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
         >
           {saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
-      </main>
+      </div>
     </div>
   );
 };
@@ -11338,7 +11391,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
       {/* Header */}
       <header className="sticky top-0 z-50 bg-gray-50/95 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between px-4 py-3">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('profile')}
             className="flex size-10 items-center justify-center rounded-full hover:bg-black/5 transition-colors text-slate-800"
           >
@@ -11349,16 +11402,16 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
         </div>
       </header>
 
-      <main className="flex-1 pb-8">
+      <div className="flex-1 pb-8">
         {/* Sección: Notificaciones */}
         <section className="px-4 pt-6">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Notificaciones</h2>
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Notificaciones</h2>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
             {/* Push Notifications Principal */}
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.pushEnabled ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`p-2 rounded-lg ${settings.pushEnabled ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-500'}`}>
                     {settings.pushEnabled ? <BellRing size={20} /> : <BellOff size={20} />}
                   </div>
                   <div>
@@ -11425,7 +11478,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.soundEnabled ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`p-2 rounded-lg ${settings.soundEnabled ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
                     {settings.soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
                   </div>
                   <span className="font-medium text-slate-700">Sonido</span>
@@ -11436,7 +11489,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.vibrationEnabled ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`p-2 rounded-lg ${settings.vibrationEnabled ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}>
                     <Vibrate size={20} />
                   </div>
                   <span className="font-medium text-slate-700">Vibración</span>
@@ -11449,12 +11502,12 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 
         {/* Sección: Privacidad */}
         <section className="px-4 pt-6">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Privacidad</h2>
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Privacidad</h2>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.shareLocation ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`p-2 rounded-lg ${settings.shareLocation ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
                     <MapPin size={20} />
                   </div>
                   <div>
@@ -11468,7 +11521,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.searchHistory ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`p-2 rounded-lg ${settings.searchHistory ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
                     <History size={20} />
                   </div>
                   <div>
@@ -11482,7 +11535,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.profileVisible ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`p-2 rounded-lg ${settings.profileVisible ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
                     <Eye size={20} />
                   </div>
                   <div>
@@ -11498,7 +11551,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 
         {/* Sección: Cuenta */}
         <section className="px-4 pt-6">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Cuenta</h2>
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Cuenta</h2>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
             <button
               onClick={() => onNavigate('edit-profile')}
@@ -11510,7 +11563,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                 </div>
                 <span className="font-medium text-slate-700">Editar perfil</span>
               </div>
-              <ChevronRight className="text-gray-400" size={20} />
+              <ChevronRight className="text-gray-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('terms')}
@@ -11522,7 +11575,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                 </div>
                 <span className="font-medium text-slate-700">Términos y condiciones</span>
               </div>
-              <ChevronRight className="text-gray-400" size={20} />
+              <ChevronRight className="text-gray-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('privacy-policy')}
@@ -11534,7 +11587,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                 </div>
                 <span className="font-medium text-slate-700">Política de privacidad</span>
               </div>
-              <ChevronRight className="text-gray-400" size={20} />
+              <ChevronRight className="text-gray-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('cookies-policy')}
@@ -11546,7 +11599,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                 </div>
                 <span className="font-medium text-slate-700">Política de cookies</span>
               </div>
-              <ChevronRight className="text-gray-400" size={20} />
+              <ChevronRight className="text-gray-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('legal-notice')}
@@ -11558,7 +11611,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                 </div>
                 <span className="font-medium text-slate-700">Aviso legal</span>
               </div>
-              <ChevronRight className="text-gray-400" size={20} />
+              <ChevronRight className="text-gray-500" size={20} />
             </button>
             <button
               onClick={() => onNavigate('contact-support')}
@@ -11573,7 +11626,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                   <span className="text-xs text-slate-500">FAQ, ayuda y formulario de contacto</span>
                 </div>
               </div>
-              <ChevronRight className="text-gray-400" size={20} />
+              <ChevronRight className="text-gray-500" size={20} />
             </button>
             <button
               onClick={onResetOnboarding}
@@ -11588,14 +11641,14 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                   <span className="text-xs text-slate-500">Vuelve a ver cómo funciona la app</span>
                 </div>
               </div>
-              <ChevronRight className="text-gray-400" size={20} />
+              <ChevronRight className="text-gray-500" size={20} />
             </button>
           </div>
         </section>
 
         {/* Sección: Zona de peligro */}
         <section className="px-4 pt-6 pb-4">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Zona de peligro</h2>
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Zona de peligro</h2>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
             <button
               onClick={() => setShowDeleteModal(true)}
@@ -11630,10 +11683,10 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 
         {/* Versión de la app */}
         <div className="text-center py-6">
-          <p className="text-xs text-gray-400">Cornellà Local v1.0.0</p>
+          <p className="text-xs text-gray-500">Cornellà Local v1.0.0</p>
           <p className="text-[10px] text-gray-300 mt-1">Hecho con ❤️ en Cornellà</p>
         </div>
-      </main>
+      </div>
 
       {/* Modal de confirmación de borrado */}
       {showDeleteModal && (
@@ -11661,7 +11714,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                   setShowDeleteModal(false);
                   onNavigate('login');
                 }}
-                className="flex-1 h-12 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors"
+                className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors"
               >
                 Eliminar
               </button>
@@ -11732,6 +11785,12 @@ export default function App() {
 
   // Estado del usuario autenticado
   const [user, setUser] = useState(null);
+
+  // Título de la pestaña según la pantalla (accesibilidad y SEO). La ficha de un comercio lo afina con su nombre.
+  useEffect(() => {
+    const t = PAGE_TITLES[currentPage];
+    document.title = t ? `${t} | Cornellà Local` : DEFAULT_DOC_TITLE;
+  }, [currentPage]);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Estado para Push Notifications
@@ -13750,6 +13809,12 @@ export default function App() {
     navigate(mode === 'register' ? 'register' : 'login');
   }
 
+  // Los invitados en pantallas restringidas ven GuestGate/GuestTeaser, que ya tienen su <h1>
+  const pageHasOwnH1 = (!user && !GUEST_PAGES.has(currentPage)) || PAGES_WITH_OWN_H1.has(currentPage);
+  const pageHeading = currentPage === 'home'
+    ? 'Cornellà Local: comercios, ofertas y servicios de Cornellà de Llobregat'
+    : (PAGE_TITLES[currentPage] || 'Cornellà Local');
+
   const renderPage = () => {
     if (!user) {
       if (GUEST_TEASER_PAGES.has(currentPage)) {
@@ -14018,11 +14083,11 @@ export default function App() {
                 <h4 className="font-bold text-slate-900 text-sm">Instalar CornellaLocal</h4>
                 <p className="text-xs text-gray-500 mt-0.5">Añade la app a tu pantalla de inicio para acceso rápido</p>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={dismissInstallBanner}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors shrink-0"
               >
-                <X size={18} className="text-gray-400" />
+                <X size={18} className="text-gray-500" />
               </button>
             </div>
             <div className="flex gap-2 mt-3">
@@ -14044,23 +14109,34 @@ export default function App() {
         </div>
       )}
 
+      <button
+        type="button"
+        onClick={() => document.getElementById('contenido')?.focus()}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-white focus:text-primary-dark focus:font-bold focus:shadow-lg"
+      >
+        Saltar al contenido
+      </button>
+
       {/* Escritorio: navegación | app | información. En móvil solo la columna central */}
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_28rem_minmax(0,1fr)] lg:gap-8">
         <DesktopSidebar user={user} currentPage={currentPage} onNavigate={navigate} onAuth={(mode, page) => handleGuestAuth(mode, page || currentPage, page ? {} : pageParams)} />
 
         {/* Contenido de la página con animación */}
-        <div
-          className={`min-w-0 lg:min-h-screen lg:bg-white lg:shadow-[0_0_40px_rgba(15,23,42,0.08)] transition-opacity duration-150 ease-out ${
+        <main
+          id="contenido"
+          tabIndex={-1}
+          className={`min-w-0 lg:min-h-screen lg:bg-white lg:shadow-[0_0_40px_rgba(15,23,42,0.08)] transition-opacity duration-150 ease-out focus:outline-none ${
             isPageTransitioning ? 'opacity-0' : 'opacity-100'
           }`}
         >
+          {!pageHasOwnH1 && <h1 className="sr-only">{pageHeading}</h1>}
           {!user && GUEST_PAGES.has(currentPage) && !['login', 'register', 'forgot-password', 'reset-password'].includes(currentPage) && (
             <GuestBanner onAuth={(mode) => handleGuestAuth(mode, currentPage, pageParams)} />
           )}
           <Suspense fallback={<PageLoadingFallback />}>
             {renderPage()}
           </Suspense>
-        </div>
+        </main>
 
         <DesktopAside user={user} onNavigate={navigate} onAuth={(mode, page) => handleGuestAuth(mode, page || currentPage, page ? {} : pageParams)} />
       </div>

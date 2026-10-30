@@ -124,7 +124,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <div className="flex items-center justify-between bg-white/95 backdrop-blur-sm p-4 z-20 sticky top-0 border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => selectedRequest ? setSelectedRequest(null) : onNavigate('profile')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
         >
@@ -157,7 +157,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
               onClick={() => setActiveFilter('new')}
               className={`rounded-xl p-3 text-center border transition-all ${
                 activeFilter === 'new'
-                  ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20'
+                  ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-500/20'
                   : 'bg-white border-gray-100 hover:border-gray-200'
               }`}
             >
@@ -170,7 +170,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
               onClick={() => setActiveFilter('replied')}
               className={`rounded-xl p-3 text-center border transition-all ${
                 activeFilter === 'replied'
-                  ? 'bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/20'
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
                   : 'bg-white border-gray-100 hover:border-gray-200'
               }`}
             >
@@ -183,7 +183,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
               onClick={() => setActiveFilter('accepted')}
               className={`rounded-xl p-3 text-center border transition-all ${
                 activeFilter === 'accepted'
-                  ? 'bg-green-500 text-white border-green-500 shadow-lg shadow-green-500/20'
+                  ? 'bg-green-700 text-white border-green-500 shadow-lg shadow-green-500/20'
                   : 'bg-white border-gray-100 hover:border-gray-200'
               }`}
             >
@@ -201,7 +201,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
             .length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <ClipboardList className="text-gray-400" size={32} />
+                <ClipboardList className="text-gray-500" size={32} />
               </div>
               <h3 className="font-bold text-slate-900 mb-2">Sin solicitudes</h3>
               <p className="text-sm text-gray-500">No hay solicitudes en esta categoría</p>
@@ -238,11 +238,11 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
                       <MapPin size={12} />
                       {request.address.split(',')[0]}
                     </span>
-                    <span className="text-gray-400">•</span>
-                    <span className="text-gray-400">{getTimeAgo(request.createdAt)}</span>
+                    <span className="text-gray-500">•</span>
+                    <span className="text-gray-500">{getTimeAgo(request.createdAt)}</span>
                   </div>
                 </div>
-                <ChevronRight className="text-gray-400 shrink-0" size={20} />
+                <ChevronRight className="text-gray-500 shrink-0" size={20} />
               </div>
 
               {request.status === 'replied' && request.myQuote && (
@@ -337,7 +337,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
               <div className="flex gap-3">
                 <button
                   onClick={() => handleContactWhatsApp(selectedRequest.phone, selectedRequest.customerName)}
-                  className="flex-1 h-12 bg-green-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-green-600"
+                  className="flex-1 h-12 bg-green-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-green-800"
                 >
                   <MessageCircle size={20} />
                   WhatsApp
@@ -364,23 +364,23 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Precio (€)</label>
-                  <input
+                  <input aria-label="Precio (€)"
                     type="number"
                     value={replyPrice}
                     onChange={(e) => setReplyPrice(e.target.value)}
                     placeholder="85"
-                    className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 text-lg font-bold placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 text-lg font-bold placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Mensaje</label>
-                  <textarea
+                  <textarea aria-label="Mensaje"
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
                     placeholder="Describe qué incluye tu presupuesto, disponibilidad, etc."
                     rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
                   />
                 </div>
 
@@ -390,7 +390,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
                   className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
                     replyPrice && replyMessage.trim()
                       ? 'bg-primary text-white hover:bg-blue-700 shadow-lg shadow-primary/20'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                   }`}
                 >
                   <Send size={18} />
@@ -460,7 +460,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
                   setShowIgnoreConfirm(false);
                   setSelectedRequest(null);
                 }}
-                className="flex-1 h-12 rounded-xl font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
+                className="flex-1 h-12 rounded-xl font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
               >
                 Ignorar
               </button>
@@ -556,14 +556,14 @@ export const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibi
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <div className="sticky top-0 z-50 flex items-center bg-white/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('profile')}
           className="text-slate-800 flex size-12 shrink-0 items-center justify-start cursor-pointer hover:opacity-70 transition-opacity"
         >
           <ArrowLeft size={24} />
         </button>
         <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">Gestión de Ofertas</h2>
-        <button
+        <button aria-label="Crear oferta"
           onClick={() => onNavigate('create-offer')}
           className="flex size-12 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent text-primary hover:bg-primary/10 transition-colors"
         >
@@ -650,7 +650,7 @@ export const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibi
               <Ticket size={14} className="text-amber-500" />
               <span className="text-gray-600">
                 <span className="font-bold text-gray-900">{offer.redemptions}</span>
-                {offer.maxUses ? <span className="text-gray-400">/{offer.maxUses}</span> : ''} canjeados
+                {offer.maxUses ? <span className="text-gray-500">/{offer.maxUses}</span> : ''} canjeados
               </span>
               {offer.maxUses && offer.redemptions >= offer.maxUses && (
                 <span className="ml-1 text-xs font-bold text-red-500">· AGOTADA</span>
@@ -739,14 +739,14 @@ export const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOf
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center bg-white/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('profile')}
           className="text-slate-800 flex size-12 shrink-0 items-center justify-start cursor-pointer hover:opacity-70 transition-opacity"
         >
           <ArrowLeft size={24} />
         </button>
         <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">Ofertas de Empleo</h2>
-        <button
+        <button aria-label="Crear oferta de empleo"
           onClick={() => onNavigate('create-job-offer')}
           className="flex size-12 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent text-primary hover:bg-primary/10 transition-colors"
         >
@@ -795,7 +795,7 @@ export const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOf
         {filteredJobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-6">
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <Briefcase className="text-gray-400" size={40} />
+              <Briefcase className="text-gray-500" size={40} />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-2">No hay ofertas de empleo</h3>
             <p className="text-sm text-gray-500 text-center mb-6">
@@ -857,7 +857,7 @@ export const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOf
                   </div>
                 </div>
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center border ${
-                  job.status === 'paused' ? 'bg-gray-100 border-gray-200 text-gray-400' : 'bg-primary/10 border-primary/20 text-primary'
+                  job.status === 'paused' ? 'bg-gray-100 border-gray-200 text-gray-500' : 'bg-primary/10 border-primary/20 text-primary'
                 }`}>
                   <Briefcase size={28} />
                 </div>
@@ -982,7 +982,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
               name: app.full_name,
               email: app.email,
               phone: app.phone || 'No proporcionado',
-              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(app.full_name)}&background=567ac7&color=fff&size=128`,
+              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(app.full_name)}&background=4b71c3&color=fff&size=128`,
               experience: app.phone || app.email, // Mostrar contacto como "experiencia"
               cv: app.cv_url || null
             }
@@ -1167,7 +1167,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => onNavigate('business-jobs')}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
           >
@@ -1268,14 +1268,14 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
                       </div>
                       <p className="text-xs text-gray-500 truncate">{c.candidate.experience}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{c.jobTitle}</span>
+                        <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{c.jobTitle}</span>
                         {c.candidate.cv && (
                           <span className="text-[10px] text-red-600 bg-red-50 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <FileText size={10} />
                             CV
                           </span>
                         )}
-                        <span className="text-[10px] text-gray-400">{c.appliedAgo}</span>
+                        <span className="text-[10px] text-gray-500">{c.appliedAgo}</span>
                       </div>
                     </div>
 
@@ -1304,7 +1304,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
           <div className="bg-white w-full max-w-md mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slideUp">
             {/* Header con foto */}
             <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 px-6 pt-6 pb-16">
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => setSelectedCandidate(null)}
                 className="absolute top-4 right-4 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center"
               >
@@ -1338,7 +1338,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
               {/* Currículum - Sección destacada */}
               {selectedCandidate.candidate.cv && (
                 <div className="mb-4">
-                  <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Currículum Vitae</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Currículum Vitae</p>
                   <PrivateStorageLink
                     bucketName="job-applications"
                     fileRef={selectedCandidate.candidate.cv}
@@ -1361,7 +1361,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
               {/* Carta de presentación */}
               {selectedCandidate.message && selectedCandidate.message !== 'Sin mensaje' && (
                 <div className="mb-6">
-                  <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Carta de presentación</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Carta de presentación</p>
                   <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-xl p-4">{selectedCandidate.message}</p>
                 </div>
               )}
@@ -1422,7 +1422,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
                   {selectedCandidate.status === 'new' && (
                     <button
                       onClick={() => updateStatus(selectedCandidate.id, 'reviewing')}
-                      className="w-full h-12 bg-amber-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-amber-600 transition-colors"
+                      className="w-full h-12 bg-amber-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-amber-800 transition-colors"
                     >
                       <Eye size={18} />
                       Marcar en revisión
@@ -1432,7 +1432,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
                   {(selectedCandidate.status === 'new' || selectedCandidate.status === 'reviewing') && (
                     <button
                       onClick={() => setShowScheduleModal(true)}
-                      className="w-full h-12 bg-purple-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-purple-600 transition-colors"
+                      className="w-full h-12 bg-purple-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-purple-700 transition-colors"
                     >
                       <Calendar size={18} />
                       Programar entrevista
@@ -1442,7 +1442,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
                   {selectedCandidate.status === 'interview' && (
                     <button
                       onClick={() => updateStatus(selectedCandidate.id, 'hired')}
-                      className="w-full h-12 bg-green-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
+                      className="w-full h-12 bg-green-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-green-800 transition-colors"
                     >
                       <CheckCircle2 size={18} />
                       Contratar
@@ -1484,7 +1484,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
-                  <input
+                  <input aria-label="Fecha"
                     type="date"
                     value={interviewDate}
                     onChange={(e) => setInterviewDate(e.target.value)}
@@ -1493,7 +1493,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Hora</label>
-                  <input
+                  <input aria-label="Hora"
                     type="time"
                     value={interviewTime}
                     onChange={(e) => setInterviewTime(e.target.value)}
@@ -1595,7 +1595,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center bg-white/90 backdrop-blur-md p-4 justify-between border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => step === 1 ? onNavigate('business-jobs') : setStep(1)}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
         >
@@ -1616,7 +1616,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
         />
       </div>
 
-      <main className="flex-1 pb-32">
+      <div className="flex-1 pb-32">
         {step === 1 ? (
           /* Paso 1: Información básica */
           <div className="p-5 space-y-5">
@@ -1624,7 +1624,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
               <label className="block text-sm font-semibold text-slate-900 mb-2">
                 Título del puesto *
               </label>
-              <input
+              <input aria-label="Título del puesto"
                 type="text"
                 value={formData.title}
                 onChange={(e) => handleChange('title', e.target.value)}
@@ -1638,7 +1638,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
                 Ubicación
               </label>
               <div className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-100 text-slate-900 flex items-center">
-                <MapPin size={18} className="text-gray-400 mr-2" />
+                <MapPin size={18} className="text-gray-500 mr-2" />
                 <span>Cornellà de Llobregat</span>
               </div>
             </div>
@@ -1647,7 +1647,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
               <label className="block text-sm font-semibold text-slate-900 mb-2">
                 Dirección del trabajo *
               </label>
-              <input
+              <input aria-label="Dirección del trabajo"
                 type="text"
                 value={formData.address}
                 onChange={(e) => handleChange('address', e.target.value)}
@@ -1661,7 +1661,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
                 <label className="block text-sm font-semibold text-slate-900 mb-2">
                   Tipo de contrato *
                 </label>
-                <select
+                <select aria-label="Tipo de contrato"
                   value={formData.contract}
                   onChange={(e) => handleChange('contract', e.target.value)}
                   className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
@@ -1676,7 +1676,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
                 <label className="block text-sm font-semibold text-slate-900 mb-2">
                   Modalidad
                 </label>
-                <select
+                <select aria-label="Modalidad"
                   value={formData.modality}
                   onChange={(e) => handleChange('modality', e.target.value)}
                   className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
@@ -1717,14 +1717,14 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
                 Salario bruto anual (€) *
               </label>
               <div className="flex gap-3 items-center">
-                <input
+                <input aria-label="Salario bruto anual (€)"
                   type="number"
                   value={formData.salaryMin}
                   onChange={(e) => handleChange('salaryMin', e.target.value)}
                   placeholder="Mínimo"
                   className="flex-1 h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                 />
-                <span className="text-gray-400">-</span>
+                <span className="text-gray-500">-</span>
                 <input
                   type="number"
                   value={formData.salaryMax}
@@ -1746,7 +1746,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
               <label className="block text-sm font-semibold text-slate-900 mb-2">
                 Descripción del puesto *
               </label>
-              <textarea
+              <textarea aria-label="Descripción del puesto"
                 value={formData.description}
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Describe las funciones, el ambiente de trabajo, etc."
@@ -1807,7 +1807,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/* Footer */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-4 pb-8 z-40">
@@ -1818,7 +1818,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
             className={`w-full h-14 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${
               isStep1Valid
                 ? 'bg-primary text-white hover:bg-blue-700 shadow-lg shadow-primary/30'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >
             Siguiente
@@ -1831,7 +1831,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
             className={`w-full h-14 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${
               isStep2Valid
                 ? 'bg-primary text-white hover:bg-blue-700 shadow-lg shadow-primary/30'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >
             <Briefcase size={20} />
@@ -1913,7 +1913,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-white">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('profile')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
         >
@@ -1928,7 +1928,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
       <div className="px-4 pt-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-primary text-sm font-bold">PASO 1 DE 3</span>
-          <span className="text-gray-400 text-sm">33%</span>
+          <span className="text-gray-500 text-sm">33%</span>
         </div>
         <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
           <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: '33%' }} />
@@ -1950,12 +1950,12 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Nombre del Negocio
             </label>
-            <input
+            <input aria-label="Nombre del Negocio"
               type="text"
               value={formData.businessName}
               onChange={(e) => handleChange('businessName', e.target.value)}
               placeholder="Ej. Cafetería Central"
-              className="w-full h-14 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-14 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
@@ -1964,12 +1964,12 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
             <label className="block text-sm font-medium text-slate-700 mb-2">
               CIF/NIF
             </label>
-            <input
+            <input aria-label="CIF/NIF"
               type="text"
               value={formData.cif}
               onChange={(e) => handleChange('cif', e.target.value)}
               placeholder="EJ. B-12345678"
-              className="w-full h-14 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-14 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
@@ -1979,7 +1979,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
               Categoría
             </label>
             <div className="relative">
-              <select
+              <select aria-label="Categoría"
                 value={formData.category}
                 onChange={(e) => handleChange('category', e.target.value)}
                 className="w-full h-14 px-4 pr-10 rounded-xl border border-gray-200 bg-white text-slate-900 appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
@@ -1989,7 +1989,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
             </div>
           </div>
 
@@ -2000,7 +2000,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
                 Subcategoría
               </label>
               <div className="relative">
-                <select
+                <select aria-label="Subcategoría"
                   value={formData.subcategory}
                   onChange={(e) => handleChange('subcategory', e.target.value)}
                   className="w-full h-14 px-4 pr-10 rounded-xl border border-gray-200 bg-white text-slate-900 appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
@@ -2010,7 +2010,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
                     <option key={sub.id} value={sub.name}>{sub.name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
               </div>
             </div>
           )}
@@ -2021,14 +2021,14 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
               Dirección Física
             </label>
             <div className="relative">
-              <input
+              <input aria-label="Dirección Física"
                 type="text"
                 value={formData.address}
                 onChange={(e) => handleChange('address', e.target.value)}
                 placeholder="Carrer de Cornellà, 12"
-                className="w-full h-14 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full h-14 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
-              <button
+              <button aria-label="Usar mi ubicación"
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
               >
@@ -2043,7 +2043,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
               Barrio <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <select
+              <select aria-label="Barrio"
                 value={formData.barrio}
                 onChange={(e) => handleChange('barrio', e.target.value)}
                 required
@@ -2056,7 +2056,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
                   <option key={barrio.id} value={barrio.id}>{barrio.name}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
             </div>
             <p className="text-xs text-gray-500 mt-1">
               Selecciona el barrio donde se encuentra tu negocio
@@ -2174,7 +2174,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-white">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('business-data')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
         >
@@ -2189,7 +2189,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
       <div className="px-4 pt-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-primary text-sm font-bold">PASO 2 DE 3</span>
-          <span className="text-gray-400 text-sm">66%</span>
+          <span className="text-gray-500 text-sm">66%</span>
         </div>
         <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
           <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: '66%' }} />
@@ -2254,7 +2254,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
                 <p className={`text-sm font-medium ${errors.license ? 'text-red-500' : 'text-primary'}`}>
                   Haz clic para subir <span className={errors.license ? 'text-red-400' : 'text-gray-500'}>o arrastra</span>
                 </p>
-                <p className="text-gray-400 text-xs mt-1">PDF, PNG, JPG (Max. 10MB)</p>
+                <p className="text-gray-500 text-xs mt-1">PDF, PNG, JPG (Max. 10MB)</p>
               </>
             )}
           </label>
@@ -2306,7 +2306,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
                 <p className={`text-sm font-medium ${errors.id ? 'text-red-500' : 'text-slate-700'}`}>
                   Subir documento
                 </p>
-                <p className="text-gray-400 text-xs mt-1">PDF o imagen — datos legibles</p>
+                <p className="text-gray-500 text-xs mt-1">PDF o imagen — datos legibles</p>
               </>
             )}
           </label>
@@ -2343,7 +2343,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
           onClick={handleSubmit}
           disabled={isSubmitting}
           className={`w-full h-14 rounded-xl text-white font-bold text-base shadow-lg shadow-primary/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-            isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-700'
+            isSubmitting ? 'bg-gray-600 cursor-not-allowed' : 'bg-primary hover:bg-blue-700'
           }`}
         >
           {isSubmitting ? (
@@ -2433,7 +2433,7 @@ export const BusinessAppealScreen = ({ onNavigate, businessData, user, showToast
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       <header className="sticky top-0 z-30 flex items-center gap-3 bg-white px-4 py-4 border-b border-gray-100">
-        <button onClick={() => onNavigate('profile')} className="text-slate-600 hover:text-slate-900 transition-colors">
+        <button aria-label="Volver" onClick={() => onNavigate('profile')} className="text-slate-600 hover:text-slate-900 transition-colors">
           <ArrowLeft size={22} />
         </button>
         <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight">Apelar rechazo</h2>
@@ -2463,29 +2463,29 @@ export const BusinessAppealScreen = ({ onNavigate, businessData, user, showToast
           <label className="block text-sm font-semibold text-slate-700 mb-2">
             Tu justificación <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <textarea aria-label="Tu justificación"
             value={appealMessage}
             onChange={(e) => setAppealMessage(e.target.value)}
             placeholder="Explica tu situación y por qué debería aprobarse tu negocio..."
             rows={5}
             className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary resize-none"
           />
-          <p className="text-xs text-slate-400 mt-1 text-right">{appealMessage.length}/500</p>
+          <p className="text-xs text-slate-500 mt-1 text-right">{appealMessage.length}/500</p>
         </div>
 
         {/* Imágenes opcionales */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Imágenes de apoyo <span className="text-slate-400 font-normal">(opcional, máx. 2)</span>
+            Imágenes de apoyo <span className="text-slate-500 font-normal">(opcional, máx. 2)</span>
           </label>
 
           <div className="flex gap-3">
             {appealImages.map((img, i) => (
               <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-slate-200">
                 <img src={img.preview} alt="" className="w-full h-full object-cover" />
-                <button
+                <button aria-label="Cerrar"
                   onClick={() => removeImage(i)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center"
                 >
                   <X size={12} />
                 </button>
@@ -2497,8 +2497,8 @@ export const BusinessAppealScreen = ({ onNavigate, businessData, user, showToast
                 onClick={() => fileInputRef.current?.click()}
                 className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-1 hover:border-primary hover:bg-blue-50 transition-colors"
               >
-                <Camera size={20} className="text-slate-400" />
-                <span className="text-xs text-slate-400">Añadir</span>
+                <Camera size={20} className="text-slate-500" />
+                <span className="text-xs text-slate-500">Añadir</span>
               </button>
             )}
           </div>
@@ -2519,7 +2519,7 @@ export const BusinessAppealScreen = ({ onNavigate, businessData, user, showToast
           className={`w-full py-4 rounded-xl font-bold text-base transition-all ${
             appealMessage.trim() && !uploading
               ? 'bg-primary text-white shadow-lg shadow-primary/25 hover:bg-blue-700 active:scale-[0.98]'
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              : 'bg-slate-100 text-slate-500 cursor-not-allowed'
           }`}
         >
           {uploading ? 'Enviando apelación...' : 'Enviar apelación'}
@@ -3091,7 +3091,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => {
               if (currentStep > 1) {
                 setCurrentStep(prev => prev - 1);
@@ -3116,13 +3116,13 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             {/* Paso 1 */}
             <div className="flex flex-col items-center gap-2 flex-1">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                currentStep > 1 ? 'bg-green-500 text-white' :
+                currentStep > 1 ? 'bg-green-700 text-white' :
                 currentStep === 1 ? 'bg-primary text-white ring-4 ring-primary/20' :
-                'bg-gray-200 text-gray-400'
+                'bg-gray-200 text-gray-500'
               }`}>
                 {currentStep > 1 ? <CheckCircle2 size={20} /> : '1'}
               </div>
-              <span className={`text-xs font-medium ${currentStep === 1 ? 'text-primary' : 'text-gray-400'}`}>
+              <span className={`text-xs font-medium ${currentStep === 1 ? 'text-primary' : 'text-gray-500'}`}>
                 Información
               </span>
             </div>
@@ -3133,13 +3133,13 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             {/* Paso 2 */}
             <div className="flex flex-col items-center gap-2 flex-1">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                currentStep > 2 ? 'bg-green-500 text-white' :
+                currentStep > 2 ? 'bg-green-700 text-white' :
                 currentStep === 2 ? 'bg-primary text-white ring-4 ring-primary/20' :
-                'bg-gray-200 text-gray-400'
+                'bg-gray-200 text-gray-500'
               }`}>
                 {currentStep > 2 ? <CheckCircle2 size={20} /> : '2'}
               </div>
-              <span className={`text-xs font-medium ${currentStep === 2 ? 'text-primary' : 'text-gray-400'}`}>
+              <span className={`text-xs font-medium ${currentStep === 2 ? 'text-primary' : 'text-gray-500'}`}>
                 Horarios
               </span>
             </div>
@@ -3151,12 +3151,12 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             <div className="flex flex-col items-center gap-2 flex-1">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
                 currentStep === 3 ? 'bg-primary text-white ring-4 ring-primary/20' :
-                currentStep > 3 ? 'bg-green-500 text-white' :
-                'bg-gray-200 text-gray-400'
+                currentStep > 3 ? 'bg-green-700 text-white' :
+                'bg-gray-200 text-gray-500'
               }`}>
                 {currentStep > 3 ? <Check size={18} /> : '3'}
               </div>
-              <span className={`text-xs font-medium ${currentStep === 3 ? 'text-primary' : currentStep > 3 ? 'text-green-600' : 'text-gray-400'}`}>
+              <span className={`text-xs font-medium ${currentStep === 3 ? 'text-primary' : currentStep > 3 ? 'text-green-600' : 'text-gray-500'}`}>
                 Fotos
               </span>
             </div>
@@ -3168,11 +3168,11 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             <div className="flex flex-col items-center gap-2 flex-1">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
                 currentStep === 4 ? 'bg-primary text-white ring-4 ring-primary/20' :
-                'bg-gray-200 text-gray-400'
+                'bg-gray-200 text-gray-500'
               }`}>
                 4
               </div>
-              <span className={`text-xs font-medium ${currentStep === 4 ? 'text-primary' : 'text-gray-400'}`}>
+              <span className={`text-xs font-medium ${currentStep === 4 ? 'text-primary' : 'text-gray-500'}`}>
                 Verificación
               </span>
             </div>
@@ -3223,12 +3223,12 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">
                     Nombre del comercio <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <input aria-label="Nombre del comercio"
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
                     placeholder="Nombre de tu negocio"
-                    className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                    className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
                     required
                   />
                 </div>
@@ -3238,7 +3238,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">
                     Categoría <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <select aria-label="Categoría"
                     value={formData.category}
                     onChange={(e) => handleChange('category', e.target.value)}
                     className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none cursor-pointer"
@@ -3257,7 +3257,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                     <label className="block text-xs font-medium text-gray-500 mb-1.5">
                       Subcategoría <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <select aria-label="Subcategoría"
                       value={formData.subcategory}
                       onChange={(e) => handleChange('subcategory', e.target.value)}
                       className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none cursor-pointer"
@@ -3276,16 +3276,16 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">
                     Descripción <span className="text-red-500">*</span>
                   </label>
-                  <textarea
+                  <textarea aria-label="Descripción"
                     value={formData.description}
                     onChange={(e) => handleChange('description', e.target.value)}
                     placeholder="Ejemplo: Cafetería acogedora con café artesanal, repostería casera y desayunos completos. WiFi gratis y terraza. Especialidad en capuchinos y tartas caseras."
                     rows={4}
                     maxLength={500}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none text-sm"
                     required
                   />
-                  <p className="text-xs text-gray-400 mt-1 text-right">{formData.description.length}/500 caracteres</p>
+                  <p className="text-xs text-gray-500 mt-1 text-right">{formData.description.length}/500 caracteres</p>
                   <p className="text-xs text-gray-500 mt-1.5 italic">
                     💡 Incluye: qué ofreces, especialidades, servicios destacados (delivery, terraza, WiFi, etc.)
                   </p>
@@ -3295,14 +3295,14 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Teléfono</label>
                   <div className="relative">
-                    <input
+                    <input aria-label="Teléfono"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleChange('phone', e.target.value)}
                       placeholder="934 123 456"
-                      className="w-full h-12 px-4 pl-11 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      className="w-full h-12 px-4 pl-11 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
                     />
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                   </div>
                 </div>
 
@@ -3310,14 +3310,14 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Sitio web</label>
                   <div className="relative">
-                    <input
+                    <input aria-label="Sitio web"
                       type="url"
                       value={formData.website}
                       onChange={(e) => handleChange('website', e.target.value)}
                       placeholder="https://www.minegocio.com"
-                      className="w-full h-12 px-4 pl-11 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      className="w-full h-12 px-4 pl-11 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
                     />
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                   </div>
                 </div>
               </div>
@@ -3335,15 +3335,15 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                     Dirección completa <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <input
+                    <input aria-label="Dirección completa"
                       type="text"
                       value={formData.address}
                       onChange={(e) => handleChange('address', e.target.value)}
                       placeholder="Carrer de Mossèn Jacint Verdaguer, 12"
-                      className="w-full h-12 px-4 pl-11 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      className="w-full h-12 px-4 pl-11 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
                       required
                     />
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                   </div>
                 </div>
 
@@ -3352,7 +3352,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">
                     Barrio <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <select aria-label="Barrio"
                     value={formData.neighborhood}
                     onChange={(e) => handleChange('neighborhood', e.target.value)}
                     className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none cursor-pointer"
@@ -3439,7 +3439,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                             onChange={(e) => updateSchedule(day, 'morning', 'start', e.target.value)}
                             className="flex-1 h-9 px-2 rounded-lg border border-gray-200 text-xs"
                           />
-                          <span className="text-gray-400">-</span>
+                          <span className="text-gray-500">-</span>
                           <input
                             type="time"
                             value={formData.schedule[day]?.morning?.end || ''}
@@ -3455,7 +3455,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                             onChange={(e) => updateSchedule(day, 'afternoon', 'start', e.target.value)}
                             className="flex-1 h-9 px-2 rounded-lg border border-gray-200 text-xs"
                           />
-                          <span className="text-gray-400">-</span>
+                          <span className="text-gray-500">-</span>
                           <input
                             type="time"
                             value={formData.schedule[day]?.afternoon?.end || ''}
@@ -3515,16 +3515,16 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                         {closure.allDay ? 'Todo el día' : `Cierre a mediodía`}
                       </p>
                     </div>
-                    <button
+                    <button aria-label="Eliminar"
                       onClick={() => removeSpecialClosure(closure.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      className="text-gray-500 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={18} />
                     </button>
                   </div>
                 ))}
                 {formData.specialClosures.length === 0 && (
-                  <p className="text-center text-gray-400 text-sm py-4">
+                  <p className="text-center text-gray-500 text-sm py-4">
                     No hay cierres especiales programados
                   </p>
                 )}
@@ -3579,9 +3579,9 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                           className="w-full h-full bg-cover bg-center"
                           style={{ backgroundImage: `url("${formData.coverPhoto}")` }}
                         />
-                        <button
+                        <button aria-label="Cerrar"
                           onClick={() => handleChange('coverPhoto', null)}
-                          className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                          className="absolute top-2 right-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
                         >
                           <X size={14} />
                         </button>
@@ -3592,7 +3592,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                           {uploadingPhoto === 'cover' ? <div className="w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin" /> : <Plus className="text-primary" size={24} />}
                         </div>
                         <span className="text-sm font-medium text-gray-600">{uploadingPhoto === 'cover' ? 'Subiendo...' : 'Añadir Foto'}</span>
-                        <span className="text-xs text-gray-400">Portada</span>
+                        <span className="text-xs text-gray-500">Portada</span>
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadPhotoToStorage(e.target.files?.[0], 'cover')} />
                       </label>
                     )}
@@ -3609,16 +3609,16 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                             className="w-full h-full bg-cover bg-center"
                             style={{ backgroundImage: `url("${formData.photos[index]}")` }}
                           />
-                          <button
+                          <button aria-label="Cerrar"
                             onClick={() => removePhoto(index)}
-                            className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                            className="absolute top-1 right-1 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
                           >
                             <X size={12} />
                           </button>
                         </>
                       ) : (
                         <label className="w-full h-full flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer">
-                          {uploadingPhoto === index ? <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Plus className="text-gray-400" size={20} />}
+                          {uploadingPhoto === index ? <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Plus className="text-gray-500" size={20} />}
                           <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadPhotoToStorage(e.target.files?.[0], 'gallery', index)} />
                         </label>
                       )}
@@ -3878,7 +3878,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
               onClick={handleNext}
               disabled={isSaving}
               className={`flex-1 h-12 rounded-xl text-white font-bold text-sm shadow-lg shadow-primary/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-                isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-700'
+                isSaving ? 'bg-gray-600 cursor-not-allowed' : 'bg-primary hover:bg-blue-700'
               }`}
             >
               {isSaving ? (
@@ -3906,7 +3906,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   }}
                   disabled={isSaving}
                   className={`flex-1 h-12 rounded-xl text-white font-bold text-sm shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-                    isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-700 shadow-primary/25'
+                    isSaving ? 'bg-gray-600 cursor-not-allowed' : 'bg-primary hover:bg-blue-700 shadow-primary/25'
                   }`}
                 >
                   {isSaving ? (
@@ -3927,7 +3927,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   onClick={handlePublish}
                   disabled={isSaving || isPublishing}
                   className={`flex-1 h-12 rounded-xl text-white font-bold text-sm shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-                    isPublishing ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 shadow-green-500/25'
+                    isPublishing ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-700 hover:bg-green-800 shadow-green-500/25'
                   }`}
                 >
                   {isPublishing ? (
@@ -3961,7 +3961,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             {/* Header del modal */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <h3 className="text-lg font-bold text-slate-900">Añadir Cierre Especial</h3>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => setShowClosureModal(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
               >
@@ -3973,7 +3973,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             <div className="p-4">
               {/* Navegación del mes */}
               <div className="flex items-center justify-between mb-4">
-                <button
+                <button aria-label="Volver"
                   onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
                 >
@@ -3982,7 +3982,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                 <span className="text-sm font-bold text-slate-900 capitalize">
                   {selectedMonth.toLocaleDateString('es', { month: 'long', year: 'numeric' })}
                 </span>
-                <button
+                <button aria-label="Siguiente"
                   onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
                 >
@@ -3993,7 +3993,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
               {/* Días de la semana */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(day => (
-                  <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">
+                  <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
                     {day}
                   </div>
                 ))}
@@ -4039,7 +4039,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Nombre del cierre
                 </label>
-                <input
+                <input aria-label="Nombre del cierre"
                   type="text"
                   value={newClosureName}
                   onChange={(e) => setNewClosureName(e.target.value)}
@@ -4063,7 +4063,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                 className={`flex-1 h-11 rounded-xl font-bold transition-colors ${
                   newClosureDate && newClosureName.trim()
                     ? 'bg-primary text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}
               >
                 Guardar
@@ -4236,7 +4236,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center bg-white px-4 py-4 border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('business-offers')}
           className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
         >
@@ -4255,15 +4255,15 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
             Título de la Oferta <span className="text-red-500">*</span>
           </label>
           <div className="relative">
-            <input
+            <input aria-label="Título de la Oferta"
               type="text"
               value={formData.title}
               onChange={(e) => handleChange('title', e.target.value)}
               placeholder="Ej: Menú del día, Corte de pelo..."
               maxLength={50}
-              className="w-full h-14 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-14 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
-            <Edit3 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Edit3 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
           </div>
         </div>
 
@@ -4337,16 +4337,16 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
                 Descuento (%) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input
+                <input aria-label="Descuento (%)"
                   type="number"
                   value={formData.discountPercent}
                   onChange={(e) => handleChange('discountPercent', e.target.value)}
                   placeholder="20"
                   min="1"
                   max="100"
-                  className="w-full h-12 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full h-12 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">%</span>
               </div>
             </div>
             <div>
@@ -4354,23 +4354,23 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
                 Precio Original (€) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input
+                <input aria-label="Precio Original (€)"
                   type="number"
                   value={formData.originalPrice}
                   onChange={(e) => handleChange('originalPrice', e.target.value)}
                   placeholder="100"
                   min="0.01"
                   step="0.01"
-                  className="w-full h-12 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full h-12 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">€</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">€</span>
               </div>
             </div>
             {discountedPrice && (
               <div className="bg-white rounded-lg p-3 flex items-center justify-between">
                 <span className="text-sm text-gray-600">Precio con descuento:</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400 line-through">{formData.originalPrice}€</span>
+                  <span className="text-sm text-gray-500 line-through">{formData.originalPrice}€</span>
                   <span className="text-xl font-bold text-green-600">{discountedPrice}€</span>
                 </div>
               </div>
@@ -4385,23 +4385,23 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
                 Precio de 1 producto (€) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input
+                <input aria-label="Precio de 1 producto (€)"
                   type="number"
                   value={formData.productPrice}
                   onChange={(e) => handleChange('productPrice', e.target.value)}
                   placeholder="5"
                   min="0.01"
                   step="0.01"
-                  className="w-full h-12 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full h-12 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">€</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">€</span>
               </div>
             </div>
             {formData.productPrice && (
               <div className="bg-white rounded-lg p-3">
                 <p className="text-sm text-gray-600 mb-2">El cliente verá:</p>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-400 line-through">{(parseFloat(formData.productPrice) * 2).toFixed(2)}€</span>
+                  <span className="text-sm text-gray-500 line-through">{(parseFloat(formData.productPrice) * 2).toFixed(2)}€</span>
                   <span className="text-lg font-bold text-purple-600">2 por {formData.productPrice}€</span>
                 </div>
               </div>
@@ -4428,15 +4428,15 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
           <label className="block text-sm font-medium text-slate-700 mb-2">
             Descripción (opcional)
           </label>
-          <textarea
+          <textarea aria-label="Descripción"
             value={formData.description}
             onChange={(e) => handleChange('description', e.target.value)}
             placeholder="Describe brevemente tu oferta..."
             rows={3}
             maxLength={150}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none text-sm"
           />
-          <p className="text-xs text-gray-400 mt-1 text-right">{formData.description.length}/150</p>
+          <p className="text-xs text-gray-500 mt-1 text-right">{formData.description.length}/150</p>
         </div>
 
         {/* Imagen */}
@@ -4448,16 +4448,16 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
             {formData.image ? (
               <div className="relative w-full h-40 rounded-xl overflow-hidden">
                 <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${formData.image}")` }} />
-                <button
+                <button aria-label="Cerrar"
                   onClick={() => handleChange('image', null)}
-                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                  className="absolute top-2 right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
                 >
                   <X size={16} />
                 </button>
               </div>
             ) : (
               <label className="w-full h-28 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
-                {uploadingOfferImage ? <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Image className="text-gray-400" size={24} />}
+                {uploadingOfferImage ? <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /> : <Image className="text-gray-500" size={24} />}
                 <span className="text-sm text-gray-500">{uploadingOfferImage ? 'Subiendo...' : 'Subir imagen'}</span>
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadOfferImage(e.target.files?.[0])} />
               </label>
@@ -4510,7 +4510,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
                 >
                   <span className="text-lg font-bold text-gray-600">-</span>
                 </button>
-                <input
+                <input aria-label="Número de unidades"
                   type="number"
                   value={formData.limitedUnits}
                   onChange={(e) => handleChange('limitedUnits', Math.max(1, parseInt(e.target.value) || 1))}
@@ -4544,7 +4544,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
                   <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${formData.image}")` }} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Store className="text-gray-400" size={24} />
+                    <Store className="text-gray-500" size={24} />
                   </div>
                 )}
               </div>
@@ -4577,7 +4577,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
                 </span>
                 {discountedPrice && formData.discountType === 'percentage' && (
                   <div className="mt-1">
-                    <span className="text-[10px] text-gray-400 line-through mr-1">{formData.originalPrice}€</span>
+                    <span className="text-[10px] text-gray-500 line-through mr-1">{formData.originalPrice}€</span>
                     <span className="text-sm font-bold text-green-600">{discountedPrice}€</span>
                   </div>
                 )}
@@ -4588,7 +4588,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
             </div>
           </div>
 
-          <p className="text-xs text-gray-400 text-center mt-3">
+          <p className="text-xs text-gray-500 text-center mt-3">
             Así verán tu oferta {formData.isFlash ? 'en el inicio' : 'en la sección de ofertas'}
           </p>
         </div>
@@ -4658,7 +4658,7 @@ export const ValidateCodeScreen = ({ onNavigate, user, showToast }) => {
     <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50 font-display">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 flex items-center gap-3">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('owner-dashboard')}
           className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
         >
@@ -4682,7 +4682,7 @@ export const ValidateCodeScreen = ({ onNavigate, user, showToast }) => {
         {/* Input del código */}
         <div className="space-y-3">
           <label className="block text-sm font-semibold text-gray-700">Código del cliente</label>
-          <input
+          <input aria-label="Código del cliente"
             type="text"
             value={code}
             onChange={e => setCode(e.target.value.toUpperCase())}
@@ -4764,7 +4764,7 @@ export const BusinessOwnerDashboard = ({
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       {/* Header */}
       <div className="sticky top-0 z-50 flex items-center bg-white/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-gray-100">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('profile')}
           className="text-slate-800 flex size-12 shrink-0 items-center justify-start cursor-pointer hover:opacity-70 transition-opacity"
         >
@@ -4773,7 +4773,7 @@ export const BusinessOwnerDashboard = ({
         <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">
           Panel de Propietario
         </h2>
-        <button
+        <button aria-label="Ajustes"
           onClick={() => onNavigate('edit-business')}
           className="flex size-12 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent text-primary hover:bg-primary/10 transition-colors"
         >
@@ -4881,7 +4881,7 @@ export const BusinessOwnerDashboard = ({
                 <div className="bg-green-100 p-2 rounded-lg text-green-600 group-hover:text-green-700 transition-colors relative">
                   <ClipboardList size={20} />
                   {newBudgetRequests > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
                       {newBudgetRequests}
                     </span>
                   )}
@@ -4893,7 +4893,7 @@ export const BusinessOwnerDashboard = ({
                   </span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
 
             <button
@@ -4904,7 +4904,7 @@ export const BusinessOwnerDashboard = ({
                 <div className="bg-blue-100 p-2 rounded-lg text-blue-600 group-hover:text-blue-700 transition-colors relative">
                   <Briefcase size={20} />
                   {totalApplications > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
                       {totalApplications}
                     </span>
                   )}
@@ -4916,7 +4916,7 @@ export const BusinessOwnerDashboard = ({
                   </span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
 
             <button
@@ -4932,7 +4932,7 @@ export const BusinessOwnerDashboard = ({
                   <span className="text-xs text-slate-500">{activeOffers} oferta{activeOffers !== 1 ? 's' : ''} activa{activeOffers !== 1 ? 's' : ''}</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
 
             <button
@@ -4948,7 +4948,7 @@ export const BusinessOwnerDashboard = ({
                   <span className="text-xs text-slate-500">Información y configuración</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
 
             <button
@@ -4964,7 +4964,7 @@ export const BusinessOwnerDashboard = ({
                   <span className="text-xs text-slate-500">Ver rendimiento</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
 
             <button
@@ -4980,7 +4980,7 @@ export const BusinessOwnerDashboard = ({
                   <span className="text-xs text-slate-500">Canjear descuento de cliente</span>
                 </div>
               </div>
-              <ChevronRight className="text-slate-400" size={20} />
+              <ChevronRight className="text-slate-500" size={20} />
             </button>
           </div>
         </div>
@@ -5055,7 +5055,7 @@ export const BusinessOwnerDashboard = ({
                 className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-colors ${
                   deleteConfirmText === 'ELIMINAR' && !deleting
                     ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-100 text-slate-500 cursor-not-allowed'
                 }`}
               >
                 {deleting ? 'Eliminando...' : 'Eliminar definitivamente'}
@@ -5201,8 +5201,8 @@ export const BusinessStatsScreen = ({
           {[
             { icon: <Users size={20} />, color: 'bg-primary/10 text-primary', value: periodApplications, label: 'Candidaturas', sub: pendingApplications > 0 ? `${pendingApplications} pendientes` : null, subColor: 'text-amber-600' },
             { icon: <FileText size={20} />, color: 'bg-purple-100 text-purple-600', value: periodBudgets, label: 'Presupuestos', sub: newBudgets > 0 ? `${newBudgets} nuevos` : null, subColor: 'text-green-600' },
-            { icon: <Eye size={20} />, color: 'bg-green-100 text-green-600', value: businessViews, label: 'Vistas negocio', sub: `${totalViews} total`, subColor: 'text-gray-400' },
-            { icon: <MousePointerClick size={20} />, color: 'bg-cyan-100 text-cyan-600', value: businessClicks, label: 'Clics', sub: `tel · web · mapa`, subColor: 'text-gray-400' },
+            { icon: <Eye size={20} />, color: 'bg-green-100 text-green-600', value: businessViews, label: 'Vistas negocio', sub: `${totalViews} total`, subColor: 'text-gray-500' },
+            { icon: <MousePointerClick size={20} />, color: 'bg-cyan-100 text-cyan-600', value: businessClicks, label: 'Clics', sub: `tel · web · mapa`, subColor: 'text-gray-500' },
             { icon: <Heart size={20} />, color: 'bg-red-100 text-red-500', value: realFavorites === null ? '…' : realFavorites, label: 'En favoritos', sub: null },
             { icon: <Ticket size={20} />, color: 'bg-amber-100 text-amber-600', value: totalRedemptions, label: 'Canjes validados', sub: null },
           ].map((item, i) => (
@@ -5233,7 +5233,7 @@ export const BusinessStatsScreen = ({
                 <div key={i}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-600">{row.label}</span>
-                    <span className="text-xs font-bold text-slate-900">{row.value} <span className="text-gray-400 font-normal">({row.pct}%)</span></span>
+                    <span className="text-xs font-bold text-slate-900">{row.value} <span className="text-gray-500 font-normal">({row.pct}%)</span></span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
                     <div className={`${row.color} h-2 rounded-full transition-all`} style={{ width: `${row.pct}%` }} />
@@ -5241,7 +5241,7 @@ export const BusinessStatsScreen = ({
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-gray-400 mt-3">Acciones = candidaturas + presupuestos + canjes</p>
+            <p className="text-[11px] text-gray-500 mt-3">Acciones = candidaturas + presupuestos + canjes</p>
           </div>
         )}
 
@@ -5376,7 +5376,7 @@ export const BusinessStatsScreen = ({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Sin responder</span>
-                  <span className="font-bold text-gray-400">{periodBudgets - repliedBudgets}</span>
+                  <span className="font-bold text-gray-500">{periodBudgets - repliedBudgets}</span>
                 </div>
               </div>
             </div>

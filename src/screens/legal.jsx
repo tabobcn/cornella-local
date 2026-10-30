@@ -26,7 +26,7 @@ export const TermsScreen = ({ onNavigate, fromRegister = false }) => {
         <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">
           Términos y Condiciones
         </h2>
-        <button
+        <button aria-label="Cerrar"
           onClick={() => fromRegister ? onNavigate('register') : onNavigate('settings')}
           className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-900 hover:bg-black/5 transition-colors"
         >
@@ -35,7 +35,7 @@ export const TermsScreen = ({ onNavigate, fromRegister = false }) => {
       </div>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto pb-32">
+      <div className="flex-1 overflow-y-auto pb-32">
         {/* Intro */}
         <div className="px-6 pt-6 pb-2">
           <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
@@ -94,11 +94,11 @@ export const TermsScreen = ({ onNavigate, fromRegister = false }) => {
             </details>
           ))}
 
-          <p className="text-xs text-center text-gray-400 px-8 pt-4 pb-2">
+          <p className="text-xs text-center text-gray-500 px-8 pt-4 pb-2">
             Al continuar, confirma que ha leído y acepta nuestros términos de servicio y política de privacidad.
           </p>
         </div>
-      </main>
+      </div>
 
       {/* Footer CTA */}
       <div className="fixed bottom-0 w-full max-w-md z-30 bg-white/90 backdrop-blur-xl border-t border-gray-100 pb-8 pt-4 px-6 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
@@ -234,7 +234,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-hidden shadow-2xl bg-white">
       {/* Header */}
       <div className="sticky top-0 z-20 flex items-center justify-between bg-blue-50 px-5 py-4 border-b border-primary/10 backdrop-blur-md">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('settings')}
           className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-900 hover:bg-black/5 transition-colors"
         >
@@ -247,7 +247,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
       </div>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto pb-8">
+      <div className="flex-1 overflow-y-auto pb-8">
         {/* Intro */}
         <div className="px-6 pt-6 pb-2">
           <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
@@ -285,7 +285,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
                   </div>
                   <p className="text-slate-900 text-sm font-semibold leading-normal">{section.title}</p>
                 </div>
-                <ChevronDown className={`text-gray-400 transition-transform duration-300 ${
+                <ChevronDown className={`text-gray-500 transition-transform duration-300 ${
                   expandedSection === section.id ? 'rotate-180' : ''
                 }`} size={20} />
               </summary>
@@ -311,7 +311,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
             </details>
           ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 };
@@ -397,7 +397,7 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-hidden shadow-2xl bg-white">
       <div className="sticky top-0 z-20 flex items-center justify-between bg-blue-50 px-5 py-4 border-b border-primary/10 backdrop-blur-md">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('settings')}
           className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-900 hover:bg-black/5 transition-colors"
         >
@@ -406,7 +406,7 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
         <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">Aviso Legal</h2>
         <div className="w-10" />
       </div>
-      <main className="flex-1 overflow-y-auto pb-8">
+      <div className="flex-1 overflow-y-auto pb-8">
         <div className="px-6 pt-6 pb-2">
           <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
             Última actualización: Mayo 2026
@@ -441,7 +441,7 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
                   </div>
                   <p className="text-slate-900 text-sm font-semibold leading-normal">{section.title}</p>
                 </div>
-                <ChevronDown className={`text-gray-400 transition-transform duration-300 ${expandedSection === section.id ? 'rotate-180' : ''}`} size={20} />
+                <ChevronDown className={`text-gray-500 transition-transform duration-300 ${expandedSection === section.id ? 'rotate-180' : ''}`} size={20} />
               </summary>
               {expandedSection === section.id && (
                 <div className="px-4 pb-4 pt-0">
@@ -463,7 +463,7 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
             </details>
           ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 };
@@ -534,7 +534,7 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
   return (
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-hidden shadow-2xl bg-white">
       <div className="sticky top-0 z-20 flex items-center justify-between bg-blue-50 px-5 py-4 border-b border-primary/10 backdrop-blur-md">
-        <button
+        <button aria-label="Volver"
           onClick={() => onNavigate('settings')}
           className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-900 hover:bg-black/5 transition-colors"
         >
@@ -543,7 +543,7 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
         <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight text-center">Política de Cookies</h2>
         <div className="w-10" />
       </div>
-      <main className="flex-1 overflow-y-auto pb-8">
+      <div className="flex-1 overflow-y-auto pb-8">
         <div className="px-6 pt-6 pb-2">
           <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
             Última actualización: Mayo 2026
@@ -578,7 +578,7 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
                   </div>
                   <p className="text-slate-900 text-sm font-semibold leading-normal">{section.title}</p>
                 </div>
-                <ChevronDown className={`text-gray-400 transition-transform duration-300 ${expandedSection === section.id ? 'rotate-180' : ''}`} size={20} />
+                <ChevronDown className={`text-gray-500 transition-transform duration-300 ${expandedSection === section.id ? 'rotate-180' : ''}`} size={20} />
               </summary>
               {expandedSection === section.id && (
                 <div className="px-4 pb-4 pt-0">
@@ -608,7 +608,7 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
             Restablecer preferencia de cookies
           </button>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

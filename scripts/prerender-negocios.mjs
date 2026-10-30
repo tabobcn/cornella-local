@@ -82,7 +82,7 @@ async function fetchTable(baseUrl, key, path) {
 }
 
 const STYLES = `
-:root{--primary:#567ac7;--primary-dark:#405b94;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f4f6fb}
+:root{--primary:#4b71c3;--primary-dark:#405b94;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f4f6fb}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5}
 a{color:var(--primary)}

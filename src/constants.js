@@ -200,7 +200,7 @@ export const BREAKPOINTS = {
 
 // Colores del Sistema (matching Tailwind config)
 export const COLORS = {
-  primary: '#567ac7',
+  primary: '#4b71c3',
   primaryDark: '#405b94',
   success: '#10b981',
   error: '#ef4444',

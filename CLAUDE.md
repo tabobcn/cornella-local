@@ -224,6 +224,29 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 - **`supabase/fix-triggers-rotos.sql`** — 5 funciones de trigger usaban columnas inexistentes y deshacían el INSERT:
   cotizaciones, solicitudes de presupuesto, empleos y push de aceptado/rechazado. El script termina con una consulta
   que lista triggers con columnas inexistentes (debe dar 0 filas). Los envíos de email/push ya no bloquean la operación.
+  **Aplicado y verificado en producción.**
+- **`supabase/performance-rls-indexes.sql`** (aplicado): 80 políticas con `(select auth.uid())` / `(select public.is_admin())`
+  (se evalúan una vez por consulta), 6 índices de claves foráneas, 1 política duplicada eliminada.
+  Las políticas nuevas deben escribirse ya así. Los "índices sin usar" del asesor NO se borran (pocos datos).
+
+### Estructura y reglas nuevas (2026-10-30, tarde)
+- **App dividida**: `src/screens/owner.jsx` (propietario), `src/screens/admin.jsx` (admin) y `src/screens/legal.jsx`
+  (textos legales) se cargan con `React.lazy` (`lazyNamed` en App.jsx) dentro de un único `<Suspense>` alrededor de
+  `renderPage()`. Importan de `../App.jsx` lo que comparten (`Icon`, `Navbar`, `formatNeighborhood`...): si una pantalla
+  movida necesita algo nuevo de App.jsx, **exportarlo allí**. JS inicial: 136 KB → 94 KB gzip.
+- **Fuente Inter servida desde el propio dominio** (`src/assets/fonts`, sin Google Fonts). CSP sin fonts.googleapis.
+- **Accesibilidad (Lighthouse 100, axe 0)** — reglas para código nuevo:
+  - Color principal `primary` = `#4b71c3` (cumple 4,5:1 con blanco). Sobre fondos azulados usar `text-primary-dark`.
+  - Texto secundario `text-gray-500`/`text-slate-500` como mínimo (nunca 400 para texto).
+  - Fondos con `text-white`: verde ≥ `green-700`, rojo ≥ `red-600`, naranja/ámbar ≥ `700`, azul ≥ `blue-600`.
+  - Todo botón con solo un icono lleva `aria-label`. Todo campo de formulario lleva etiqueta (`aria-label` o `htmlFor`).
+  - No anidar botones/enlaces (tarjeta clicable = contenedor + botón «estirado» `after:absolute after:inset-0`).
+  - Un solo `<main id="contenido">` (en App); las pantallas usan `<div>`. H1: si la pantalla no tiene, añadirla a
+    `PAGE_TITLES` (título de pestaña + H1 oculto) o pintar su propio `<h1>` y añadirla a `PAGES_WITH_OWN_H1`.
+  - Nombres de icono para `<Icon name>` deben existir en `iconMap` (si no, no se pinta nada).
+- **Fallos corregidos**: recuperar contraseña se colgaba (`CheckCircle` sin importar), `showToast` sin pasar a 4
+  pantallas, ruta `business-budget` con datos demo, `?nav=login` no abría el login sin sesión, 5 iconos invisibles.
+- **Registro con Google** también en la pantalla de registro.
 
 ---
 
@@ -250,7 +273,7 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 ## Archivos Clave del Proyecto
 
 ### Código Principal
-- **`src/App.jsx`** (~20,900 líneas): Toda la aplicación
+- **`src/App.jsx`** (~14.000 líneas): App, pantallas de usuario e invitado (owner/admin/legal en `src/screens/`)
   - ~30-600: Componentes reutilizables (Icon, Toast, EmptyState, skeletons, PullToRefreshIndicator...)
   - ~600-3,800: Pantallas de usuario (Home, Businesses, Offers, Jobs, Budgets...)
   - ~3,800-6,200: OffersPage (con fuegos 🔥), CouponDetailPage, BusinessDetailPage inicio

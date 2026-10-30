@@ -2079,6 +2079,12 @@ const GUEST_PAGES = new Set([
 ]);
 const GUEST_TEASER_PAGES = new Set(['business', 'coupon', 'job-detail']);
 
+// ¿La URL con la que se abrió la app pedía expresamente el login? (?nav=login o #login)
+// Se lee al cargar el módulo, antes de que la app reescriba la URL.
+const INITIAL_URL_WANTS_LOGIN = typeof window !== 'undefined' && (
+  new URLSearchParams(window.location.search).get('nav') === 'login' || window.location.hash === '#login'
+);
+
 // Título de la pestaña (y H1 para lectores de pantalla en las pantallas que no lo tienen)
 const DEFAULT_DOC_TITLE = typeof document !== 'undefined' ? document.title : 'Cornellà Local';
 const PAGE_TITLES = {
@@ -2133,7 +2139,7 @@ const takeAuthRedirect = () => {
   }
 };
 
-const formatNeighborhood = (value) => {
+export const formatNeighborhood = (value) => {
   if (!value) return '';
   const match = barrios.find(b => b.id === value || b.name.toLowerCase() === String(value).toLowerCase());
   if (match) return match.name;
@@ -3195,14 +3201,31 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             <h2 className="text-xl font-bold tracking-tight">Ofertas Flash</h2>
             <Zap className="animate-pulse text-yellow-500" size={20} />
           </div>
-          <button
-            onClick={() => onNavigate('flash-offers')}
-            className="text-primary text-sm font-semibold hover:text-blue-700 transition-colors flex items-center gap-1"
-          >
-            Ver todos
-            <ChevronRight size={16} />
-          </button>
+          {(loadingOffers || allFlashOffers.length > 0) && (
+            <button
+              onClick={() => onNavigate('flash-offers')}
+              className="text-primary text-sm font-semibold hover:text-blue-700 transition-colors flex items-center gap-1"
+            >
+              Ver todos
+              <ChevronRight size={16} />
+            </button>
+          )}
         </div>
+        {loadingOffers && allFlashOffers.length === 0 ? (
+          <div className="flex gap-4 px-4 pb-4 overflow-hidden" aria-hidden="true">
+            {[0, 1].map(i => <div key={i} className="w-64 h-40 shrink-0 rounded-2xl bg-gray-100 animate-pulse" />)}
+          </div>
+        ) : allFlashOffers.length === 0 ? (
+          <div className="mx-4 mb-2 flex items-center gap-3 rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-3">
+            <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center shrink-0">
+              <Zap className="text-yellow-600" size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-900">Ahora mismo no hay ofertas flash</p>
+              <p className="text-xs text-gray-500 leading-snug">Duran solo unas horas. Guarda tus comercios en favoritos y te avisamos cuando publiquen una.</p>
+            </div>
+          </div>
+        ) : (
         <div className="flex overflow-x-auto no-scrollbar gap-4 px-4 pb-4 snap-x snap-mandatory scroll-smooth">
           {allFlashOffers.slice(0, 5).map(offer => (
             <FlashOfferCard
@@ -3213,6 +3236,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             />
           ))}
         </div>
+        )}
       </section>
 
       {/* Categorías */}
@@ -3294,6 +3318,11 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
               >
                 {/* Image */}
                 <div className="relative h-44 bg-gradient-to-br from-blue-400 to-blue-600 overflow-hidden">
+                  {!(business.cover_photo || (business.images && business.images[0])) && (
+                    <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                      <Store className="text-white/40" size={64} strokeWidth={1.5} />
+                    </div>
+                  )}
                   {(business.cover_photo || (business.images && business.images[0])) && (
                     <img
                       src={business.cover_photo || business.images[0]}
@@ -3362,18 +3391,22 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                   <div className="flex items-center justify-center gap-2">
                     <p className="text-sm font-medium text-primary">{business.subcategory || business.category}</p>
                     <span className="text-gray-300 text-sm">│</span>
-                    <div className="flex items-center gap-1">
-                      <Star className="text-yellow-500 fill-yellow-500" size={15} />
-                      <span className="font-bold text-slate-900 text-sm">{business.rating || '—'}</span>
-                      <span className="text-gray-500 text-xs">({business.review_count || business.reviews || 0})</span>
-                    </div>
+                    {(business.review_count || business.reviews) ? (
+                      <div className="flex items-center gap-1">
+                        <Star className="text-yellow-500 fill-yellow-500" size={15} />
+                        <span className="font-bold text-slate-900 text-sm">{Number(business.rating || 0).toFixed(1)}</span>
+                        <span className="text-gray-500 text-xs">({business.review_count || business.reviews})</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-medium text-gray-500">Sin reseñas aún</span>
+                    )}
                   </div>
 
                   {/* Fila 2: Barrio | Favoritos */}
                   <div className="flex items-center justify-center gap-2">
                     <div className="flex items-center gap-1">
                       <MapPin size={13} className="text-primary" />
-                      <span className="text-xs text-gray-500">{business.neighborhood || business.address}</span>
+                      <span className="text-xs text-gray-500">{formatNeighborhood(business.neighborhood) || business.address}</span>
                     </div>
                     <span className="text-gray-300 text-sm">│</span>
                     <div className="flex items-center gap-1">
@@ -5977,7 +6010,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-dark transition-colors w-fit"
                 >
                   <MapPin size={16} />
-                  <span>{business.neighborhood}</span>
+                  <span>{formatNeighborhood(business.neighborhood)}</span>
                   <ChevronRight size={14} />
                 </button>
               )}
@@ -7512,8 +7545,12 @@ const CategoryDetailPage = ({ categoryId, onNavigate }) => {
 
   if (!category) {
     return (
-      <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Categoría no encontrada</p>
+      <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50 flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <h1 className="text-lg font-bold text-slate-900">Categoría no encontrada</h1>
+        <p className="text-sm text-gray-500">Puede que el enlace haya cambiado. Explora todas las categorías desde el inicio.</p>
+        <button onClick={() => onNavigate('home')} className="h-11 px-6 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold">
+          Volver al inicio
+        </button>
       </div>
     );
   }
@@ -7712,8 +7749,12 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
 
   if (!subcategory) {
     return (
-      <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Subcategoría no encontrada</p>
+      <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50 flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <h1 className="text-lg font-bold text-slate-900">Subcategoría no encontrada</h1>
+        <p className="text-sm text-gray-500">Puede que el enlace haya cambiado. Explora todas las categorías desde el inicio.</p>
+        <button onClick={() => onNavigate('home')} className="h-11 px-6 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold">
+          Volver al inicio
+        </button>
       </div>
     );
   }
@@ -10635,6 +10676,15 @@ const RegisterScreen = ({ onNavigate }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const handleGoogleSignup = async () => {
+    setError('');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) setError('No se pudo continuar con Google. Inténtalo de nuevo.');
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -10901,6 +10951,39 @@ const RegisterScreen = ({ onNavigate }) => {
             </button>
           </div>
         </form>
+
+        {/* Registro con Google: un toque, sin contraseña */}
+        <div className="flex flex-col gap-4 pt-6">
+          <div className="relative flex items-center">
+            <div className="flex-grow border-t border-gray-100"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-500 text-sm font-medium">O regístrate con</span>
+            <div className="flex-grow border-t border-gray-100"></div>
+          </div>
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={loading || success}
+            className="w-full flex items-center justify-center gap-3 h-12 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span className="text-slate-900 font-semibold text-sm">Continuar con Google</span>
+          </button>
+          <p className="text-center text-xs text-gray-500 leading-relaxed">
+            Al continuar con Google aceptas los{' '}
+            <button type="button" onClick={() => onNavigate('terms-register')} className="text-primary font-semibold hover:underline">
+              términos y condiciones
+            </button>{' '}
+            y la{' '}
+            <button type="button" onClick={() => onNavigate('privacy-policy')} className="text-primary font-semibold hover:underline">
+              política de privacidad
+            </button>.
+          </p>
+        </div>
 
         {/* Footer */}
         <div className="flex-1 flex flex-col justify-end pb-8 pt-4">
@@ -11888,7 +11971,8 @@ export default function App() {
           } else if (event === 'INITIAL_SESSION') {
             // Sin sesión: se entra como invitado (listados visibles, detalles piden cuenta).
             // Se respeta el deep link (?negocio=, ?oferta=, ?empleo=) si lo hay.
-            if (currentPageRef.current === 'login') {
+            const wantsLogin = INITIAL_URL_WANTS_LOGIN;
+            if (currentPageRef.current === 'login' && !wantsLogin) {
               setCurrentPage('home');
               window.history.replaceState({ page: 'home', params: {} }, '', window.location.pathname === '/' ? '/' : window.location.pathname);
             }

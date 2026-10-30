@@ -6,6 +6,7 @@ import {
   Navbar,
   VerificationDocumentCard,
   createPrivateSignedUrl,
+  formatNeighborhood,
 } from '../App.jsx';
 
 const SignedVerificationImage = ({ documentRef, className, alt = '' }) => {
@@ -708,7 +709,7 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
                       {statusBadge(business.verification_status, business.is_published)}
                     </div>
                     <p className="text-xs text-gray-500 truncate">
-                      {business.category}{business.neighborhood ? ` · ${business.neighborhood}` : ''}
+                      {business.category}{business.neighborhood ? ` · ${formatNeighborhood(business.neighborhood)}` : ''}
                     </p>
                     <p className="text-[10px] text-gray-500 mt-1">
                       ID: {business.id} · Creado: {new Date(business.created_at).toLocaleDateString('es-ES')}

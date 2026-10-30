@@ -31,6 +31,32 @@ const VAPID_SUBJECT     = Deno.env.get('VAPID_SUBJECT') || 'mailto:noreply@corne
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') || Deno.env.get('PROJECT_URL') || '';
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY') || '';
 
+// La clave de servicio que envía la base de datos (Vault) puede no coincidir literalmente con
+// SUPABASE_SERVICE_ROLE_KEY: Supabase ha cambiado su sistema de claves. Se acepta si coincide o si
+// la API de Auth la reconoce como clave de servicio (verificación real en el servidor, no basta con
+// leer el contenido del token). El resultado se guarda 10 minutos para no repetirlo en cada envío.
+const verifiedServiceKeys = new Map<string, number>();
+async function isServiceKey(key: string): Promise<boolean> {
+  if (!key) return false;
+  if (SERVICE_ROLE_KEY && key === SERVICE_ROLE_KEY) return true;
+  const at = verifiedServiceKeys.get(key);
+  if (at && Date.now() - at < 10 * 60 * 1000) return true;
+  if (!SUPABASE_URL) return false;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    await r.body?.cancel();
+    if (r.ok) {
+      verifiedServiceKeys.set(key, Date.now());
+      return true;
+    }
+  } catch (_) {
+    // error de red: se trata como no válida
+  }
+  return false;
+}
+
 function decodeJwtPayload(jwt: string): { sub?: string; role?: string } | null {
   try {
     const parts = jwt.split('.');
@@ -197,7 +223,7 @@ serve(async (req) => {
     const claims = decodeJwtPayload(callerJwt);
 
     if (claims?.role === 'service_role') {
-      if (!SERVICE_ROLE_KEY || callerJwt !== SERVICE_ROLE_KEY) {
+      if (!(await isServiceKey(callerJwt))) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
     } else if (claims?.role !== 'authenticated') {

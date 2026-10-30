@@ -219,6 +219,11 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   `sitemap.xml` con los negocios aprobados y publicados (los nuevos aparecen en el siguiente despliegue).
   La app también abre `/negocio/<slug>-<id>` como deep link.
 - **Datos falsos eliminados** — presupuestos de demo, valoraciones aleatorias en cotizaciones, `aggregateRating` inventado.
+- **`supabase/security-hardening-v4.sql` parte A** (aplicada y verificada): RPC `get_budget_request_contact`, triggers
+  `reviews_enforce_rules` y `budget_quotes_protect`. Parte B (privilegios por columna) solo tras publicar el código nuevo.
+- **`supabase/fix-triggers-rotos.sql`** — 5 funciones de trigger usaban columnas inexistentes y deshacían el INSERT:
+  cotizaciones, solicitudes de presupuesto, empleos y push de aceptado/rechazado. El script termina con una consulta
+  que lista triggers con columnas inexistentes (debe dar 0 filas). Los envíos de email/push ya no bloquean la operación.
 
 ---
 

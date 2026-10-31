@@ -248,6 +248,17 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   pantallas, ruta `business-budget` con datos demo, `?nav=login` no abría el login sin sesión, 5 iconos invisibles.
 - **Registro con Google** también en la pantalla de registro.
 
+### Push y emails desde la base de datos (2026-10-31)
+- Requieren la extensión **pg_net** (activada con `supabase/fix-push-pgnet.sql`). Sin ella no sale ningún aviso.
+- `send_push_notification` ya **no** desactiva suscripciones al fallar; `send-push` las desactiva solo si el servicio de
+  push responde 404/410 (caducadas).
+- Las Edge Functions `send-push` y `send-email` aceptan la clave del Vault (`supabase_service_role_key`) si coincide con
+  `SUPABASE_SERVICE_ROLE_KEY` **o** si `/auth/v1/admin` la reconoce (Supabase cambió su sistema de claves y ya no
+  coinciden literalmente). Desplegar: `npx supabase functions deploy send-push` / `send-email` (verify_jwt activo).
+- Respuestas de las llamadas: `SELECT status_code, content FROM net._http_response ORDER BY created DESC`.
+- **Emails pendientes**: falta el secreto `RESEND_API_KEY` y verificar el dominio cornellalocal.es en Resend
+  (remitente `noreply@cornellalocal.es`). Hasta entonces `send-email` responde 500 "Email service not configured".
+
 ---
 
 ## Reglas de Negocio Importantes

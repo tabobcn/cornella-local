@@ -42,12 +42,13 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
   const [search, setSearch] = useState('');
   const [confirmAction, setConfirmAction] = useState(null); // { type: 'delete'|'ban'|'unban', user }
   const [actionLoading, setActionLoading] = useState(false);
+  const [banReason, setBanReason] = useState('');
 
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, email, created_at, is_admin, is_banned')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(500);
       setUsers(data || []);
@@ -56,32 +57,37 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
     load();
   }, []);
 
+  // Suspender / reactivar. El motivo se le enseña al usuario al intentar entrar (DSA art. 17).
   const handleBanToggle = async (user) => {
     setActionLoading(true);
     const newVal = !user.is_banned;
-    const { error } = await supabase.from('profiles').update({ is_banned: newVal }).eq('id', user.id);
+    const reason = newVal ? (banReason.trim() || null) : null;
+    const { error } = await supabase.from('profiles').update({ is_banned: newVal, ban_reason: reason }).eq('id', user.id);
     if (error) {
+      console.error('Error actualizando suspensión:', error);
       showToast('Error al actualizar', 'error');
     } else {
-      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_banned: newVal } : u));
-      showToast(newVal ? `${user.full_name || 'Usuario'} baneado` : `${user.full_name || 'Usuario'} desbaneado`, 'success');
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_banned: newVal, ban_reason: reason } : u));
+      showToast(newVal ? `${user.full_name || 'Usuario'} suspendido` : `${user.full_name || 'Usuario'} reactivado`, 'success');
     }
     setActionLoading(false);
     setConfirmAction(null);
+    setBanReason('');
   };
 
+  // Borrado real: datos, negocios y cuenta de acceso (función delete_user_account de la BD).
+  // Ojo: con el mismo email se podría volver a registrar; para impedirlo, suspender en vez de borrar.
   const handleDelete = async (user) => {
     setActionLoading(true);
-    // Banear primero para bloquear login aunque el delete no elimine el auth user
-    await supabase.from('profiles').update({ is_banned: true }).eq('id', user.id);
-    const { error } = await supabase.from('profiles').delete().eq('id', user.id);
-    if (error) {
-      // Si el delete falla por FK, al menos queda baneado
-      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_banned: true } : u));
-      showToast(`Cuenta desactivada (no se pudo eliminar completamente)`, 'warning');
+    const { data, error } = await supabase.rpc('delete_user_account', { p_user_id: user.id });
+    if (error || !data?.success) {
+      console.error('Error borrando la cuenta:', error || data);
+      showToast(data?.error === 'cannot_delete_admin'
+        ? 'No se puede borrar la cuenta de otro administrador'
+        : 'No se pudo borrar la cuenta. Inténtalo de nuevo.', 'error');
     } else {
       setUsers(prev => prev.filter(u => u.id !== user.id));
-      showToast(`Cuenta de ${user.full_name || user.email} eliminada`, 'success');
+      showToast(`Cuenta de ${user.full_name || user.email} borrada con todos sus datos`, 'success');
     }
     setActionLoading(false);
     setConfirmAction(null);
@@ -176,20 +182,34 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
             </div>
             <div className="text-center">
               <h3 className="text-lg font-bold text-slate-900 mb-1">
-                {confirmAction.type === 'delete' ? '¿Eliminar cuenta?' :
-                 confirmAction.type === 'ban' ? '¿Banear usuario?' : '¿Desbanear usuario?'}
+                {confirmAction.type === 'delete' ? '¿Borrar cuenta?' :
+                 confirmAction.type === 'ban' ? '¿Suspender usuario?' : '¿Reactivar usuario?'}
               </h3>
               <p className="text-sm text-gray-600">
                 {confirmAction.type === 'delete'
-                  ? <>Se eliminará el perfil de <strong>{confirmAction.user.full_name || confirmAction.user.email}</strong> y todos sus datos. No se puede deshacer.</>
+                  ? <>Se borrarán la cuenta de <strong>{confirmAction.user.full_name || confirmAction.user.email}</strong>, sus datos y sus negocios. No se puede deshacer. Podría volver a registrarse con el mismo email: si quieres impedirlo, suspéndelo.</>
                   : confirmAction.type === 'ban'
-                  ? <><strong>{confirmAction.user.full_name || confirmAction.user.email}</strong> no podrá acceder a la app.</>
+                  ? <><strong>{confirmAction.user.full_name || confirmAction.user.email}</strong> no podrá entrar en la app. Verá el motivo al intentarlo.</>
                   : <>Se restaurará el acceso de <strong>{confirmAction.user.full_name || confirmAction.user.email}</strong>.</>}
               </p>
             </div>
+            {confirmAction.type === 'ban' && (
+              <div>
+                <label htmlFor="ban-reason" className="block text-sm font-semibold text-slate-700 mb-1">Motivo (lo verá el usuario)</label>
+                <textarea
+                  id="ban-reason"
+                  value={banReason}
+                  onChange={e => setBanReason(e.target.value)}
+                  rows={2}
+                  maxLength={300}
+                  placeholder="Ej.: reseñas falsas repetidas"
+                  className="w-full rounded-xl border border-gray-200 p-3 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+            )}
             <div className="flex gap-3">
               <button
-                onClick={() => setConfirmAction(null)}
+                onClick={() => { setConfirmAction(null); setBanReason(''); }}
                 className="flex-1 h-12 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
               >
                 Cancelar
@@ -203,8 +223,8 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
                 }`}
               >
                 {actionLoading ? <RefreshCw size={16} className="animate-spin" /> :
-                 confirmAction.type === 'delete' ? 'Eliminar' :
-                 confirmAction.type === 'ban' ? 'Banear' : 'Desbanear'}
+                 confirmAction.type === 'delete' ? 'Borrar' :
+                 confirmAction.type === 'ban' ? 'Suspender' : 'Reactivar'}
               </button>
             </div>
           </div>
@@ -575,9 +595,39 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
     load();
   }, [filter]);
 
+  const [removeReason, setRemoveReason] = useState('');
+
+  // Retirar un negocio: la función admin_remove_business lo borra todo en cascada y avisa al
+  // dueño con el motivo (DSA art. 17). Si la función aún no existe en la BD, se usa el borrado antiguo.
   const handleDelete = async (business) => {
     setDeletingId(business.id);
     try {
+      const { data, error: rpcError } = await supabase.rpc('admin_remove_business', {
+        p_business_id: business.id,
+        p_reason: removeReason.trim() || null,
+      });
+      if (!rpcError) {
+        if (!data?.success) throw new Error(data?.error || 'remove_failed');
+        setBusinesses(prev => prev.filter(b => b.id !== business.id));
+        showToast(`"${business.name}" retirado. Hemos avisado al dueño.`, 'success');
+        return;
+      }
+      if (rpcError.code !== 'PGRST202') throw rpcError;
+      await legacyDelete(business);
+      setBusinesses(prev => prev.filter(b => b.id !== business.id));
+      showToast(`"${business.name}" eliminado`, 'success');
+    } catch (err) {
+      console.error('Error eliminando negocio:', err);
+      showToast('Error al eliminar el negocio', 'error');
+    } finally {
+      setDeletingId(null);
+      setConfirmDelete(null);
+      setRemoveReason('');
+    }
+  };
+
+  const legacyDelete = async (business) => {
+    {
       // Borrado por fases: dentro de cada fase no hay dependencias de FK,
       // así que van en paralelo. Antes eran ~10 viajes encadenados; ahora 4.
 
@@ -612,14 +662,6 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
       // Fase 4 — el negocio, cuando nada le apunta
       const { error } = await supabase.from('businesses').delete().eq('id', business.id);
       if (error) throw error;
-      setBusinesses(prev => prev.filter(b => b.id !== business.id));
-      showToast(`"${business.name}" eliminado`, 'success');
-    } catch (err) {
-      console.error('Error eliminando negocio:', err);
-      showToast('Error al eliminar el negocio', 'error');
-    } finally {
-      setDeletingId(null);
-      setConfirmDelete(null);
     }
   };
 
@@ -750,23 +792,36 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
               <Trash2 className="text-red-500" size={24} />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-bold text-slate-900 mb-1">¿Eliminar negocio?</h3>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">¿Retirar negocio?</h3>
               <p className="text-sm text-gray-600">
-                Se eliminará <strong>"{confirmDelete.name}"</strong> y todos sus datos (ofertas, empleos, reseñas, candidaturas). Esta acción no se puede deshacer.
+                Se borrará <strong>"{confirmDelete.name}"</strong> con todos sus datos (ofertas, empleos, reseñas, candidaturas). No se puede deshacer. El dueño recibirá un aviso con el motivo.
               </p>
+            </div>
+            <div>
+              <label htmlFor="remove-reason" className="block text-sm font-semibold text-slate-700 mb-1">Motivo (lo verá el dueño)</label>
+              <textarea
+                id="remove-reason"
+                value={removeReason}
+                onChange={e => setRemoveReason(e.target.value)}
+                rows={2}
+                maxLength={300}
+                placeholder="Ej.: el negocio ha cerrado / información falsa"
+                className="w-full rounded-xl border border-gray-200 p-3 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              />
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setConfirmDelete(null)}
+                onClick={() => { setConfirmDelete(null); setRemoveReason(''); }}
                 className="flex-1 h-12 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleDelete(confirmDelete)}
-                className="flex-1 h-12 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                disabled={deletingId === confirmDelete.id}
+                className="flex-1 h-12 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-60"
               >
-                Eliminar
+                {deletingId === confirmDelete.id ? 'Retirando…' : 'Retirar'}
               </button>
             </div>
           </div>

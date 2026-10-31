@@ -45,7 +45,7 @@ export const TermsScreen = ({ onNavigate, fromRegister = false }) => {
             Bienvenido a Cornellà Local
           </h3>
           <p className="text-gray-700 text-base font-normal leading-relaxed">
-            Gracias por confiar en nosotros. Le rogamos que lea atentamente los siguientes términos antes de utilizar nuestros servicios para garantizar una experiencia segura y transparente. Su privacidad y seguridad son nuestra prioridad.
+            Aquí te explicamos, en lenguaje claro, cómo funciona la plataforma, qué puedes esperar de nosotros y qué esperamos de ti y de los negocios. Toca cada apartado para leerlo.
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export const TermsScreen = ({ onNavigate, fromRegister = false }) => {
           ))}
 
           <p className="text-xs text-center text-gray-500 px-8 pt-4 pb-2">
-            Al continuar, confirma que ha leído y acepta nuestros términos de servicio y política de privacidad.
+            Estos términos se completan con el Aviso legal, la Política de privacidad y la Política de cookies.
           </p>
         </div>
       </div>
@@ -106,7 +106,7 @@ export const TermsScreen = ({ onNavigate, fromRegister = false }) => {
           onClick={handleAccept}
           className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 text-white shadow-lg shadow-primary/25"
         >
-          <span className="text-base font-bold leading-normal tracking-wide mr-2">Aceptar y continuar</span>
+          <span className="text-base font-bold leading-normal tracking-wide mr-2">{fromRegister ? 'Volver al registro' : 'Entendido'}</span>
           <ArrowRight size={20} />
         </button>
       </div>
@@ -122,111 +122,116 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
     {
       id: 1,
       icon: 'User',
-      title: 'Responsable del tratamiento',
-      content: 'CornellaLocal es un proyecto personal sin ánimo de lucro creado para apoyar al comercio local de Cornellà de Llobregat. El responsable del tratamiento de los datos es una persona física, no una empresa.',
+      title: 'Quién es el responsable',
+      content: 'Cornellà Local (cornellalocal.es) es un proyecto personal y sin ánimo de lucro para dar a conocer el comercio de Cornellà de Llobregat. El responsable de tus datos es una persona física, no una empresa:',
       bullets: [
-        'Responsable: Carlos Taboada Valencia',
-        'NIF: 46462083J',
+        'Responsable: Carlos Taboada Valencia · NIF 46462083J',
         'Localidad: Cornellà de Llobregat (Barcelona)',
-        'Email de contacto en materia de privacidad: cornellalocal@gmail.com',
-        'Web: https://www.cornellalocal.es'
+        'Contacto para todo lo relacionado con tus datos: cornellalocal@gmail.com (en castellano, catalán o inglés)',
+        'No hay delegado de protección de datos: no es obligatorio para un proyecto de este tamaño.',
       ]
     },
     {
       id: 2,
       icon: 'FileText',
-      title: 'Datos que tratamos y finalidad',
-      content: 'Tratamos únicamente los datos imprescindibles para que la aplicación funcione. Cada dato tiene una finalidad concreta y una base jurídica conforme al artículo 6 del RGPD.',
+      title: 'Qué datos tratamos y para qué',
+      content: 'Solo usamos lo necesario para que la app funcione. Para cada dato te explicamos para qué sirve y en qué se basa (art. 6 del RGPD):',
       bullets: [
-        'Email, nombre y avatar (de tu cuenta o tu proveedor OAuth como Google) — para crear y gestionar tu cuenta. Base: ejecución de contrato (art. 6.1.b RGPD).',
-        'Teléfono — solo si lo proporcionas al solicitar un presupuesto, para que el negocio que aceptes pueda contactarte. Base: ejecución de contrato.',
-        'Reseñas, favoritos, candidaturas y solicitudes de presupuesto — para prestar el servicio. Base: ejecución de contrato.',
-        'Documentos acreditativos del negocio (si registras un comercio) — para verificar la titularidad. Base: interés legítimo (art. 6.1.f RGPD).',
-        'Datos de uso anonimizados (visitas, dispositivo, país) vía Vercel Analytics, que no usa cookies. Por prudencia, CornellaLocal activa Vercel Analytics únicamente si aceptas todas las cookies/preferencias en el banner. Base: consentimiento (art. 6.1.a RGPD).',
-        'No realizamos perfilados ni decisiones automatizadas con efectos jurídicos.'
+        'Tu cuenta — email, nombre y foto de perfil (los tuyos o los de Google si entras con Google): para crear y gestionar tu cuenta. Base: el contrato de uso (art. 6.1.b).',
+        'Lo que haces en la app — favoritos, reseñas, 🔥 a ofertas, cupones que pides y avisos: para darte el servicio. Base: contrato.',
+        'Solicitudes de presupuesto — oficio, descripción, fotos, dirección, urgencia y teléfono: para que los negocios del oficio te den precio. Ven la descripción, las fotos y la dirección; tu teléfono solo lo ve el negocio cuyo presupuesto aceptes. Base: medidas previas a un contrato que pides tú (art. 6.1.b).',
+        'Candidaturas a empleos — nombre, email, teléfono, carta y CV: para enviarlas al negocio de la oferta. Desde que las recibe, ese negocio es responsable de tus datos para su proceso de selección. Base: medidas previas a un contrato que pides tú.',
+        'Si tienes un negocio — los datos de la ficha (nombre, dirección, teléfono, horario, fotos...): para publicarla. La web la pedimos para la verificación, pero no se muestra. Base: contrato.',
+        'Documentos de verificación (alta de autónomo o modelo 036/037, factura o recibo a nombre del negocio, licencia...): para comprobar que el negocio es tuyo y evitar suplantaciones. No hace falta el DNI; si lo envías, tapa la foto y el número de soporte. Base: interés legítimo en evitar fraudes (art. 6.1.f).',
+        'Difusión en Instagram (@cornella_informa) — solo si marcas la casilla: para anunciar tu negocio con su nombre, categoría, barrio y foto de portada. Base: tu consentimiento (art. 6.1.a), que puedes retirar en Editar negocio; si nos lo pides, borraremos lo publicado.',
+        'Notificaciones push — solo si las activas: guardamos la suscripción técnica de tu navegador para enviarte avisos. Base: consentimiento; las desactivas en Ajustes cuando quieras.',
+        'Ubicación — solo si pulsas «Más cerca de ti»: se usa en tu móvil para ordenar los negocios por distancia; no se guarda ni nos llega.',
+        'Denuncias y mensajes de soporte: para atenderte y moderar la plataforma. Base: interés legítimo y las obligaciones del Reglamento de Servicios Digitales.',
+        'Estadísticas — visitas y clics en las fichas, para que cada negocio vea sus números: a los 90 días se quita a qué usuario corresponde cada dato. La analítica de Vercel solo se activa si aceptas en el aviso de cookies. Base: interés legítimo y, para la analítica, consentimiento.',
+        'No vendemos tus datos, no hacemos publicidad personalizada ni tomamos decisiones automáticas con efectos sobre ti. El único filtro automático revisa las reseñas (insultos, spam, teléfonos o emails) y solo impide publicarlas: puedes reescribirla o escribirnos.',
       ]
     },
     {
       id: 3,
-      icon: 'Shield',
-      title: 'Seguridad y plazos de conservación',
-      content: 'Aplicamos medidas técnicas y organizativas razonables para una aplicación de este tamaño. Los datos se conservan únicamente el tiempo necesario para cumplir su finalidad.',
+      icon: 'Clock',
+      title: 'Cuánto tiempo los guardamos',
+      content: 'Los guardamos solo mientras hacen falta. Cada noche un proceso automático borra lo que ya ha caducado:',
       bullets: [
-        'Comunicaciones cifradas con TLS / HTTPS',
-        'Almacenamiento en Supabase (UE) con políticas de Row Level Security activadas en todas las tablas',
-        'Cuenta de usuario: mientras la mantengas activa. Tras la baja se elimina en 30 días, salvo obligación legal de conservar (p. ej. facturación si la hubiera).',
-        'Documentos de verificación de negocio: máximo 30 días tras la aprobación o rechazo definitivo.',
-        'Reseñas y comentarios: mientras el negocio reseñado esté activo o hasta que solicites su supresión.',
-        'Logs técnicos (errores, accesos): hasta 90 días.'
+        'Cuenta y todo su contenido: mientras la tengas. Si la borras en Ajustes, se elimina al momento; sus archivos (fotos, CV, documentos) desaparecen como mucho en 7 días.',
+        'Documentos de verificación: 2 días después de aprobar el negocio. Si se rechaza y no se vuelve a enviar, a los 30 días.',
+        'CV: 2 días después de que termine el proceso (te contraten, te descarten o se cierre la oferta) y, como máximo, a los 90 días.',
+        'Candidaturas, solicitudes de presupuesto (con sus respuestas) y cupones: 12 meses.',
+        'Avisos de la app: los leídos, a los 90 días; todos, a los 6 meses.',
+        'Denuncias cerradas y mensajes de soporte: 12 meses.',
+        'Altas de negocio que se quedan en borrador sin tocar: 6 meses.',
+        'Estadísticas de visitas: anónimas a los 90 días; se borran a los 24 meses.',
+        'Reseñas: mientras exista el negocio o hasta que las borres.',
+        'Fotos que ya no se usan (por ejemplo, una portada que has cambiado): a los 7 días.',
+        'Si una ley obliga a conservar algo más tiempo (por ejemplo, ante una reclamación), se guarda solo lo necesario y bloqueado.',
       ]
     },
     {
       id: 4,
       icon: 'Users',
-      title: 'Destinatarios y encargados de tratamiento',
-      content: 'CornellaLocal no vende ni cede tus datos a terceros con fines comerciales. Sí los comparte con los proveedores tecnológicos imprescindibles para que la aplicación funcione, todos ellos con sus propias políticas de privacidad RGPD.',
+      title: 'Quién más puede ver tus datos',
+      content: 'No vendemos ni cedemos tus datos. Solo llegan a:',
       bullets: [
-        'Supabase (Supabase Inc., con servidores EU) — base de datos, autenticación y almacenamiento.',
-        'Vercel (Vercel Inc., USA) — alojamiento web. Transferencia internacional amparada en cláusulas contractuales tipo de la Comisión Europea.',
-        'Resend (Resend Inc., USA) — envío de notificaciones por email cuando aplica. Misma garantía contractual.',
-        'Google (Maps, OAuth, Push notifications vía FCM) — solo si interactúas con esos componentes.',
-        'Negocios locales — únicamente cuando tú decides solicitarles un presupuesto o aplicar a una oferta de empleo. Solo los datos que tú facilitas en esa interacción.',
-        'Autoridades públicas — únicamente cuando exista una obligación legal.'
+        'Los negocios con los que tú tratas: el de la oferta de empleo a la que te apuntas, los del oficio cuando pides presupuesto (sin tu teléfono hasta que aceptes) y el que valida tu cupón.',
+        'Otros usuarios: tu nombre y tus reseñas se ven en la ficha del negocio. Tu perfil no es público.',
+        'Supabase (base de datos, cuentas y sus emails, archivos y envío de avisos), con los datos en servidores de Frankfurt (UE).',
+        'Vercel (alojamiento de la web y, si la aceptas, analítica).',
+        'Google: inicio de sesión con Google y mapas, solo si los usas o los aceptas.',
+        'El servicio de notificaciones de tu navegador (Google, Mozilla o Apple, según cuál uses), que recibe el aviso cifrado para entregarlo en tu dispositivo.',
+        'Meta (Instagram): solo los datos del negocio que haya dado permiso para la difusión.',
+        'Autoridades públicas: solo si una ley nos obliga.',
+        'Supabase, Vercel, Google y Meta son empresas de EE. UU. Cuando los datos salen de la UE se aplican las garantías del RGPD (Marco de Privacidad de Datos UE‑EE. UU. o cláusulas contractuales tipo de la Comisión Europea).',
       ]
     },
     {
       id: 5,
       icon: 'Settings',
-      title: 'Tus derechos (RGPD / LOPDGDD)',
-      content: 'Conforme al Reglamento (UE) 2016/679 y a la Ley Orgánica 3/2018, en cualquier momento puedes ejercer los siguientes derechos sobre tus datos personales de forma gratuita.',
+      title: 'Tus derechos y cómo ejercerlos',
+      content: 'Puedes ejercerlos gratis y en cualquier momento. Lo más habitual lo haces tú mismo desde la app:',
       bullets: [
-        'Acceso: saber qué datos tuyos tratamos.',
-        'Rectificación: corregir datos inexactos.',
-        'Supresión ("derecho al olvido"): borrar tus datos cuando ya no sean necesarios.',
-        'Oposición: oponerte a un tratamiento basado en interés legítimo.',
-        'Limitación: pedir que se restrinja el uso temporalmente.',
-        'Portabilidad: recibir tus datos en formato estructurado y reutilizable.',
-        'Retirar el consentimiento: cuando el tratamiento se base en él, sin afectar a la licitud previa.',
-        'Cómo ejercerlos: escribe a cornellalocal@gmail.com indicando el derecho que quieres ejercer y adjuntando un documento que acredite tu identidad. Responderemos en el plazo máximo de un mes.',
-        'Reclamar ante la AEPD: tienes derecho a presentar reclamación ante la Agencia Española de Protección de Datos (www.aepd.es) si consideras que el tratamiento no se ajusta a la normativa.'
+        'Acceso y portabilidad: Ajustes → «Descargar mis datos» te da un archivo con todo lo que guardamos de ti.',
+        'Supresión: Ajustes → «Borrar mi cuenta» lo borra todo al momento.',
+        'Rectificación: cambia tu nombre y tu foto en Editar perfil, y la ficha de tu negocio en Editar negocio.',
+        'Retirar el consentimiento: Instagram (Editar negocio), notificaciones (Ajustes) y cookies (Ajustes → Preferencias de cookies). Retirarlo no afecta a lo que se hizo antes.',
+        'Oposición y limitación: por ejemplo, a las estadísticas o a la revisión de documentos.',
+        'Para lo demás, escribe a cornellalocal@gmail.com desde el email de tu cuenta. Solo te pediremos algún dato más para identificarte si hay dudas razonables. Respondemos en un mes como máximo.',
+        'Si no estás conforme con nuestra respuesta, puedes reclamar ante la Agencia Española de Protección de Datos (www.aepd.es).',
       ]
     },
     {
       id: 6,
-      icon: 'Cookie',
-      title: 'Cookies y tecnologías similares',
-      content: 'CornellaLocal utiliza únicamente lo imprescindible. Para el detalle completo consulta la Política de Cookies dedicada.',
-      bullets: [
-        'No usamos cookies de marketing ni publicitarias propias.',
-        'Vercel Analytics no usa cookies — solo tokens efímeros sin identificación personal.',
-        'Google Maps (cuando ves un mapa de un negocio) puede instalar cookies propias de Google. Es un servicio de terceros con su propia política.',
-        'Inicio de sesión con Google (OAuth) usa cookies de google.com en su flujo de autenticación.',
-        'localStorage (no es cookie técnicamente, pero te lo informamos): guardamos tu sesión, búsquedas recientes y preferencias en tu propio navegador. Puedes borrarlo desde los ajustes del navegador.',
-        'Más información en la Política de Cookies.'
-      ]
+      icon: 'Baby',
+      title: 'Menores de edad',
+      content: 'Cornellà Local es para personas de 14 años o más (art. 7 de la Ley Orgánica 3/2018). Al registrarte confirmas que tienes esa edad. Si sabemos que una cuenta es de alguien menor de 14 años, la borraremos.',
     },
     {
       id: 7,
-      icon: 'Trash2',
-      title: 'Documentos de verificación de negocios',
-      content: 'Si registras un negocio, te pedimos un documento que acredite tu vínculo con el comercio (alta de autónomo, recibo del local, factura a nombre del negocio, licencia comercial, etc.). No solicitamos DNI/NIE personal del propietario.',
+      icon: 'Lock',
+      title: 'Cómo protegemos tus datos',
+      content: 'Aplicamos medidas razonables para un proyecto de este tamaño:',
       bullets: [
-        'Almacenados en Supabase Storage privado (no público, no indexable).',
-        'Solo accesibles por el equipo de administración durante la verificación.',
-        'Plazo máximo de conservación: 30 días tras la aprobación o rechazo definitivo.',
-        'En caso de apelación, se conservan hasta resolver y se eliminan en 30 días.',
-        'Base jurídica: interés legítimo del titular del negocio en acreditar la titularidad.'
+        'Conexión cifrada (HTTPS) en toda la web.',
+        'Cada usuario solo puede leer y cambiar sus propios datos (reglas de seguridad en la base de datos).',
+        'Los documentos de verificación y los CV están en un almacenamiento privado y solo se abren con enlaces temporales.',
+        'Las contraseñas las guarda Supabase Auth de forma irreversible (hash): nadie, tampoco nosotros, puede verlas.',
+        'Si hubiera una brecha de seguridad que te afecte, te avisaríamos y lo comunicaríamos a la AEPD en 72 horas cuando corresponda.',
       ]
     },
     {
       id: 8,
+      icon: 'Cookie',
+      title: 'Cookies',
+      content: 'Solo usamos lo imprescindible para que la app funcione. La analítica y los mapas de Google solo se cargan si los aceptas, y la letra de la web está alojada en nuestro propio dominio (sin Google Fonts). Tienes todo el detalle en la Política de cookies.',
+    },
+    {
+      id: 9,
       icon: 'Mail',
-      title: 'Contacto y modificaciones',
-      content: 'Para cualquier asunto relacionado con la privacidad o el ejercicio de tus derechos, escribe a cornellalocal@gmail.com. Esta política puede actualizarse. La fecha de la última versión se muestra al inicio. Si los cambios son sustanciales, te informaremos.',
-      bullets: [
-        'Email: cornellalocal@gmail.com',
-        'Última actualización: mayo 2026'
-      ]
+      title: 'Cambios en esta política',
+      content: 'Si cambiamos algo importante, te avisaremos dentro de la app antes de que se aplique. Última actualización: 31 de octubre de 2026.',
     },
   ];
 
@@ -251,7 +256,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
         {/* Intro */}
         <div className="px-6 pt-6 pb-2">
           <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
-            Última actualización: Mayo 2026
+            Última actualización: 31 de octubre de 2026
           </p>
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -262,7 +267,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
             Tu privacidad es importante
           </h3>
           <p className="text-gray-600 text-sm leading-relaxed text-center">
-            En Cornellà Local nos comprometemos a proteger tu información personal y ser transparentes sobre cómo la utilizamos.
+            Te contamos qué datos usamos, para qué, cuánto tiempo los guardamos y cómo puedes descargarlos o borrarlos tú mismo desde Ajustes.
           </p>
         </div>
 
@@ -327,69 +332,67 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
       id: 1,
       icon: 'User',
       title: 'Datos identificativos del titular',
-      content: 'En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y Comercio Electrónico (LSSI-CE), se ofrece la siguiente información:',
+      content: 'En cumplimiento del artículo 10 de la Ley 34/2002, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE):',
       bullets: [
-        'Titular del sitio web: Carlos Taboada Valencia',
+        'Titular: Carlos Taboada Valencia (persona física, no inscrita en el Registro Mercantil)',
         'NIF: 46462083J',
         'Domicilio: Cornellà de Llobregat (Barcelona)',
-        'Email de contacto: cornellalocal@gmail.com',
+        'Email: cornellalocal@gmail.com',
         'Sitio web: https://www.cornellalocal.es',
-        'Naturaleza del proyecto: iniciativa personal sin ánimo de lucro orientada a apoyar al comercio local.'
+        'Naturaleza: proyecto personal, gratuito y sin ánimo de lucro para apoyar al comercio local.',
+        'Punto de contacto para usuarios y autoridades (Reglamento (UE) 2022/2065 de Servicios Digitales): cornellalocal@gmail.com, en castellano, catalán o inglés.',
       ]
     },
     {
       id: 2,
       icon: 'FileText',
       title: 'Objeto y condiciones de uso',
-      content: 'CornellaLocal es una plataforma que conecta a vecinos de Cornellà de Llobregat con comercios locales, permitiendo descubrir negocios, ver ofertas, solicitar presupuestos y aplicar a ofertas de empleo locales.',
+      content: 'Cornellà Local es una plataforma que conecta a los vecinos de Cornellà de Llobregat con el comercio local: fichas de negocios, ofertas con cupón, solicitudes de presupuesto y ofertas de empleo.',
       bullets: [
-        'El uso de la plataforma supone la aceptación plena de las condiciones del Aviso Legal y la Política de Privacidad.',
-        'El acceso es gratuito. La publicación de contenido por parte de comercios verificados también es gratuita en esta fase del proyecto.',
-        'El usuario se compromete a usar la plataforma conforme a la ley, la moral, el orden público y el respeto a los demás usuarios y comercios.',
-        'Quedan prohibidos los contenidos que sean ilícitos, atenten contra derechos de terceros, sean ofensivos, falsos o engañosos.'
+        'El uso de la plataforma implica aceptar este Aviso legal, los Términos y condiciones y la Política de privacidad.',
+        'El acceso y la publicación de negocios verificados son gratuitos.',
+        'Las normas de uso, las condiciones para negocios y la moderación se explican en los Términos y condiciones.',
       ]
     },
     {
       id: 3,
       icon: 'Shield',
       title: 'Propiedad intelectual e industrial',
-      content: 'Los contenidos del sitio (textos, gráficos, código fuente, logotipo) son propiedad del titular o de terceros que han autorizado su uso, y están protegidos por la legislación vigente sobre propiedad intelectual e industrial.',
+      content: 'Los contenidos propios del sitio (textos, diseño, código y logotipo) pertenecen a su titular o a terceros que han autorizado su uso.',
       bullets: [
-        'No se autoriza la reproducción, distribución, comunicación pública o transformación, salvo con autorización expresa del titular.',
-        'Las marcas, nombres comerciales y logos de los negocios mostrados son propiedad de sus respectivos titulares.',
-        'Las imágenes y contenido aportados por los comercios son propiedad de éstos; al publicarlos en CornellaLocal otorgan licencia no exclusiva para su exhibición en la plataforma.'
+        'No se permite su reproducción, distribución, comunicación pública o transformación sin autorización expresa.',
+        'Las marcas, nombres comerciales, logos y fotos de los negocios pertenecen a cada negocio, que da permiso para mostrarlos en la plataforma mientras estén publicados.',
       ]
     },
     {
       id: 4,
       icon: 'AlertTriangle',
-      title: 'Responsabilidad y exoneración',
-      content: 'El titular del sitio actúa como intermediario entre usuarios y comercios y no es parte de las transacciones que entre ellos se acuerden.',
+      title: 'Responsabilidad',
+      content: 'El titular actúa como intermediario: aloja la información que publican vecinos y negocios y no es parte de los acuerdos que hagan entre ellos.',
       bullets: [
-        'El titular no garantiza la veracidad ni exactitud de la información publicada por los comercios, aunque adopta medidas razonables para verificar su titularidad.',
-        'Las relaciones comerciales (presupuestos, contrataciones, compras) se establecen exclusivamente entre el usuario y el comercio. Cualquier reclamación debe dirigirse al comercio implicado.',
-        'El titular no se responsabiliza de los daños derivados de un mal uso del servicio o de la imposibilidad de acceso por motivos técnicos, mantenimiento o causas ajenas razonables.',
-        'Se reserva el derecho a suspender, modificar o eliminar contenido que infrinja estas condiciones o la legislación vigente.'
+        'No garantiza que la información publicada por los negocios sea exacta, aunque comprueba que cada negocio pertenece a quien lo da de alta.',
+        'Las relaciones comerciales (presupuestos, contrataciones, compras) son solo entre el usuario y el negocio, al que deben dirigirse las reclamaciones.',
+        'Cuando tenga conocimiento efectivo de que un contenido es ilícito, lo retirará con diligencia (art. 16 LSSI-CE). Puedes avisar con el botón «Reportar problema» o por email.',
+        'No responde de los daños causados por un mal uso del servicio ni de interrupciones por mantenimiento, fallos técnicos de proveedores o causas ajenas.',
       ]
     },
     {
       id: 5,
       icon: 'Globe',
       title: 'Enlaces a terceros',
-      content: 'El sitio puede incluir enlaces a webs de terceros (negocios, redes sociales, servicios externos). El titular no se hace responsable del contenido ni del tratamiento de datos que esos terceros realicen.',
+      content: 'La plataforma puede incluir enlaces a sitios de terceros (redes sociales de los negocios, mapas, WhatsApp...). El titular no responde de su contenido ni de cómo tratan los datos.',
       bullets: [
-        'Los enlaces externos se abren con atributos noopener/noreferrer.',
-        'La inclusión de enlaces no implica relación, recomendación ni respaldo de los contenidos enlazados.'
+        'Incluir un enlace no supone ninguna relación, recomendación ni respaldo.',
       ]
     },
     {
       id: 6,
       icon: 'Scale',
-      title: 'Legislación y jurisdicción aplicable',
-      content: 'Las presentes condiciones se rigen por la legislación española.',
+      title: 'Legislación y jurisdicción',
+      content: 'Este sitio se rige por la legislación española.',
       bullets: [
-        'Para cualquier controversia, las partes se someten a los Juzgados y Tribunales del domicilio del usuario consumidor (art. 90.2 TRLGDCU).',
-        'Si el usuario no es consumidor, los Juzgados y Tribunales de Cornellà de Llobregat / Barcelona.'
+        'Si eres consumidor, serán competentes los juzgados de tu domicilio (art. 90.2 del texto refundido de la Ley General para la Defensa de los Consumidores y Usuarios).',
+        'Si no eres consumidor, los juzgados de Barcelona.',
       ]
     },
   ];
@@ -409,7 +412,7 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
       <div className="flex-1 overflow-y-auto pb-8">
         <div className="px-6 pt-6 pb-2">
           <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
-            Última actualización: Mayo 2026
+            Última actualización: 31 de octubre de 2026
           </p>
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -475,8 +478,9 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
   const [expandedSection, setExpandedSection] = useState(null);
 
   const resetConsent = () => {
-    localStorage.removeItem('cookie-consent');
-    if (showToast) showToast('Preferencia de cookies restablecida. Recarga la página para volver a verla.', 'info');
+    try { localStorage.removeItem('cookie-consent'); } catch { /* sin almacenamiento */ }
+    window.dispatchEvent(new Event('cookie-consent-changed'));
+    if (showToast) showToast('Elige de nuevo en el aviso de cookies de abajo', 'info');
   };
 
   const sections = [
@@ -484,49 +488,47 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
       id: 1,
       icon: 'Info',
       title: '¿Qué son las cookies?',
-      content: 'Una cookie es un pequeño archivo de texto que un sitio web guarda en tu navegador para recordar información (preferencias, sesión, etc.). Junto a las cookies, los sitios pueden usar otras tecnologías similares como localStorage o tokens de sesión, que también te explicamos aquí.',
+      content: 'Son pequeños archivos que una web guarda en tu navegador para recordar información, como que has iniciado sesión. Junto a ellas existen tecnologías parecidas, como el almacenamiento local del navegador (localStorage), que también te explicamos aquí.',
       bullets: [
-        'Cookies propias: las pone CornellaLocal directamente en tu navegador.',
-        'Cookies de terceros: las ponen servicios externos integrados (Google Maps, OAuth de Google).',
-        'Sesión: duran hasta que cierras el navegador.',
-        'Persistentes: se mantienen hasta una fecha de caducidad.'
+        'Propias: las pone Cornellà Local.',
+        'De terceros: las ponen servicios externos integrados, como Google Maps o el inicio de sesión con Google.',
       ]
     },
     {
       id: 2,
       icon: 'Shield',
-      title: 'Cookies y tecnologías que usamos',
-      content: 'CornellaLocal procura usar lo mínimo imprescindible. La mayoría de información persistente se guarda en localStorage del navegador, no en cookies.',
+      title: 'Qué usamos exactamente',
+      content: 'Usamos lo mínimo. Lo imprescindible no necesita tu permiso; lo demás solo se activa si lo aceptas:',
       bullets: [
-        '✅ Esenciales (no requieren consentimiento): tokens de sesión de Supabase Auth para mantenerte logueado, almacenados en localStorage.',
-        '✅ Preferencias propias en localStorage: búsquedas recientes, opciones de notificación, banner de instalación PWA.',
-        '✅ Analítica anónima — Vercel Analytics no usa cookies y no rastrea individualmente. Aunque técnicamente no requeriría consentimiento, CornellaLocal lo activa solo si aceptas todas las cookies/preferencias en el banner.',
-        '⚠️ Google Maps (de terceros): si visualizas el mapa de un negocio, Google puede instalar cookies propias (NID, etc.).',
-        '⚠️ Google OAuth (de terceros): si inicias sesión con Google, Google gestiona sus propias cookies en su dominio.',
-        '⚠️ Push notifications (Firebase Cloud Messaging de Google): si activas notificaciones, se intercambian tokens con servidores de Google.'
+        'Imprescindible — sesión: Supabase guarda en el almacenamiento local de tu navegador el identificador de tu sesión para que no tengas que entrar cada vez.',
+        'Imprescindible — preferencias: tu elección sobre cookies, las búsquedas recientes, si has visto la bienvenida, si has desactivado las notificaciones y el aviso de instalar la app. Todo se queda en tu navegador.',
+        'Solo si aceptas — analítica de Vercel: cuenta visitas de forma anónima y sin cookies. Aun así, solo se activa con «Aceptar todas».',
+        'Solo si aceptas — Google Maps: el mapa de cada negocio instala cookies de Google. Se carga si pulsas «Aceptar todas» o si tocas «Mostrar mapa» en esa ficha.',
+        'Si usas el inicio de sesión con Google, Google usa sus propias cookies en su página durante el acceso.',
+        'Notificaciones push: no usan cookies. Si las activas, el servicio de avisos de tu navegador (Google, Mozilla o Apple) recibe el aviso cifrado para entregarlo.',
+        'La letra de la web está alojada en nuestro dominio: no usamos Google Fonts ni publicidad.',
       ]
     },
     {
       id: 3,
       icon: 'Settings',
-      title: 'Cómo gestionar tus preferencias',
-      content: 'Tienes el control sobre las cookies en cualquier momento.',
+      title: 'Cómo cambiar tu elección',
+      content: 'Puedes cambiar de opinión cuando quieras, igual de fácil que al aceptar:',
       bullets: [
-        'Puedes aceptar o rechazar las cookies de terceros desde el banner que aparece en tu primera visita.',
-        'Puedes restablecer tu preferencia con el botón al final de esta página.',
-        'En la mayoría de navegadores puedes bloquear las cookies o eliminarlas desde la configuración. Hazlo desde el menú "Privacidad" o "Historial".',
-        'Bloquear cookies de terceros puede afectar a la visualización de mapas de los negocios o al inicio de sesión con Google. La aplicación seguirá funcionando con login por email.'
+        'En Ajustes → «Preferencias de cookies», o con el botón al final de esta página: vuelve a salir el aviso para que elijas.',
+        'En la configuración de tu navegador también puedes borrar o bloquear las cookies y el almacenamiento local (si borras la sesión, tendrás que volver a entrar).',
+        'Si rechazas, la app funciona igual; los mapas se cargan solo cuando tú lo pidas.',
       ]
     },
     {
       id: 4,
       icon: 'Globe',
-      title: 'Información de los terceros',
-      content: 'Si tienes dudas sobre cómo gestionan tus datos los servicios de terceros que pueden instalar cookies a través de CornellaLocal, consulta sus políticas:',
+      title: 'Políticas de los terceros',
+      content: 'Puedes consultar cómo tratan los datos los servicios externos:',
       bullets: [
-        'Google (Maps, OAuth, FCM): https://policies.google.com/privacy',
-        'Vercel (hosting, analytics): https://vercel.com/legal/privacy-policy',
-        'Supabase (hosting de datos): https://supabase.com/privacy'
+        'Google (Maps e inicio de sesión): https://policies.google.com/privacy',
+        'Vercel (alojamiento y analítica): https://vercel.com/legal/privacy-policy',
+        'Supabase (base de datos y sesión): https://supabase.com/privacy',
       ]
     },
   ];
@@ -546,7 +548,7 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
       <div className="flex-1 overflow-y-auto pb-8">
         <div className="px-6 pt-6 pb-2">
           <p className="text-gray-500 text-xs font-medium uppercase tracking-wider text-center mb-4">
-            Última actualización: Mayo 2026
+            Última actualización: 31 de octubre de 2026
           </p>
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -557,7 +559,7 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
             Política de Cookies
           </h3>
           <p className="text-gray-600 text-sm leading-relaxed text-center">
-            Cómo usamos cookies y tecnologías similares en CornellaLocal.
+            Qué guardamos en tu navegador, para qué y cómo cambiar tu elección.
           </p>
         </div>
         <div className="flex flex-col px-4 py-4 gap-3">
@@ -605,7 +607,7 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
             onClick={resetConsent}
             className="w-full h-12 bg-gray-100 text-slate-700 font-medium rounded-xl hover:bg-gray-200 transition-colors text-sm"
           >
-            Restablecer preferencia de cookies
+            Cambiar mi elección de cookies
           </button>
         </div>
       </div>

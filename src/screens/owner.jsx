@@ -2112,7 +2112,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
       newErrors.license = 'Debes subir la Licencia de Actividad o Recibo de Suministros';
     }
     if (!idFile) {
-      newErrors.id = 'Debes subir tu Documento de Identidad';
+      newErrors.id = 'Debes subir un documento que acredite que el negocio es tuyo';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -2217,8 +2217,8 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
       <div className="flex-1 px-4 py-6 pb-32">
         <h1 className="text-2xl font-bold text-slate-900 mb-3">Verificación de Negocio</h1>
         <p className="text-gray-500 text-sm mb-6">
-          Para garantizar la seguridad de Cornellà Local, necesitamos verificar la dirección de tu negocio.
-          Sube tu Licencia de Actividad o un Recibo de Suministros (Luz/Agua) reciente.
+          Para que solo los dueños reales publiquen sus negocios, necesitamos comprobar que el negocio es tuyo.
+          Sube tu licencia de actividad o un recibo de suministros (luz/agua) reciente.
         </p>
 
         {/* Aviso importante */}
@@ -2229,7 +2229,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
           <div>
             <h4 className="text-amber-800 text-sm font-bold">Documentación obligatoria</h4>
             <p className="text-amber-700 text-xs mt-1">
-              Ambos documentos son necesarios para verificar tu negocio. Tu solicitud será revisada en un plazo máximo de 24 horas.
+              Ambos documentos son necesarios para verificar tu negocio. Normalmente revisamos las solicitudes en 1 o 2 días. Solo los ve el administrador y se borran solos 2 días después de aprobar el negocio.
             </p>
           </div>
         </div>
@@ -3148,7 +3148,6 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
           .from('businesses')
           .update({
             is_published: true,
-            verification_documents: verificationDocuments,
             updated_at: new Date().toISOString(),
           })
           .eq('id', businessData.id)
@@ -3563,7 +3562,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   <span>
                     <span className="block text-sm font-semibold text-slate-900">Quiero que @cornella_informa anuncie mi negocio, para que llegue a más personas</span>
                     <span className="block text-xs text-gray-500 mt-0.5 leading-relaxed">
-                      Gratis. Podremos publicar el nombre, la categoría, el barrio y la foto de portada de tu negocio en Instagram. Puedes quitar el permiso cuando quieras.
+                      Gratis y voluntario. Podremos publicar en Instagram el nombre, la categoría, el barrio y la foto de portada de tu negocio. Puedes quitar el permiso cuando quieras: no publicaremos nada nuevo y, si nos lo pides, borraremos lo publicado.
                     </span>
                   </span>
                 </label>
@@ -3862,9 +3861,18 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
               <p className="text-sm text-gray-500 mb-3">
                 Sube al menos un documento que demuestre que el negocio es tuyo: alta de autónomo o modelo 036/037, una factura o recibo a nombre del negocio, o la licencia de actividad.
               </p>
-              <p className="text-xs text-gray-500 mb-6 bg-gray-50 border border-gray-200 rounded-xl p-3 leading-relaxed">
-                🔒 Los documentos son privados: solo los ve el administrador para verificarte. Si subes el DNI, tapa la foto y el número de soporte; solo necesitamos comprobar el nombre.
+              <p className="text-xs text-gray-500 mb-3 bg-gray-50 border border-gray-200 rounded-xl p-3 leading-relaxed">
+                🔒 Los documentos son privados: solo los ve el administrador para verificarte y <strong>se borran solos 2 días después de aprobar tu negocio</strong>. No hace falta el DNI; si aun así lo subes, tapa la foto y el número de soporte (solo necesitamos comprobar el nombre).
               </p>
+              {isDraft && (
+                <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                  Al enviar la solicitud aceptas los{' '}
+                  <button type="button" onClick={() => onNavigate('terms')} className="text-primary font-semibold underline">
+                    términos y condiciones
+                  </button>{' '}
+                  (apartado «Negocios»): información veraz, respetar las ofertas y cupones que publiques y las reglas de publicación.
+                </p>
+              )}
 
               {/* Status Card */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 mb-6 border border-blue-100">
@@ -3877,10 +3885,9 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                       ¿Por qué verificar tu negocio?
                     </h4>
                     <ul className="text-xs text-blue-700 space-y-1">
-                      <li>✓ Badge azul de verificación oficial</li>
-                      <li>✓ Mayor confianza de los clientes</li>
-                      <li>✓ Aparece destacado en búsquedas</li>
-                      <li>✓ Acceso a funciones premium</li>
+                      <li>✓ Insignia de negocio verificado en tu ficha</li>
+                      <li>✓ Más confianza de los clientes</li>
+                      <li>✓ Podrás publicar ofertas y empleos y recibir presupuestos</li>
                     </ul>
                   </div>
                 </div>

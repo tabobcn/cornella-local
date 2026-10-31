@@ -22,7 +22,7 @@ import {
   BellRing, BellOff, Languages, History, Trash, AlertCircle, ChevronLeft,
   Volume2, VolumeX, Moon, Sun, Vibrate, TreePine, Snowflake, Wine,
   Sandwich, Utensils, Circle, Droplets, Hand, MousePointerClick, Flag,
-  ShieldAlert, UserCog, BarChart3, XCircle, UserX, ShieldOff, CheckCircle, AlertTriangle, Cookie, Percent, Scale
+  ShieldAlert, UserCog, BarChart3, XCircle, UserX, ShieldOff, CheckCircle, AlertTriangle, Cookie, Percent, Scale, Download
 } from 'lucide-react';
 
 import {
@@ -469,12 +469,13 @@ const EmptyState = ({ icon, title, description, actionLabel, onAction, color = '
 const Toast = ({ message, type = 'success', isVisible, onClose }) => {
   useEffect(() => {
     if (isVisible) {
+      // Los avisos largos (motivo de suspensión, errores con instrucciones) duran más
       const timer = setTimeout(() => {
         onClose();
-      }, 3000);
+      }, Math.min(9000, Math.max(3000, (message?.length || 0) * 55)));
       return () => clearTimeout(timer);
     }
-  }, [isVisible, onClose]);
+  }, [isVisible, onClose, message]);
 
   if (!isVisible) return null;
 
@@ -3905,6 +3906,10 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
               {formData.phone && phoneValidation.isValid && (
                 <p className="mt-1 text-xs text-green-600">✓ Teléfono válido</p>
               )}
+              <p className="mt-2 text-xs text-gray-500 leading-relaxed">
+                🔒 Tu teléfono solo lo verá el negocio cuyo presupuesto aceptes. Los negocios que reciben la solicitud
+                ven la descripción, las fotos y la dirección para poder darte precio.
+              </p>
             </div>
           </div>
         )}
@@ -4253,6 +4258,10 @@ const DirectBudgetScreen = ({ onNavigate, businessId, businessName, user, showTo
             placeholder="612 345 678"
             className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-sm focus:border-primary focus:outline-none"
           />
+          <p className="mt-2 text-xs text-gray-500 leading-relaxed">
+            🔒 El negocio ve la descripción, las fotos y la dirección para darte precio. Tu teléfono solo lo verá
+            si aceptas su presupuesto.
+          </p>
         </div>
       </div>
 
@@ -4357,9 +4366,9 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
   }), [flashOffers]);
 
   const getTimeColor = (minutes) => {
-    if (minutes <= 60) return 'text-red-500 bg-red-50';
-    if (minutes <= 180) return 'text-orange-500 bg-orange-50';
-    return 'text-green-600 bg-green-50';
+    if (minutes <= 60) return 'text-red-700 bg-red-50';
+    if (minutes <= 180) return 'text-orange-800 bg-orange-50';
+    return 'text-green-800 bg-green-50';
   };
 
   const getTimeIcon = (minutes) => {
@@ -4474,9 +4483,9 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
               {/* Urgency indicator for first 3 */}
               {index < 3 && (
                 <div className={`px-3 py-2 text-xs font-medium flex items-center gap-2 ${
-                  index === 0 ? 'bg-red-50 text-red-600' :
-                  index === 1 ? 'bg-orange-50 text-orange-600' :
-                  'bg-yellow-50 text-yellow-600'
+                  index === 0 ? 'bg-red-50 text-red-700' :
+                  index === 1 ? 'bg-orange-50 text-orange-800' :
+                  'bg-yellow-50 text-yellow-800'
                 }`}>
                   <Zap size={12} />
                   {index === 0 ? '¡Expira muy pronto!' : index === 1 ? 'Pocas horas restantes' : 'Aprovecha antes que acabe'}
@@ -7544,6 +7553,16 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                     </div>
                   </div>
                 </div>
+
+                {/* Información al enviar datos personales (RGPD art. 13) */}
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  🔒 Tu nombre, email, teléfono, carta y CV solo los verá este negocio, que decide la selección.
+                  El CV se borra solo 2 días después de que termine el proceso (te contraten, te descarten o se cierre
+                  la oferta) y como máximo a los 90 días.{' '}
+                  <button type="button" onClick={() => onNavigate('privacy-policy')} className="text-primary font-semibold underline">
+                    Más información
+                  </button>
+                </p>
               </div>
 
               {/* Botones fijos */}
@@ -9950,12 +9969,22 @@ const ConsentedMapEmbed = ({ address }) => {
 // Rechazar y Aceptar tienen el MISMO peso visual (exigencia AEPD 2023).
 // =============================================
 const CookieBanner = ({ onNavigate }) => {
-  const [visible, setVisible] = useState(() => !localStorage.getItem('cookie-consent'));
+  const readVisible = () => {
+    try { return !localStorage.getItem('cookie-consent'); } catch { return true; }
+  };
+  const [visible, setVisible] = useState(readVisible);
+
+  // Si el usuario borra su elección (Ajustes o Política de cookies), el aviso vuelve a salir
+  useEffect(() => {
+    const handler = () => setVisible(readVisible());
+    window.addEventListener('cookie-consent-changed', handler);
+    return () => window.removeEventListener('cookie-consent-changed', handler);
+  }, []);
 
   if (!visible) return null;
 
   const setConsent = (value) => {
-    localStorage.setItem('cookie-consent', value);
+    try { localStorage.setItem('cookie-consent', value); } catch { /* sin almacenamiento */ }
     // Forzar re-render de toda la app para que componentes condicionales
     // (Analytics, Google Maps embed) reaccionen al consentimiento
     setVisible(false);
@@ -10022,7 +10051,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
     { q: '¿Cómo puedo registrar mi negocio?', a: 'Ve a tu perfil > "¿Tienes un negocio?" y sigue los pasos de verificación.' },
     { q: '¿Las ofertas tienen coste?', a: 'Publicar ofertas es gratuito para comercios verificados de Cornellà.' },
     { q: '¿Cómo solicito un presupuesto?', a: 'Desde el menú principal, selecciona "Solicitar presupuesto" y elige la categoría.' },
-    { q: '¿Cómo elimino mi cuenta?', a: 'Contacta con soporte y procesaremos tu solicitud en 48h.' },
+    { q: '¿Cómo elimino mi cuenta?', a: 'En Ajustes > "Borrar mi cuenta". Se borra al momento con todos tus datos. Antes puedes guardar una copia con "Descargar mis datos".' },
   ];
 
   const [sending, setSending] = useState(false);
@@ -10195,6 +10224,12 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
                 <Send size={18} />
                 Enviar mensaje
               </button>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Usaremos tu nombre y tu email solo para responderte. El mensaje se borra a los 12 meses.{' '}
+                <button type="button" onClick={() => onNavigate('privacy-policy')} className="text-primary font-semibold underline">
+                  Política de privacidad
+                </button>
+              </p>
             </div>
           </div>
         </div>
@@ -10688,6 +10723,12 @@ const LoginScreen = ({ onNavigate, setUser }) => {
             </svg>
             <span className="text-slate-900 font-semibold text-sm">Continuar con Google</span>
           </button>
+          <p className="text-center text-xs text-gray-500 leading-relaxed">
+            Si es tu primera vez, al continuar con Google confirmas que tienes 14 años o más y aceptas los{' '}
+            <button type="button" onClick={() => onNavigate('terms')} className="text-primary font-semibold hover:underline">términos</button>.
+            Tratamos tus datos según la{' '}
+            <button type="button" onClick={() => onNavigate('privacy-policy')} className="text-primary font-semibold hover:underline">política de privacidad</button>.
+          </p>
         </div>
 
         {/* Register link */}
@@ -10767,7 +10808,7 @@ const RegisterScreen = ({ onNavigate }) => {
     }
 
     if (!acceptTerms) {
-      setError('Debes aceptar los términos y condiciones');
+      setError('Para crear la cuenta confirma que tienes 14 años o más y aceptas los términos');
       setLoading(false);
       return;
     }
@@ -10990,16 +11031,22 @@ const RegisterScreen = ({ onNavigate }) => {
               />
               <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" size={16} />
             </div>
-            <p className="text-gray-500 text-sm font-normal leading-tight">
-              Acepto los{' '}
+            <p className="text-gray-500 text-sm font-normal leading-snug">
+              Tengo 14 años o más y acepto los{' '}
               <button
                 type="button"
                 onClick={() => onNavigate('terms-register')}
                 className="text-primary font-medium hover:underline"
               >
                 términos y condiciones
-              </button>{' '}
-              y la política de privacidad.
+              </button>. He leído la{' '}
+              <button
+                type="button"
+                onClick={() => onNavigate('privacy-policy')}
+                className="text-primary font-medium hover:underline"
+              >
+                política de privacidad
+              </button>.
             </p>
           </label>
 
@@ -11037,11 +11084,10 @@ const RegisterScreen = ({ onNavigate }) => {
             <span className="text-slate-900 font-semibold text-sm">Continuar con Google</span>
           </button>
           <p className="text-center text-xs text-gray-500 leading-relaxed">
-            Al continuar con Google aceptas los{' '}
+            Al continuar con Google confirmas que tienes 14 años o más y aceptas los{' '}
             <button type="button" onClick={() => onNavigate('terms-register')} className="text-primary font-semibold hover:underline">
               términos y condiciones
-            </button>{' '}
-            y la{' '}
+            </button>. Tratamos tus datos según la{' '}
             <button type="button" onClick={() => onNavigate('privacy-policy')} className="text-primary font-semibold hover:underline">
               política de privacidad
             </button>.
@@ -11301,7 +11347,6 @@ const ResetPasswordScreen = ({ onNavigate, showToast }) => {
 const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [birthDate, setBirthDate] = useState(user?.birth_date || '');
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -11334,7 +11379,8 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
     setSaving(true);
     try {
       // Actualizar nombre y fecha en tabla profiles
-      const updates = { full_name: fullName.trim(), birth_date: birthDate || null };
+      // La fecha de nacimiento ya no se pide (no se usaba para nada: minimización de datos)
+      const updates = { full_name: fullName.trim() };
       const { error: profileError } = await supabase
         .from('profiles')
         .update(updates)
@@ -11349,7 +11395,7 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
       }
 
       // Actualizar estado global del usuario
-      setUser(prev => ({ ...prev, full_name: fullName.trim(), birth_date: birthDate || null }));
+      setUser(prev => ({ ...prev, full_name: fullName.trim() }));
       showToast('Perfil actualizado correctamente', 'success');
       onNavigate('settings');
     } catch (e) {
@@ -11420,17 +11466,6 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
             />
             <p className="text-xs text-gray-500 mt-1.5">Si cambias el correo recibirás un email de confirmación.</p>
           </div>
-
-          {/* Fecha de nacimiento */}
-          <div className="p-4">
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Fecha de nacimiento</label>
-            <input aria-label="Fecha de nacimiento"
-              type="date"
-              value={birthDate}
-              onChange={e => setBirthDate(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-            />
-          </div>
         </div>
 
         <button
@@ -11449,28 +11484,13 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
 // PANTALLA DE AJUSTES
 // ==============================================
 
-const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboarding, onShowNotificationModal, user, showToast, onRequestPushPermission }) => {
-  // Estados locales para los toggles
-  const [settings, setSettings] = useState(userSettings || {
-    // Notificaciones
-    pushEnabled: false,
-    offerNotifications: true,
-    messageNotifications: true,
-    reminderNotifications: true,
-    soundEnabled: true,
-    vibrationEnabled: true,
-    // Privacidad
-    shareLocation: true,
-    searchHistory: true,
-    personalizedAds: false,
-    profileVisible: true,
-    // Idioma
-    language: 'es',
-    // Tema
-    darkMode: false,
-  });
+const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboarding, onShowNotificationModal, user, showToast, onRequestPushPermission, onDisablePush }) => {
+  // Solo hay un ajuste real: las notificaciones push de este dispositivo
+  const [settings, setSettings] = useState(userSettings || { pushEnabled: false });
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
   const [pushPermissionStatus, setPushPermissionStatus] = useState('default');
 
   useEffect(() => {
@@ -11487,12 +11507,6 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
       }
     }
   }, []);
-
-  const handleToggle = (key) => {
-    const newSettings = { ...settings, [key]: !settings[key] };
-    setSettings(newSettings);
-    if (updateSettings) updateSettings(newSettings);
-  };
 
   // Solicitar permisos de notificaciones push
   const requestPushPermission = async () => {
@@ -11515,10 +11529,84 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
     }
   };
 
+  // Desactivar push: anula la suscripción de este dispositivo y la borra de la base de datos
+  const handleDisablePush = async () => {
+    if (!onDisablePush) return;
+    const ok = await onDisablePush();
+    if (ok) {
+      const newSettings = { ...settings, pushEnabled: false };
+      setSettings(newSettings);
+      if (updateSettings) updateSettings(newSettings);
+    }
+  };
+
+  // Descargar mis datos (derecho de acceso y portabilidad): archivo JSON con todo lo guardado
+  const handleExportData = async () => {
+    if (!user?.id || exportingData) return;
+    setExportingData(true);
+    try {
+      const { data, error } = await supabase.rpc('export_my_data');
+      if (error) throw error;
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `cornella-local-mis-datos-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast?.('Listo: se ha descargado un archivo con todos tus datos', 'success');
+    } catch (error) {
+      console.error('Error exportando datos:', error);
+      showToast?.('No se pudieron descargar tus datos. Escríbenos a cornellalocal@gmail.com y te los enviamos.', 'error');
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  // Volver a elegir las cookies: se borra la elección y reaparece el aviso
+  const handleResetCookies = () => {
+    try { localStorage.removeItem('cookie-consent'); } catch { /* sin almacenamiento */ }
+    window.dispatchEvent(new Event('cookie-consent-changed'));
+    showToast?.('Elige de nuevo en el aviso de cookies de abajo', 'info');
+  };
+
+  // Borrar la cuenta de verdad: datos, negocio y acceso (los archivos se borran esa noche)
+  const handleDeleteAccount = async () => {
+    if (deletingAccount) return;
+    setDeletingAccount(true);
+    try {
+      const { data, error } = await supabase.rpc('delete_user_account');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'delete_failed');
+      try {
+        ['recentSearches', 'post-login-redirect', 'push-asked', 'push-disabled'].forEach(k => localStorage.removeItem(k));
+      } catch { /* sin almacenamiento */ }
+      try {
+        const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+        const subscription = await registration?.pushManager?.getSubscription();
+        if (subscription) await subscription.unsubscribe();
+      } catch { /* el navegador no tenía suscripción */ }
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      setShowDeleteModal(false);
+      showToast?.('Tu cuenta y tus datos se han borrado. Gracias por haber formado parte de Cornellà Local.', 'success');
+      onNavigate('home');
+    } catch (error) {
+      console.error('Error borrando la cuenta:', error);
+      showToast?.('No se pudo borrar la cuenta. Escríbenos a cornellalocal@gmail.com y lo hacemos nosotros.', 'error');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
 
   // Toggle Switch Component
-  const ToggleSwitch = ({ enabled, onToggle, disabled = false }) => (
+  const ToggleSwitch = ({ enabled, onToggle, disabled = false, label }) => (
     <button
+      type="button"
+      role="switch"
+      aria-checked={!!enabled}
+      aria-label={label}
       onClick={onToggle}
       disabled={disabled}
       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
@@ -11562,12 +11650,12 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                     {settings.pushEnabled ? <BellRing size={20} /> : <BellOff size={20} />}
                   </div>
                   <div>
-                    <span className="font-medium text-slate-700 block">Notificaciones Push</span>
-                    <span className="text-xs text-slate-500">Recibir alertas aunque la app esté cerrada</span>
+                    <span className="font-medium text-slate-700 block">Notificaciones push</span>
+                    <span className="text-xs text-slate-500">Avisos en este dispositivo aunque la app esté cerrada</span>
                   </div>
                 </div>
                 {pushPermissionStatus === 'granted' ? (
-                  <ToggleSwitch enabled={settings.pushEnabled} onToggle={settings.pushEnabled ? () => handleToggle('pushEnabled') : requestPushPermission} />
+                  <ToggleSwitch label="Notificaciones push" enabled={settings.pushEnabled} onToggle={settings.pushEnabled ? handleDisablePush : requestPushPermission} />
                 ) : (
                   <button
                     onClick={requestPushPermission}
@@ -11587,113 +11675,55 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
               )}
             </div>
 
-            {/* Sub-opciones de notificaciones */}
-            {settings.pushEnabled && pushPermissionStatus === 'granted' && (
-              <>
-                <div className="p-4 pl-14">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-medium text-slate-700 block text-sm">Ofertas y descuentos</span>
-                      <span className="text-xs text-slate-500">Nuevas ofertas de tus favoritos</span>
-                    </div>
-                    <ToggleSwitch enabled={settings.offerNotifications} onToggle={() => handleToggle('offerNotifications')} />
-                  </div>
-                </div>
-                <div className="p-4 pl-14">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-medium text-slate-700 block text-sm">Mensajes</span>
-                      <span className="text-xs text-slate-500">Respuestas a presupuestos</span>
-                    </div>
-                    <ToggleSwitch enabled={settings.messageNotifications} onToggle={() => handleToggle('messageNotifications')} />
-                  </div>
-                </div>
-                <div className="p-4 pl-14">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-medium text-slate-700 block text-sm">Recordatorios</span>
-                      <span className="text-xs text-slate-500">Cupones por caducar, citas</span>
-                    </div>
-                    <ToggleSwitch enabled={settings.reminderNotifications} onToggle={() => handleToggle('reminderNotifications')} />
-                  </div>
-                </div>
-              </>
-            )}
-
-
-            {/* Sonido y vibración */}
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.soundEnabled ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-                    {settings.soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-                  </div>
-                  <span className="font-medium text-slate-700">Sonido</span>
-                </div>
-                <ToggleSwitch enabled={settings.soundEnabled} onToggle={() => handleToggle('soundEnabled')} />
-              </div>
-            </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.vibrationEnabled ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}>
-                    <Vibrate size={20} />
-                  </div>
-                  <span className="font-medium text-slate-700">Vibración</span>
-                </div>
-                <ToggleSwitch enabled={settings.vibrationEnabled} onToggle={() => handleToggle('vibrationEnabled')} />
-              </div>
-            </div>
+            <p className="px-4 pb-4 -mt-1 !border-t-0 text-xs text-slate-500 leading-relaxed">
+              Te avisamos de las ofertas y empleos de tus negocios favoritos, de las respuestas a tus
+              presupuestos y candidaturas y, si tienes negocio, de sus novedades. Los avisos de la campana,
+              dentro de la app, siguen llegando aunque desactives estas notificaciones.
+            </p>
           </div>
         </section>
 
-        {/* Sección: Privacidad */}
+        {/* Sección: Privacidad y datos */}
         <section className="px-4 pt-6">
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Privacidad</h2>
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Privacidad y datos</h2>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.shareLocation ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
-                    <MapPin size={20} />
-                  </div>
-                  <div>
-                    <span className="font-medium text-slate-700 block">Compartir ubicación</span>
-                    <span className="text-xs text-slate-500">Mostrar negocios cercanos</span>
-                  </div>
+            <button
+              type="button"
+              onClick={handleExportData}
+              disabled={exportingData}
+              className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors disabled:opacity-60"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-100 p-2 rounded-lg text-slate-600">
+                  <Download size={20} />
                 </div>
-                <ToggleSwitch enabled={settings.shareLocation} onToggle={() => handleToggle('shareLocation')} />
-              </div>
-            </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.searchHistory ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
-                    <History size={20} />
-                  </div>
-                  <div>
-                    <span className="font-medium text-slate-700 block">Historial de búsqueda</span>
-                    <span className="text-xs text-slate-500">Guardar búsquedas recientes</span>
-                  </div>
+                <div className="text-left">
+                  <span className="font-medium text-slate-700 block">{exportingData ? 'Preparando tus datos…' : 'Descargar mis datos'}</span>
+                  <span className="text-xs text-slate-500">Un archivo con todo lo que guardamos de ti</span>
                 </div>
-                <ToggleSwitch enabled={settings.searchHistory} onToggle={() => handleToggle('searchHistory')} />
               </div>
-            </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.profileVisible ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-                    <Eye size={20} />
-                  </div>
-                  <div>
-                    <span className="font-medium text-slate-700 block">Perfil visible</span>
-                    <span className="text-xs text-slate-500">Otros usuarios pueden ver tu perfil</span>
-                  </div>
+              <ChevronRight className="text-gray-500" size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={handleResetCookies}
+              className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-100 p-2 rounded-lg text-slate-600">
+                  <Cookie size={20} />
                 </div>
-                <ToggleSwitch enabled={settings.profileVisible} onToggle={() => handleToggle('profileVisible')} />
+                <div className="text-left">
+                  <span className="font-medium text-slate-700 block">Preferencias de cookies</span>
+                  <span className="text-xs text-slate-500">Vuelve a elegir qué aceptas</span>
+                </div>
               </div>
-            </div>
+              <ChevronRight className="text-gray-500" size={20} />
+            </button>
           </div>
+          <p className="px-1 pt-2 text-xs text-slate-500 leading-relaxed">
+            Tu ubicación solo se usa en tu móvil para ordenar los negocios por cercanía y no se guarda.
+          </p>
         </section>
 
         {/* Sección: Cuenta */}
@@ -11806,8 +11836,8 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
                   <Trash size={20} />
                 </div>
                 <div className="text-left">
-                  <span className="font-medium text-red-600 block">Borrar mis datos</span>
-                  <span className="text-xs text-slate-500">Eliminar cuenta y todos los datos</span>
+                  <span className="font-medium text-red-600 block">Borrar mi cuenta</span>
+                  <span className="text-xs text-slate-500">Borra tu cuenta y todos tus datos</span>
                 </div>
               </div>
             </button>
@@ -11837,7 +11867,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 
       {/* Modal de confirmación de borrado */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDeleteModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { if (!deletingAccount) setShowDeleteModal(false); }}>
           <div
             className="bg-white rounded-2xl w-full max-w-sm p-6 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
@@ -11845,25 +11875,31 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="text-red-500" size={32} />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">¿Eliminar tu cuenta?</h3>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              Esta acción no se puede deshacer. Se eliminarán todos tus datos, favoritos, reseñas y medallas.
+            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">¿Borrar tu cuenta?</h3>
+            <p className="text-sm text-gray-600 text-center mb-3 leading-relaxed">
+              Se borrarán tu cuenta y todo lo tuyo: favoritos, reseñas, solicitudes de presupuesto, candidaturas,
+              cupones y avisos. Si tienes un negocio, también se borrará su ficha con sus ofertas y empleos.
+              <strong className="block mt-1 text-slate-800">No se puede deshacer.</strong>
+            </p>
+            <p className="text-xs text-gray-500 text-center mb-6">
+              Si quieres guardar una copia, usa antes «Descargar mis datos».
             </p>
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 h-12 bg-gray-100 text-slate-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                disabled={deletingAccount}
+                className="flex-1 h-12 bg-gray-100 text-slate-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  onNavigate('login');
-                }}
-                className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors"
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60"
               >
-                Eliminar
+                {deletingAccount ? 'Borrando…' : 'Borrar mi cuenta'}
               </button>
             </div>
           </div>
@@ -11976,7 +12012,7 @@ export default function App() {
 
       // 2. Sincronizar con profiles en segundo plano (sin await — no bloquea el login)
       supabase.from('profiles')
-        .select('id, full_name, avatar_url, is_admin, birth_date, is_banned')
+        .select('*')
         .eq('id', session.user.id)
         .single()
         .then(({ data }) => {
@@ -11986,11 +12022,15 @@ export default function App() {
               supabase.auth.signOut();
               setUser(null);
               setCurrentPage('login');
-              showToast('Tu cuenta ha sido suspendida. Contacta con soporte: cornellalocal@gmail.com', 'error');
+              showToast(
+                `Tu cuenta está suspendida${data.ban_reason ? `. Motivo: ${data.ban_reason}` : ''}. Si no estás de acuerdo, escríbenos a cornellalocal@gmail.com y lo revisaremos.`,
+                'error'
+              );
               return;
             }
-            // Perfil existe: actualizar estado con datos completos del perfil
-            setUser(prev => ({ ...prev, ...data }));
+            // Perfil existe: actualizar estado con los datos del perfil que usa la app
+            const { id, full_name, avatar_url, is_admin, is_banned } = data;
+            setUser(prev => ({ ...prev, id, full_name, avatar_url, is_admin, is_banned }));
           } else {
             // Perfil no existe: crearlo
             supabase.from('profiles').upsert({
@@ -12100,8 +12140,9 @@ export default function App() {
     return outputArray;
   };
 
-  // Función para solicitar permisos y suscribirse a push notifications
-  const requestPushPermission = async () => {
+  // Función para solicitar permisos y suscribirse a push notifications.
+  // silent: re-sincronización automática al entrar (sin aviso de "activadas").
+  const requestPushPermission = async ({ silent = false } = {}) => {
     if (!pushSupported) {
       showToast('Tu navegador no soporta notificaciones push', 'error');
       return false;
@@ -12152,7 +12193,9 @@ export default function App() {
         return false;
       }
 
-      showToast('¡Notificaciones activadas! 🔔', 'success');
+      // Si las había desactivado en Ajustes, al activarlas de nuevo se quita la marca
+      try { localStorage.removeItem('push-disabled'); } catch { /* sin almacenamiento */ }
+      if (!silent) showToast('¡Notificaciones activadas! 🔔', 'success');
       return true;
 
     } catch (error) {
@@ -12161,6 +12204,34 @@ export default function App() {
       } else {
         showToast('Error al activar notificaciones', 'error');
       }
+      return false;
+    }
+  };
+
+  // Desactivar las notificaciones push en este dispositivo: se anula la suscripción del navegador
+  // y se borra de la base de datos (retirar el permiso debe ser tan fácil como darlo).
+  const disablePushNotifications = async () => {
+    try { localStorage.setItem('push-disabled', '1'); } catch { /* sin almacenamiento */ }
+    try {
+      let endpoint = null;
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        const subscription = await registration?.pushManager?.getSubscription();
+        endpoint = subscription?.endpoint || null;
+        if (subscription) await subscription.unsubscribe();
+      }
+      if (user?.id) {
+        let query = supabase.from('push_subscriptions').delete().eq('user_id', user.id);
+        if (endpoint) query = query.eq('subscription->>endpoint', endpoint);
+        const { error } = await query;
+        if (error) throw error;
+      }
+      setUserSettings(prev => ({ ...prev, pushEnabled: false }));
+      showToast('Notificaciones desactivadas en este dispositivo', 'info');
+      return true;
+    } catch (error) {
+      console.error('Error desactivando notificaciones:', error);
+      showToast('No se pudieron desactivar las notificaciones. Inténtalo de nuevo.', 'error');
       return false;
     }
   };
@@ -12231,9 +12302,11 @@ export default function App() {
   // Si el permiso ya estaba concedido pero no hay fila en BD, re-sincronizar.
   useEffect(() => {
     if (!user?.id || !pushSupported || pushPermission !== 'granted' || pushSyncAttemptedRef.current) return;
+    // Si el usuario las desactivó en Ajustes, no se vuelven a activar solas
+    try { if (localStorage.getItem('push-disabled')) return; } catch { /* sin almacenamiento */ }
 
     pushSyncAttemptedRef.current = true;
-    requestPushPermission().then((success) => {
+    requestPushPermission({ silent: true }).then((success) => {
       if (success) {
         setUserSettings(prev => ({ ...prev, pushEnabled: true }));
       }
@@ -13406,20 +13479,7 @@ export default function App() {
   };
 
   // Configuración del usuario
-  const [userSettings, setUserSettings] = useState({
-    pushEnabled: false,
-    offerNotifications: true,
-    messageNotifications: true,
-    reminderNotifications: true,
-    soundEnabled: true,
-    vibrationEnabled: true,
-    shareLocation: true,
-    searchHistory: true,
-    personalizedAds: false,
-    profileVisible: true,
-    language: 'es',
-    darkMode: false,
-  });
+  const [userSettings, setUserSettings] = useState({ pushEnabled: false });
 
   // Actualizar configuración
   const updateSettings = (newSettings) => {
@@ -14143,6 +14203,7 @@ export default function App() {
           user={user}
           showToast={showToast}
           onRequestPushPermission={requestPushPermission}
+          onDisablePush={disablePushNotifications}
         />;
       case 'privacy-policy':
         return <PrivacyPolicyScreen onNavigate={navigate} />;

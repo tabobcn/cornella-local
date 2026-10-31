@@ -1905,7 +1905,7 @@ const BusinessCard = ({ business, onClick, variant = 'default', isFavorite = fal
             <span className="text-sm font-bold text-primary/50">{business.name?.charAt(0).toUpperCase()}</span>
           </div>
         )}
-        {business.isNew && (
+        {(business.isNew || isRecentlyPublished(business)) && (
           <span className="absolute top-3 left-3 bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">
             Nuevo
           </span>
@@ -2147,6 +2147,15 @@ const takeAuthRedirect = () => {
     console.error('No se pudo leer la redirección tras login:', err);
     return null;
   }
+};
+
+// Etiqueta "NUEVO": solo durante los primeros días desde que se aprobó (publicó) el negocio
+export const NEW_BUSINESS_DAYS = 7;
+export const isRecentlyPublished = (business, days = NEW_BUSINESS_DAYS) => {
+  const since = business?.verified_at || business?.created_at;
+  if (!since) return false;
+  const t = new Date(since).getTime();
+  return Number.isFinite(t) && Date.now() - t < days * 24 * 60 * 60 * 1000;
 };
 
 export const formatNeighborhood = (value) => {
@@ -3341,11 +3350,13 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   )}
-                  {/* Badge "NUEVO" */}
-                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-green-700 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-lg">
-                    <Sparkles size={14} />
-                    NUEVO
-                  </div>
+                  {/* Badge "NUEVO" (7 días desde la publicación) */}
+                  {isRecentlyPublished(business) && (
+                    <div className="absolute top-3 left-3 px-3 py-1.5 bg-green-700 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-lg">
+                      <Sparkles size={14} />
+                      NUEVO
+                    </div>
+                  )}
 
                   {/* Badge Estado (Abierto/Cerrado) */}
                   {(() => {
@@ -7899,7 +7910,7 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
                       Abierto
                     </span>
                   )}
-                  {business.isNew && (
+                  {(business.isNew || isRecentlyPublished(business)) && (
                     <span className="px-2.5 py-1 bg-primary text-white text-xs font-bold rounded-full">
                       Nuevo
                     </span>

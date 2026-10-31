@@ -285,6 +285,30 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 - Textos legales: `src/screens/legal.jsx` (privacidad, aviso legal, cookies) y `termsAndConditions` en
   `src/data/mockData.js`. Si cambia una regla (límite de ofertas, reseñas, orden...), actualiza los términos.
 
+### Panel de administración ampliado (2026-10-31)
+- **SQL**: `supabase/panel-admin-servicios.sql` (idempotente; después de `privacidad-borrado-automatico.sql` y
+  `seo-reconstruir-web.sql`, cuyas `export_my_data()` y `run_site_rebuild()` sustituye). La app funciona antes y
+  después de ejecutarlo (si falta, las pantallas nuevas dicen "Falta ejecutar…").
+- **Panel → Servicios web y vídeo** (`admin-services`): interruptor `app_settings.services_offer_enabled` (empieza
+  apagado). Encendido → el negocio aprobado ve `ServicesOfferCard` en su panel (pedir información: tabla
+  `service_requests`, 1 abierta por negocio, aviso app+push a los admins) y la casilla `services_contact_consent` en
+  Editar negocio. Pestaña "Negocios sin web": **solo se contacta a los que han marcado la casilla o lo han pedido**
+  (LSSI art. 21 / RGPD); al resto les llega la tarjeta. Solicitudes cerradas se borran a los 12 meses
+  (cron `limpieza-servicios`). Las notas internas salen en "Descargar mis datos".
+- **Panel → Instagram** (`admin-instagram`): por borrar (quitaron el permiso: plazo 30 días desde
+  `instagram_consent_changed_at`), por publicar (texto listo para copiar con enlace a la ficha) y publicados
+  (`instagram_posted_at`, que el dueño no puede tocar).
+- **Panel → Reseñas** (`admin-reviews`): RPC `admin_remove_review(id, motivo)` → borra, recalcula la media y avisa
+  al autor con el motivo (DSA art. 17).
+- **Estado del sistema** (tarjeta del panel): RPC `admin_system_status()`. `run_privacy_cleanup()` y
+  `run_site_rebuild()` apuntan cada ejecución en `system_job_log`; `collect_system_job_results()` (cron
+  `recoger-resultados`, cada hora) recoge la respuesta de pg_net y avisa a los admins (`system_job_failed`) si falla.
+- **Antes de cobrar** por web/vídeo: revisar textos legales (dicen "sin ánimo de lucro") y situación fiscal.
+- **Fallos corregidos**: (1) pulsar un aviso no lo borraba de la BD porque se comprobaba que el id fuera UUID y
+  `notifications.id` es un número → al reabrir la app volvía el "1". Ahora los avisos solo de pantalla llevan
+  `isLocal`. (2) Los enlaces `?nav=...` (los de los push) acababan en Inicio al abrir la app en frío con sesión:
+  el efecto de deep links actualiza ya `currentPageRef`.
+
 ---
 
 ## Reglas de Negocio Importantes
@@ -304,6 +328,8 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 | **Fotos en oferta** | Obligatorio subir imagen para poder publicar |
 | **Ban de usuarios** | Admin suspende desde AdminUsersScreen con motivo → `is_banned=true` + `ban_reason` → al entrar ve el motivo y se hace signOut. Un suspendido no puede borrar su propia cuenta |
 | **Delete usuarios** | Borrado real con la RPC `delete_user_account` (usuario o admin): perfil, negocios y cuenta de acceso; los archivos los borra la limpieza nocturna. Con el mismo email podría volver a registrarse: para impedirlo, suspender |
+| **Servicios web/vídeo** | Opcionales y aparte; no cambian el orden ni la visibilidad. Solo se contacta a negocios con `services_contact_consent` o con solicitud. Interruptor en Panel → Servicios |
+| **Retirar reseña** | Solo admin, con `admin_remove_review` (motivo al autor). No se borran reseñas negativas legítimas porque lo pida el negocio |
 
 ---
 

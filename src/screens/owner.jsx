@@ -43,6 +43,271 @@ const PrivateStorageLink = ({ bucketName, fileRef, children, className }) => {
   );
 };
 
+// =====================================================
+// SERVICIOS DE WEB Y VÍDEO (opcionales, los ofrece Cornellà Local)
+// El admin los enciende o apaga en Panel → Servicios (app_settings.services_offer_enabled).
+// =====================================================
+const SERVICE_OPTIONS = [
+  { value: 'web', label: 'Página web' },
+  { value: 'video', label: 'Vídeo para redes' },
+  { value: 'web_video', label: 'Las dos cosas' },
+];
+
+// ¿Está encendida la oferta de servicios? (false si la tabla aún no existe)
+const useServicesOfferEnabled = () => {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'services_offer_enabled')
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          if (error.code !== 'PGRST205' && error.code !== '42P01') console.error('Error leyendo app_settings:', error);
+          return;
+        }
+        if (active) setEnabled(data?.value === true);
+      });
+    return () => { active = false; };
+  }, []);
+  return enabled;
+};
+
+const servicesHiddenKey = (businessId) => `services-card-hidden-${businessId}`;
+const readServicesHidden = (businessId) => {
+  try { return localStorage.getItem(servicesHiddenKey(businessId)) === '1'; } catch { return false; }
+};
+
+const ServicesOfferCard = ({ businessData, onNavigate, showToast }) => {
+  const enabled = useServicesOfferEnabled();
+  const businessId = businessData?.id;
+  const [openRequest, setOpenRequest] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [hidden, setHidden] = useState(() => readServicesHidden(businessId));
+  const [showModal, setShowModal] = useState(false);
+  const [service, setService] = useState(businessData?.website ? 'video' : 'web');
+  const [phone, setPhone] = useState(businessData?.phone || '');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    setHidden(readServicesHidden(businessId));
+    setPhone(prev => prev || businessData?.phone || '');
+  }, [businessId]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    let active = true;
+    supabase
+      .from('service_requests')
+      .select('*')
+      .eq('business_id', businessId)
+      .in('status', ['nuevo', 'contactado'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error && error.code !== 'PGRST205' && error.code !== '42P01') console.error('Error cargando solicitud de servicios:', error);
+        setOpenRequest(data?.[0] || null);
+        setLoaded(true);
+      });
+    return () => { active = false; };
+  }, [businessId]);
+
+  if (!businessId || businessData?.verification_status !== 'approved' || !loaded) return null;
+  // Con la oferta apagada solo se enseña si hay una solicitud en curso (para poder verla o retirarla)
+  if (!enabled && !openRequest) return null;
+  if (hidden && !openRequest) return null;
+
+  const hasWeb = !!(businessData?.website || '').trim();
+
+  const handleHide = () => {
+    try { localStorage.setItem(servicesHiddenKey(businessId), '1'); } catch { /* sin almacenamiento: solo se oculta ahora */ }
+    setHidden(true);
+  };
+
+  const handleSend = async () => {
+    if (sending) return;
+    setSending(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from('service_requests')
+        .insert({
+          business_id: businessId,
+          owner_id: authUser?.id,
+          service,
+          contact_phone: phone.trim() || null,
+          message: message.trim() || null,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setOpenRequest(data);
+      setShowModal(false);
+      setMessage('');
+      showToast('¡Solicitud enviada! Te contactaremos pronto.', 'success');
+    } catch (error) {
+      console.error('Error enviando solicitud de servicios:', error);
+      const text = `${error?.message || ''}`;
+      if (error?.code === '23505') showToast('Ya tienes una solicitud en curso', 'info');
+      else if (text.includes('services_disabled')) showToast('Ahora mismo no estamos ofreciendo este servicio', 'info');
+      else if (text.includes('service_business_not_approved')) showToast('Tu negocio tiene que estar aprobado para pedirlo', 'error');
+      else showToast('No se pudo enviar la solicitud. Inténtalo de nuevo.', 'error');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!openRequest) return;
+    try {
+      const { error } = await supabase.from('service_requests').delete().eq('id', openRequest.id);
+      if (error) throw error;
+      setOpenRequest(null);
+      showToast('Solicitud retirada', 'success');
+    } catch (error) {
+      console.error('Error retirando solicitud de servicios:', error);
+      showToast('No se pudo retirar la solicitud', 'error');
+    }
+  };
+
+  const serviceLabel = (value) => SERVICE_OPTIONS.find(o => o.value === value)?.label || value;
+
+  return (
+    <>
+      <div className="mx-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        {openRequest ? (
+          <div className="flex items-start gap-3">
+            <div className="bg-amber-100 p-2 rounded-lg text-amber-800 shrink-0">
+              <CheckCircle2 size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-bold text-slate-900">Solicitud enviada: {serviceLabel(openRequest.service)}</h4>
+              <p className="text-xs text-slate-700 mt-1 leading-relaxed">
+                {openRequest.status === 'contactado'
+                  ? 'Ya estamos en contacto contigo.'
+                  : `La enviaste el ${new Date(openRequest.created_at).toLocaleDateString('es-ES')}. Te contactaremos pronto.`}
+              </p>
+              <button onClick={handleWithdraw} className="mt-2 text-xs font-semibold text-amber-900 underline">
+                Retirar solicitud
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-start gap-3">
+              <div className="bg-amber-100 p-2 rounded-lg text-amber-800 shrink-0">
+                {hasWeb ? <Camera size={20} /> : <Globe size={20} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-slate-900">
+                  {hasWeb ? '¿Quieres un vídeo de tu negocio?' : '¿Tu negocio aún no tiene web?'}
+                </h4>
+                <p className="text-xs text-slate-700 mt-1 leading-relaxed">
+                  Te ayudamos con una página web sencilla o un vídeo para tus redes. Pide información sin compromiso y te contactamos.
+                  Es opcional: contratarlo o no, no cambia cómo aparece tu negocio en Cornellà Local.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex-1 h-10 rounded-xl bg-amber-700 text-white text-sm font-semibold hover:bg-amber-800 transition-colors"
+              >
+                Pedir información
+              </button>
+              <button
+                onClick={handleHide}
+                className="h-10 px-3 rounded-xl border border-amber-300 bg-white text-sm font-semibold text-amber-900 hover:bg-amber-100 transition-colors"
+              >
+                No me interesa
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="services-modal-title">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 id="services-modal-title" className="font-bold text-slate-900 text-lg">Pedir información</h3>
+              <button aria-label="Cerrar" onClick={() => setShowModal(false)} className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                <X size={20} className="text-slate-600" />
+              </button>
+            </div>
+
+            <fieldset className="mb-4">
+              <legend className="text-sm font-semibold text-slate-700 mb-2">¿Qué te interesa?</legend>
+              <div className="grid grid-cols-3 gap-2">
+                {SERVICE_OPTIONS.map(opt => (
+                  <label
+                    key={opt.value}
+                    className={`cursor-pointer rounded-xl border px-2 py-3 text-center text-xs font-semibold transition-colors ${
+                      service === opt.value ? 'border-primary bg-primary/10 text-primary-dark' : 'border-gray-200 text-slate-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="service-option"
+                      value={opt.value}
+                      checked={service === opt.value}
+                      onChange={() => setService(opt.value)}
+                      className="sr-only"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <label htmlFor="service-phone" className="block text-sm font-semibold text-slate-700 mb-1">Teléfono o WhatsApp de contacto</label>
+            <input
+              id="service-phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              maxLength={30}
+              placeholder="600 000 000"
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none mb-4"
+            />
+
+            <label htmlFor="service-message" className="block text-sm font-semibold text-slate-700 mb-1">Cuéntanos qué necesitas (opcional)</label>
+            <textarea
+              id="service-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Ej.: una web con la carta y el horario"
+              className="w-full rounded-xl border border-gray-200 p-3 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none mb-3"
+            />
+
+            <p className="text-xs text-gray-500 leading-relaxed mb-4">
+              Usaremos el nombre de tu negocio, tu email y este teléfono solo para responderte. Lo borramos 12 meses después de
+              cerrar la solicitud.{' '}
+              <button type="button" onClick={() => onNavigate('privacy-policy')} className="text-primary font-semibold underline">
+                Política de privacidad
+              </button>
+            </p>
+
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              className="w-full h-12 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition-colors disabled:opacity-60"
+            >
+              {sending ? 'Enviando…' : 'Enviar solicitud'}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 // Pantalla de Presupuestos Entrantes (para negocios)
 export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToast, onAddNotification, requests = [], onSendQuote }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -2650,14 +2915,20 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
     },
     specialClosures: businessData?.special_closures || businessData?.specialClosures || [],
     instagramConsent: !!businessData?.instagram_consent,
+    servicesConsent: !!businessData?.services_contact_consent,
   });
 
   // Difusión en @cornella_informa: solo si la base de datos ya tiene las columnas
   // (supabase/instagram-consent.sql). Así esta versión funciona antes y después de aplicarlo.
   const supportsInstagram = !!businessData && Object.prototype.hasOwnProperty.call(businessData, 'instagram_consent');
-  const instagramFields = () => (supportsInstagram ? {
-    instagram_consent: !!formData.instagramConsent,
-  } : {});
+  // Permiso para informarle de servicios de web y vídeo (supabase/panel-admin-servicios.sql). La casilla solo
+  // se enseña si el admin ha encendido la oferta o si el negocio ya la tenía marcada (para poder quitarla).
+  const supportsServicesConsent = !!businessData && Object.prototype.hasOwnProperty.call(businessData, 'services_contact_consent');
+  const servicesOfferEnabled = useServicesOfferEnabled();
+  const instagramFields = () => ({
+    ...(supportsInstagram ? { instagram_consent: !!formData.instagramConsent } : {}),
+    ...(supportsServicesConsent ? { services_contact_consent: !!formData.servicesConsent } : {}),
+  });
 
   // Sincronizar formData cuando businessData cambia
   useEffect(() => {
@@ -2685,6 +2956,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
         },
         specialClosures: businessData.special_closures || [],
         instagramConsent: !!businessData.instagram_consent,
+        servicesConsent: !!businessData.services_contact_consent,
       });
     }
   }, [businessData?.id]);
@@ -3563,6 +3835,26 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                     <span className="block text-sm font-semibold text-slate-900">Quiero que @cornella_informa anuncie mi negocio, para que llegue a más personas</span>
                     <span className="block text-xs text-gray-500 mt-0.5 leading-relaxed">
                       Gratis y voluntario. Podremos publicar en Instagram el nombre, la categoría, el barrio y la foto de portada de tu negocio. Puedes quitar el permiso cuando quieras: no publicaremos nada nuevo y borraremos lo publicado en 30 días como máximo.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            )}
+
+            {/* Información sobre servicios de web y vídeo: casilla aparte, opcional y sin marcar */}
+            {supportsServicesConsent && (servicesOfferEnabled || businessData?.services_contact_consent) && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!formData.servicesConsent}
+                    onChange={(e) => setFormData(prev => ({ ...prev, servicesConsent: e.target.checked }))}
+                    className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-900">Quiero que Cornellà Local me informe de sus servicios de página web y vídeo para negocios</span>
+                    <span className="block text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      Opcional. Podremos llamarte, escribirte por WhatsApp o por email con el teléfono y el email de tu negocio. Marcarlo o no, no cambia cómo aparece tu negocio. Puedes quitarlo cuando quieras.
                     </span>
                   </span>
                 </label>
@@ -5224,6 +5516,9 @@ export const BusinessOwnerDashboard = ({
           </div>
         </div>
 
+        {/* Servicios opcionales de web y vídeo (solo si el admin los ha encendido) */}
+        <ServicesOfferCard businessData={businessData} onNavigate={onNavigate} showToast={showToast} />
+
         {/* Zona de peligro */}
         <div className="mx-4 mb-6">
           <div className="border border-red-200 rounded-2xl overflow-hidden">
@@ -5240,7 +5535,7 @@ export const BusinessOwnerDashboard = ({
                 </div>
                 <div>
                   <span className="font-medium text-red-700 block text-sm">Eliminar negocio</span>
-                  <span className="text-xs text-red-500">Acción permanente e irreversible</span>
+                  <span className="text-xs text-red-700">Acción permanente e irreversible</span>
                 </div>
               </button>
             </div>

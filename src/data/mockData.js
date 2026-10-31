@@ -740,6 +740,7 @@ export const termsAndConditions = {
         "Te comprometes a que la información sea verdadera y esté al día (horario, dirección, cierres, precios) y a tener derecho a usar las fotos, logos y marcas que subes, con permiso de las personas que aparezcan en ellas.",
         "La web del negocio se pide para la verificación, pero no se muestra en la ficha.",
         "Difusión en Instagram (@cornella_informa): solo si marcas la casilla. Es gratis y puedes quitar el permiso cuando quieras; entonces borraremos lo publicado en 30 días como máximo.",
+        "Servicios de página web y vídeo: cuando estén disponibles, podrás pedir información desde el panel de tu negocio o marcar en Editar negocio la casilla para que te informemos. Son opcionales y aparte de la plataforma: el precio y las condiciones se acuerdan contigo por escrito antes de empezar, y contratarlos o no, no cambia el orden ni la visibilidad de tu negocio.",
         "Podemos rechazar o retirar un negocio, o suspender una cuenta, si incumple estos términos: información falsa, ofertas engañosas, cupones que no se respetan, contenido ilegal o que no sea el dueño. Siempre te diremos el motivo y podrás reclamar escribiendo a cornellalocal@gmail.com.",
         "Salvo incumplimientos graves o repetidos, o si una ley nos obliga, te avisaremos con 30 días de antelación antes de retirar definitivamente tu negocio.",
         "Como negocio puedes ver las estadísticas de tu ficha, las candidaturas a tus empleos, las solicitudes de presupuesto de tu oficio (el teléfono, solo si te aceptan) y los cupones canjeados.",
@@ -780,6 +781,7 @@ export const termsAndConditions = {
         "Ofertas «Destacadas»: las 3 con más 🔥 de los vecinos. El resto, de la más reciente a la más antigua.",
         "Presupuestos: la solicitud la ven todos los negocios verificados del oficio; el aviso inmediato llega a los 10 mejor valorados.",
         "Nadie paga por salir antes: no hay posiciones patrocinadas. Si algún día las hubiera, se marcarían claramente como «Patrocinado».",
+        "Contratar con Cornellà Local servicios de web o vídeo no da ninguna ventaja en el orden ni en la visibilidad.",
       ],
     },
     {
@@ -793,6 +795,7 @@ export const termsAndConditions = {
         "El dueño no puede reseñar su propio negocio.",
         "Un filtro automático impide publicar insultos, spam, teléfonos o emails.",
         "No comprobamos que hayas comprado o contratado en el negocio: estas reglas sirven para reducir las reseñas falsas. No borramos reseñas negativas legítimas porque lo pida el negocio, pero sí las falsas o las que incumplen estas normas.",
+        "Si retiramos tu reseña, te avisamos en la app con el motivo. Si no estás de acuerdo, escríbenos y la volveremos a revisar.",
       ],
     },
     {

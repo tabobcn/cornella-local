@@ -98,6 +98,9 @@ const AdminAllBusinessesScreen = lazyNamed(loadAdminScreens, 'AdminAllBusinesses
 const BusinessApprovalScreen = lazyNamed(loadAdminScreens, 'BusinessApprovalScreen');
 const BusinessAnalyticsScreen = lazyNamed(loadAdminScreens, 'BusinessAnalyticsScreen');
 const ReportsScreen = lazyNamed(loadAdminScreens, 'ReportsScreen');
+const AdminServicesScreen = lazyNamed(loadAdminScreens, 'AdminServicesScreen');
+const AdminInstagramScreen = lazyNamed(loadAdminScreens, 'AdminInstagramScreen');
+const AdminReviewsScreen = lazyNamed(loadAdminScreens, 'AdminReviewsScreen');
 const loadLegalScreens = () => import('./screens/legal.jsx');
 const TermsScreen = lazyNamed(loadLegalScreens, 'TermsScreen');
 const PrivacyPolicyScreen = lazyNamed(loadLegalScreens, 'PrivacyPolicyScreen');
@@ -2115,13 +2118,15 @@ const PAGE_TITLES = {
   'business-verification': 'Verificación del negocio', 'business-appeal': 'Apelación', 'edit-business': 'Editar negocio',
   'validate-code': 'Validar cupón', 'admin-dashboard': 'Administración', 'admin-all-businesses': 'Todos los negocios',
   'admin-approve-businesses': 'Aprobar negocios', 'admin-users': 'Usuarios', 'admin-support': 'Soporte',
-  'business-analytics': 'Analítica', 'admin-reports': 'Denuncias',
+  'business-analytics': 'Analítica', 'admin-reports': 'Denuncias', 'admin-services': 'Servicios web y vídeo',
+  'admin-instagram': 'Instagram', 'admin-reviews': 'Reseñas',
 };
 // Pantallas cuyo componente ya pinta su propio <h1>
 const PAGES_WITH_OWN_H1 = new Set([
   'favorites', 'profile', 'business', 'coupon', 'job-detail', 'category', 'subcategory', 'login', 'register',
   'forgot-password', 'reset-password', 'edit-profile', 'settings', 'direct-budget', 'registration-success',
   'admin-dashboard', 'admin-all-businesses', 'admin-approve-businesses', 'business-analytics', 'admin-reports',
+  'admin-services', 'admin-instagram', 'admin-reviews',
   'business-candidates', 'business-data', 'business-verification', 'validate-code', 'business-stats',
 ]);
 const AUTH_REDIRECT_KEY = 'post-login-redirect';
@@ -10274,9 +10279,10 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
     setNotificationsState(withoutIt);
     if (onUpdateNotifications) onUpdateNotifications(withoutIt);
 
-    // Los avisos creados solo en pantalla (p. ej. "Presupuesto enviado") no están en la base de datos
-    const isStored = typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id);
-    if (!user?.id || !isStored) return;
+    // Los avisos creados solo en pantalla (p. ej. "Presupuesto enviado") llevan isLocal y no están en la
+    // base de datos. Los demás se borran de verdad (notifications.id es un número, no un UUID: antes se
+    // comprobaba que fuera UUID y nunca se borraban, así que al volver a abrir la app reaparecían).
+    if (!user?.id || notification.isLocal || id === undefined || id === null) return;
     try {
       const { error } = await supabase
         .from('notifications')
@@ -12544,6 +12550,14 @@ export default function App() {
           params: { reportId: data.report_id }
         };
 
+      // Panel de administración ampliado (supabase/panel-admin-servicios.sql)
+      case 'service_request':
+        return { route: 'admin-services', params: {} };
+      case 'system_job_failed':
+        return { route: 'admin-dashboard', params: {} };
+      case 'review_removed':
+        return { route: 'user-reviews', params: {} };
+
       default:
         return {
           route: 'home',
@@ -12594,6 +12608,9 @@ export default function App() {
               'business_submitted': 'bg-amber-600',
               'business_pending_review': 'bg-blue-600',
               'new_budget_request': 'bg-teal-700',
+              'service_request': 'bg-amber-700',
+              'system_job_failed': 'bg-red-600',
+              'review_removed': 'bg-red-600',
             };
             return iconBgMap[type] || 'bg-gray-500';
           };
@@ -12659,6 +12676,9 @@ export default function App() {
               'business_submitted': 'bg-amber-600',
               'business_pending_review': 'bg-blue-600',
               'new_budget_request': 'bg-teal-700',
+              'service_request': 'bg-amber-700',
+              'system_job_failed': 'bg-red-600',
+              'review_removed': 'bg-red-600',
             };
             return iconBgMap[type] || 'bg-gray-500';
           };
@@ -13359,6 +13379,11 @@ export default function App() {
     const ofertaId = urlParams.get('oferta');
     const empleoId = urlParams.get('empleo');
     const navTo = urlParams.get('nav');
+    // El ref se actualiza ya: si la sesión se restaura antes del siguiente render, el aviso de
+    // INITIAL_SESSION vería todavía 'login' y mandaría a Inicio (los enlaces de los avisos push
+    // con ?nav=... acababan en Inicio al abrir la app en frío).
+    const deepLinkPage = negocioId ? 'business' : ofertaId ? 'coupon' : empleoId ? 'job-detail' : navTo;
+    if (deepLinkPage) currentPageRef.current = deepLinkPage;
 
     if (negocioId) {
       const params = { id: parseInt(negocioId) };
@@ -13520,10 +13545,11 @@ export default function App() {
   // Agregar notificación
   const addNotification = (notification) => {
     const newNotification = {
-      id: Date.now(),
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       time: 'Ahora',
       isRead: false,
-      ...notification
+      ...notification,
+      isLocal: true, // solo existe en pantalla: no hay que borrarla de la base de datos
     };
     setDynamicNotifications(prev => [newNotification, ...prev]);
   };
@@ -14139,6 +14165,12 @@ export default function App() {
         return <BusinessAnalyticsScreen onNavigate={navigate} user={user} businessData={businessData} />;
       case 'admin-reports':
         return <ReportsScreen onNavigate={navigate} user={user} showToast={showToast} />;
+      case 'admin-services':
+        return <AdminServicesScreen onNavigate={navigate} showToast={showToast} />;
+      case 'admin-instagram':
+        return <AdminInstagramScreen onNavigate={navigate} showToast={showToast} />;
+      case 'admin-reviews':
+        return <AdminReviewsScreen onNavigate={navigate} showToast={showToast} />;
       case 'business':
         return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} showToast={showToast} />;
       case 'coupon':

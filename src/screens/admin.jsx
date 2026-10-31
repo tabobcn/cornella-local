@@ -1,6 +1,7 @@
 // Generado al dividir App.jsx: pantallas "admin" (se cargan bajo demanda con React.lazy)
-import { AlertCircle, ArrowLeft, ArrowRight, BarChart3, Calendar, Check, ChevronRight, Clock, Eye, FileText, Flag, Heart, Lightbulb, MessageCircle, MessageSquare, MousePointerClick, RefreshCw, Search, ShieldAlert, Star, Store, Trash2, TrendingUp, UserCheck, UserX, Users, X, XCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Calendar, Camera, Check, CheckCircle2, ChevronRight, Clock, Copy, ExternalLink, Eye, FileText, Flag, Globe, Heart, Lightbulb, Mail, MessageCircle, MessageSquare, MousePointerClick, Phone, RefreshCw, Search, ShieldAlert, Sparkles, Star, Store, Trash2, TrendingUp, UserCheck, UserX, Users, X, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { copyToClipboard } from '../utils/helpers';
 import { useEffect, useState } from 'react';
 import {
   Navbar,
@@ -368,6 +369,9 @@ export const AdminDashboard = ({ onNavigate, user }) => {
     totalBusinesses: 0,
     activeOffers: 0,
     activeJobs: 0,
+    newServiceRequests: 0,
+    instagramToPost: 0,
+    instagramToDelete: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -413,6 +417,30 @@ export const AdminDashboard = ({ onNavigate, user }) => {
             .eq('status', 'pending'),
         ]);
 
+        // Servicios e Instagram (si aún no se ha ejecutado panel-admin-servicios.sql, salen a 0)
+        const [
+          { count: newServices },
+          { count: igToPost },
+          { count: igToDelete },
+        ] = await Promise.all([
+          supabase
+            .from('service_requests')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'nuevo'),
+          supabase
+            .from('businesses')
+            .select('*', { count: 'exact', head: true })
+            .eq('instagram_consent', true)
+            .eq('verification_status', 'approved')
+            .eq('is_published', true)
+            .is('instagram_posted_at', null),
+          supabase
+            .from('businesses')
+            .select('*', { count: 'exact', head: true })
+            .eq('instagram_consent', false)
+            .not('instagram_posted_at', 'is', null),
+        ]);
+
         setStats({
           pendingBusinesses: pendingBiz || 0,
           pendingReports: pendingRep || 0,
@@ -421,6 +449,9 @@ export const AdminDashboard = ({ onNavigate, user }) => {
           totalBusinesses: totalBiz || 0,
           activeOffers: activeOff || 0,
           activeJobs: activeJb || 0,
+          newServiceRequests: newServices || 0,
+          instagramToPost: igToPost || 0,
+          instagramToDelete: igToDelete || 0,
         });
       } catch (error) {
         console.error('Error:', error);
@@ -467,6 +498,36 @@ export const AdminDashboard = ({ onNavigate, user }) => {
       color: 'purple',
       badge: stats.pendingSupport,
       route: 'admin-support'
+    },
+    {
+      id: 'reviews',
+      title: 'Reseñas',
+      description: 'Revisar y retirar reseñas con motivo',
+      icon: Star,
+      color: 'yellow',
+      route: 'admin-reviews'
+    },
+    {
+      id: 'instagram',
+      title: 'Instagram',
+      description: stats.instagramToDelete > 0
+        ? `${stats.instagramToDelete} por borrar · ${stats.instagramToPost} por publicar`
+        : `${stats.instagramToPost} por publicar`,
+      icon: Camera,
+      color: 'pink',
+      badge: stats.instagramToDelete + stats.instagramToPost,
+      route: 'admin-instagram'
+    },
+    {
+      id: 'services',
+      title: 'Servicios web y vídeo',
+      description: stats.newServiceRequests > 0
+        ? `${stats.newServiceRequests} ${stats.newServiceRequests === 1 ? 'solicitud nueva' : 'solicitudes nuevas'}`
+        : 'Negocios sin web y solicitudes',
+      icon: Sparkles,
+      color: 'amber',
+      badge: stats.newServiceRequests,
+      route: 'admin-services'
     },
   ];
 
@@ -527,7 +588,10 @@ export const AdminDashboard = ({ onNavigate, user }) => {
               blue: 'bg-blue-100 text-blue-600',
               red: 'bg-red-100 text-red-600',
               green: 'bg-green-100 text-green-600',
-              purple: 'bg-purple-100 text-purple-600'
+              purple: 'bg-purple-100 text-purple-600',
+              yellow: 'bg-yellow-100 text-yellow-700',
+              pink: 'bg-pink-100 text-pink-700',
+              amber: 'bg-amber-100 text-amber-700',
             };
 
             return (
@@ -553,6 +617,9 @@ export const AdminDashboard = ({ onNavigate, user }) => {
             );
           })}
         </div>
+
+        {/* Estado de las tareas automáticas de cada noche */}
+        <SystemStatusCard />
       </div>
 
       {/* Navbar */}
@@ -1877,3 +1944,972 @@ export const ReportsScreen = ({ onNavigate, user, showToast }) => {
   );
 };
 
+
+// =====================================================
+// PANEL AMPLIADO (2026-10-31): estado del sistema, servicios web/vídeo, Instagram y reseñas
+// SQL: supabase/panel-admin-servicios.sql
+// =====================================================
+
+// La función o la tabla todavía no existe en la base de datos (falta ejecutar el SQL)
+const isMissingDbObject = (error) => ['PGRST202', 'PGRST205', '42P01', '42883'].includes(error?.code);
+
+const SERVICE_LABELS = { web: 'Página web', video: 'Vídeo', web_video: 'Web y vídeo' };
+const SERVICE_STATUSES = [
+  { value: 'nuevo', label: 'Nuevo', badge: 'bg-blue-100 text-blue-800' },
+  { value: 'contactado', label: 'Contactado', badge: 'bg-amber-100 text-amber-800' },
+  { value: 'hecho', label: 'Hecho', badge: 'bg-green-100 text-green-800' },
+  { value: 'descartado', label: 'Descartado', badge: 'bg-gray-100 text-gray-700' },
+];
+
+// Igual que scripts/prerender-negocios.mjs, para que el enlace coincida con la ficha pública
+const publicSlug = (text) => String(text || 'negocio')
+  .normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '')
+  .slice(0, 60) || 'negocio';
+const businessPublicUrl = (b) => `https://www.cornellalocal.es/negocio/${publicSlug(b.slug || b.name)}-${b.id}`;
+
+// Número para wa.me: solo cifras; los móviles/fijos españoles de 9 cifras llevan delante el 34
+const whatsappNumber = (phone) => {
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.length === 9 && /^[6789]/.test(digits)) digits = `34${digits}`;
+  return digits.length >= 9 ? digits : '';
+};
+
+const formatDateTime = (value) => (value
+  ? new Date(value).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  : '');
+const formatDay = (value) => (value ? new Date(value).toLocaleDateString('es-ES') : '');
+
+const AdminHeader = ({ title, subtitle, onBack, children }) => (
+  <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-4">
+    <div className="flex items-center gap-3">
+      <button aria-label="Volver" onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors shrink-0">
+        <ArrowLeft size={20} className="text-gray-700" />
+      </button>
+      <div className="min-w-0">
+        <h1 className="text-lg font-bold text-gray-900 truncate">{title}</h1>
+        {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+      </div>
+    </div>
+    {children}
+  </header>
+);
+
+const TabButtons = ({ tabs, value, onChange }) => (
+  <div className="flex gap-2 overflow-x-auto pb-1 mt-3" role="tablist">
+    {tabs.map(t => (
+      <button
+        key={t.key}
+        role="tab"
+        aria-selected={value === t.key}
+        onClick={() => onChange(t.key)}
+        className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+          value === t.key ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        {t.label}
+      </button>
+    ))}
+  </div>
+);
+
+const MissingSqlNotice = () => (
+  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+    Falta ejecutar <strong>supabase/panel-admin-servicios.sql</strong> en el SQL Editor de Supabase.
+  </div>
+);
+
+// Botones para contactar (enlaces normales: WhatsApp, llamada y email)
+const ContactButtons = ({ phone, email, whatsappText, emailSubject }) => {
+  const wa = whatsappNumber(phone);
+  if (!wa && !phone && !email) {
+    return <p className="text-xs text-gray-500">Sin teléfono ni email de contacto.</p>;
+  }
+  const linkClass = 'inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold transition-colors';
+  return (
+    <div className="flex flex-wrap gap-2">
+      {wa && (
+        <a
+          href={`https://wa.me/${wa}?text=${encodeURIComponent(whatsappText || '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${linkClass} bg-green-700 text-white hover:bg-green-800`}
+        >
+          <MessageCircle size={14} /> WhatsApp
+        </a>
+      )}
+      {phone && (
+        <a href={`tel:${String(phone).replace(/\s/g, '')}`} className={`${linkClass} bg-blue-50 text-blue-800 hover:bg-blue-100`}>
+          <Phone size={14} /> Llamar
+        </a>
+      )}
+      {email && (
+        <a
+          href={`mailto:${email}?subject=${encodeURIComponent(emailSubject || 'Cornellà Local')}`}
+          className={`${linkClass} bg-gray-100 text-gray-800 hover:bg-gray-200`}
+        >
+          <Mail size={14} /> Email
+        </a>
+      )}
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Tarjeta "Estado del sistema" (limpieza nocturna y actualización de la web)
+// ---------------------------------------------------------------------------
+const sumNumbers = (obj) => Object.values(obj || {}).reduce((acc, v) => acc + (typeof v === 'number' ? v : 0), 0);
+
+const describeJob = (job, kind) => {
+  if (!job) {
+    return { tone: 'wait', title: 'Aún no hay datos', detail: 'Se apuntará la próxima vez que se ejecute (cada noche).' };
+  }
+  if (!job.finished_at) {
+    return { tone: 'wait', title: `En marcha desde ${formatDateTime(job.requested_at)}`, detail: 'El resultado aparece aquí en cuanto llegue.' };
+  }
+  if (!job.ok) {
+    return { tone: 'bad', title: `Ha fallado · ${formatDateTime(job.finished_at)}`, detail: job.error || 'Sin detalle' };
+  }
+  if (kind === 'limpieza') {
+    const files = sumNumbers(job.summary?.archivos_borrados);
+    const rows = sumNumbers(job.summary?.filas);
+    return { tone: 'ok', title: `Bien · ${formatDateTime(job.finished_at)}`, detail: `${files} archivos y ${rows} datos caducados borrados` };
+  }
+  if (job.summary?.resultado === 'sin cambios') {
+    return { tone: 'ok', title: `Bien · ${formatDateTime(job.finished_at)}`, detail: 'No había cambios que publicar' };
+  }
+  return { tone: 'ok', title: `Bien · ${formatDateTime(job.finished_at)}`, detail: 'Páginas de negocios y sitemap actualizados' };
+};
+
+const ToneIcon = ({ tone }) => {
+  if (tone === 'ok') return <CheckCircle2 size={20} className="text-green-700 shrink-0" aria-hidden="true" />;
+  if (tone === 'bad') return <AlertTriangle size={20} className="text-red-600 shrink-0" aria-hidden="true" />;
+  return <Clock size={20} className="text-gray-500 shrink-0" aria-hidden="true" />;
+};
+
+const SystemStatusCard = () => {
+  const [status, setStatus] = useState(null);
+  const [state, setState] = useState('loading'); // loading | ok | missing | error
+
+  const load = async () => {
+    setState('loading');
+    const { data, error } = await supabase.rpc('admin_system_status');
+    if (error) {
+      if (isMissingDbObject(error)) setState('missing');
+      else {
+        console.error('Error cargando el estado del sistema:', error);
+        setState('error');
+      }
+      return;
+    }
+    setStatus(data);
+    setState('ok');
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const rows = state === 'ok' ? [
+    { key: 'limpieza', name: 'Limpieza nocturna de datos', ...describeJob(status?.limpieza, 'limpieza') },
+    { key: 'web', name: 'Actualización de la web (Google)', ...describeJob(status?.web, 'web') },
+  ] : [];
+  const inactive = (status?.tareas || []).filter(t => !t.activa);
+
+  return (
+    <section className="mt-6 bg-white rounded-xl p-4 shadow-sm" aria-labelledby="system-status-title">
+      <div className="flex items-center justify-between mb-3">
+        <h2 id="system-status-title" className="text-base font-bold text-slate-900">Estado del sistema</h2>
+        <button
+          onClick={load}
+          aria-label="Actualizar estado del sistema"
+          className="w-8 h-8 rounded-lg bg-gray-100 text-gray-700 flex items-center justify-center hover:bg-gray-200"
+        >
+          <RefreshCw size={14} className={state === 'loading' ? 'animate-spin' : ''} />
+        </button>
+      </div>
+      {state === 'loading' && <p className="text-sm text-gray-500">Cargando…</p>}
+      {state === 'missing' && <MissingSqlNotice />}
+      {state === 'error' && <p className="text-sm text-red-700">No se pudo cargar el estado.</p>}
+      {state === 'ok' && (
+        <div className="space-y-3">
+          {rows.map(r => (
+            <div key={r.key} className="flex items-start gap-3">
+              <ToneIcon tone={r.tone} />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-slate-900">{r.name}</div>
+                <div className="text-xs text-slate-700">{r.title}</div>
+                <div className="text-xs text-gray-500 break-words">{r.detail}</div>
+              </div>
+            </div>
+          ))}
+          {status?.web_cambios_pendientes && (
+            <p className="text-xs text-slate-700 bg-blue-50 rounded-lg p-2">
+              Hay cambios en negocios publicados: la web se actualizará esta noche.
+            </p>
+          )}
+          {inactive.length > 0 && (
+            <p className="text-xs text-red-700 bg-red-50 rounded-lg p-2">
+              Tareas desactivadas: {inactive.map(t => t.nombre).join(', ')}
+            </p>
+          )}
+          <p className="text-[11px] text-gray-500">Si algo falla, te llegará un aviso.</p>
+        </div>
+      )}
+    </section>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Servicios de web y vídeo
+// ---------------------------------------------------------------------------
+export const AdminServicesScreen = ({ onNavigate, showToast }) => {
+  const [enabled, setEnabled] = useState(false);
+  const [missingSql, setMissingSql] = useState(false);
+  const [savingToggle, setSavingToggle] = useState(false);
+  const [tab, setTab] = useState('requests');
+  const [requestFilter, setRequestFilter] = useState('open');
+  const [requests, setRequests] = useState([]);
+  const [businesses, setBusinesses] = useState([]);
+  const [owners, setOwners] = useState({});
+  const [notesDraft, setNotesDraft] = useState({});
+  const [savingId, setSavingId] = useState(null);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [settingsRes, requestsRes, businessesRes] = await Promise.all([
+          supabase.from('app_settings').select('value').eq('key', 'services_offer_enabled').maybeSingle(),
+          supabase.from('service_requests').select('*').order('created_at', { ascending: false }).limit(300),
+          supabase.from('businesses').select('*').order('name', { ascending: true }).limit(500),
+        ]);
+        if (businessesRes.error) throw businessesRes.error;
+        setBusinesses(businessesRes.data || []);
+
+        if (isMissingDbObject(settingsRes.error) || isMissingDbObject(requestsRes.error)) {
+          setMissingSql(true);
+          return;
+        }
+        if (settingsRes.error) throw settingsRes.error;
+        if (requestsRes.error) throw requestsRes.error;
+        setEnabled(settingsRes.data?.value === true);
+        const reqs = requestsRes.data || [];
+        setRequests(reqs);
+
+        const ownerIds = [...new Set(reqs.map(r => r.owner_id).filter(Boolean))];
+        if (ownerIds.length > 0) {
+          const { data: profiles, error: profilesError } = await supabase.from('profiles').select('*').in('id', ownerIds);
+          if (profilesError) console.error('Error cargando dueños:', profilesError);
+          setOwners(Object.fromEntries((profiles || []).map(p => [p.id, p])));
+        }
+      } catch (error) {
+        console.error('Error cargando servicios (admin):', error);
+        showToast('Error al cargar los servicios', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const businessById = Object.fromEntries(businesses.map(b => [b.id, b]));
+  const openStatuses = ['nuevo', 'contactado'];
+
+  const handleToggle = async () => {
+    const next = !enabled;
+    setSavingToggle(true);
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .update({ value: next })
+        .eq('key', 'services_offer_enabled')
+        .select();
+      if (error) throw error;
+      if (!data?.length) throw new Error('sin permiso');
+      setEnabled(next);
+      showToast(next ? 'Encendido: los negocios ya ven la tarjeta de web y vídeo' : 'Apagado: los negocios ya no ven la tarjeta', 'success');
+    } catch (error) {
+      console.error('Error cambiando services_offer_enabled:', error);
+      showToast('No se pudo cambiar el interruptor', 'error');
+    } finally {
+      setSavingToggle(false);
+    }
+  };
+
+  const updateRequest = async (request, changes, okMessage) => {
+    setSavingId(request.id);
+    try {
+      const { data, error } = await supabase
+        .from('service_requests')
+        .update(changes)
+        .eq('id', request.id)
+        .select()
+        .single();
+      if (error) throw error;
+      setRequests(prev => prev.map(r => (r.id === request.id ? data : r)));
+      setNotesDraft(prev => {
+        const next = { ...prev };
+        delete next[request.id];
+        return next;
+      });
+      if (okMessage) showToast(okMessage, 'success');
+    } catch (error) {
+      console.error('Error actualizando solicitud de servicios:', error);
+      showToast('No se pudo guardar', 'error');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const visibleRequests = requests.filter(r => (requestFilter === 'open'
+    ? openStatuses.includes(r.status)
+    : !openStatuses.includes(r.status)));
+  const openCount = requests.filter(r => openStatuses.includes(r.status)).length;
+  const openByBusiness = new Set(requests.filter(r => openStatuses.includes(r.status)).map(r => r.business_id));
+
+  const q = search.trim().toLowerCase();
+  const withoutWeb = businesses
+    .filter(b => b.verification_status === 'approved' && !(b.website || '').trim())
+    .filter(b => !q || [b.name, b.subcategory, formatNeighborhood(b.neighborhood)].some(v => (v || '').toLowerCase().includes(q)))
+    .sort((a, b) => Number(!!b.services_contact_consent) - Number(!!a.services_contact_consent));
+  const consentCount = withoutWeb.filter(b => b.services_contact_consent).length;
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50">
+      <AdminHeader title="Servicios web y vídeo" subtitle="Solicitudes y negocios sin web" onBack={() => onNavigate('admin-dashboard')}>
+        {!missingSql && (
+          <TabButtons
+            tabs={[
+              { key: 'requests', label: `Solicitudes (${openCount})` },
+              { key: 'no-web', label: 'Negocios sin web' },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
+        )}
+      </AdminHeader>
+
+      <div className="p-4 pb-24 space-y-3">
+        {missingSql && <MissingSqlNotice />}
+
+        {!missingSql && (
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div id="services-toggle-label" className="text-sm font-bold text-slate-900">Ofrecer web y vídeo a los negocios</div>
+                <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                  {enabled
+                    ? 'Encendido: los negocios aprobados ven en su panel una tarjeta para pedir información, y una casilla en «Editar negocio» para aceptar que les informes.'
+                    : 'Apagado: los negocios no ven nada. Enciéndelo cuando quieras empezar a ofrecerlo.'}
+                </p>
+                <p className="text-[11px] text-amber-900 bg-amber-50 rounded-lg p-2 mt-2 leading-relaxed">
+                  Antes de cobrar el primer trabajo, revisa los textos legales (ahora dicen que el proyecto es sin ánimo de
+                  lucro) y tu situación fiscal (alta de autónomo y facturas).
+                </p>
+              </div>
+              <button
+                role="switch"
+                aria-checked={enabled}
+                aria-labelledby="services-toggle-label"
+                onClick={handleToggle}
+                disabled={savingToggle || loading}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60 ${enabled ? 'bg-green-700' : 'bg-gray-400'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : ''}`} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!missingSql && loading && <p className="text-sm text-gray-500 text-center py-8">Cargando…</p>}
+
+        {/* Solicitudes */}
+        {!missingSql && !loading && tab === 'requests' && (
+          <>
+            <div className="flex gap-2">
+              {[{ key: 'open', label: 'Abiertas' }, { key: 'closed', label: 'Terminadas' }].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setRequestFilter(f.key)}
+                  aria-pressed={requestFilter === f.key}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold ${requestFilter === f.key ? 'bg-slate-800 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            {visibleRequests.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <Sparkles size={36} className="mx-auto mb-2 opacity-40" />
+                <p className="text-sm">{requestFilter === 'open' ? 'No hay solicitudes abiertas' : 'No hay solicitudes terminadas'}</p>
+              </div>
+            )}
+            {visibleRequests.map(r => {
+              const biz = businessById[r.business_id] || {};
+              const owner = owners[r.owner_id] || {};
+              const statusInfo = SERVICE_STATUSES.find(s => s.value === r.status) || SERVICE_STATUSES[0];
+              const phone = r.contact_phone || biz.phone;
+              const email = owner.email || biz.email;
+              const notesValue = notesDraft[r.id] ?? r.admin_notes ?? '';
+              const notesChanged = notesValue !== (r.admin_notes ?? '');
+              const what = (SERVICE_LABELS[r.service] || r.service).toLowerCase();
+              return (
+                <article key={r.id} className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h2 className="font-bold text-slate-900 truncate">{biz.name || `Negocio ${r.business_id}`}</h2>
+                      <p className="text-xs text-gray-500">
+                        {owner.full_name ? `${owner.full_name} · ` : ''}Pedido el {formatDay(r.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">{SERVICE_LABELS[r.service] || r.service}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${statusInfo.badge}`}>{statusInfo.label}</span>
+                    </div>
+                  </div>
+                  {r.message && <p className="text-sm text-slate-700 bg-gray-50 rounded-lg p-3 whitespace-pre-line">{r.message}</p>}
+                  <ContactButtons
+                    phone={phone}
+                    email={email}
+                    whatsappText={`Hola, soy de Cornellà Local. Te escribo por tu solicitud de información sobre ${what} para ${biz.name || 'tu negocio'}.`}
+                    emailSubject={`Tu solicitud de ${what} · Cornellà Local`}
+                  />
+                  <div className="grid grid-cols-2 gap-2 items-end">
+                    <div>
+                      <label htmlFor={`service-status-${r.id}`} className="block text-xs font-semibold text-slate-700 mb-1">Estado</label>
+                      <select
+                        id={`service-status-${r.id}`}
+                        value={r.status}
+                        disabled={savingId === r.id}
+                        onChange={(e) => updateRequest(r, { status: e.target.value }, 'Estado guardado')}
+                        className="w-full h-9 rounded-lg border border-gray-200 bg-white px-2 text-sm text-slate-900"
+                      >
+                        {SERVICE_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    </div>
+                    {biz.id && (
+                      <button
+                        onClick={() => onNavigate('business', { id: biz.id })}
+                        className="h-9 rounded-lg bg-blue-50 text-blue-800 text-xs font-semibold hover:bg-blue-100 inline-flex items-center justify-center gap-1"
+                      >
+                        <Eye size={14} /> Ver ficha
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <label htmlFor={`service-notes-${r.id}`} className="block text-xs font-semibold text-slate-700 mb-1">Notas internas</label>
+                    <textarea
+                      id={`service-notes-${r.id}`}
+                      value={notesValue}
+                      onChange={(e) => setNotesDraft(prev => ({ ...prev, [r.id]: e.target.value }))}
+                      rows={2}
+                      maxLength={2000}
+                      placeholder="Ej.: le llamo el lunes; presupuesto enviado…"
+                      className="w-full rounded-lg border border-gray-200 p-2 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+                    />
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <p className="text-[11px] text-gray-500">El negocio puede verlas si descarga sus datos.</p>
+                      {notesChanged && (
+                        <button
+                          onClick={() => updateRequest(r, { admin_notes: notesValue.trim() || null }, 'Notas guardadas')}
+                          disabled={savingId === r.id}
+                          className="h-8 px-3 rounded-lg bg-primary text-white text-xs font-semibold disabled:opacity-60"
+                        >
+                          Guardar notas
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </>
+        )}
+
+        {/* Negocios sin web */}
+        {!missingSql && !loading && tab === 'no-web' && (
+          <>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 leading-relaxed">
+              Solo puedes ofrecerles tus servicios por teléfono, WhatsApp o email a los negocios que han marcado la casilla
+              «Quiero que me informéis» o que te han pedido información. Al resto les llega la tarjeta de su panel cuando el
+              interruptor está encendido.
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                aria-label="Buscar negocio sin web"
+                placeholder="Buscar por nombre, oficio o barrio…"
+                className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-white text-sm text-slate-900 placeholder:text-gray-500 focus:outline-none focus:border-primary"
+              />
+            </div>
+            <p className="text-xs text-gray-600">{withoutWeb.length} negocios aprobados sin web · {consentCount} aceptan información</p>
+            {withoutWeb.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <Globe size={36} className="mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Todos los negocios aprobados tienen web</p>
+              </div>
+            )}
+            {withoutWeb.map(b => (
+              <article key={b.id} className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h2 className="font-bold text-slate-900 truncate">{b.name}</h2>
+                    <p className="text-xs text-gray-500 truncate">
+                      {b.subcategory || 'Comercio'}{b.neighborhood ? ` · ${formatNeighborhood(b.neighborhood)}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onNavigate('business', { id: b.id })}
+                    aria-label={`Ver ficha de ${b.name}`}
+                    className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center hover:bg-blue-100 shrink-0"
+                  >
+                    <Eye size={15} />
+                  </button>
+                </div>
+                {openByBusiness.has(b.id) ? (
+                  <button onClick={() => { setTab('requests'); setRequestFilter('open'); }} className="text-xs font-semibold text-primary-dark underline">
+                    Ha pedido información → ver solicitud
+                  </button>
+                ) : b.services_contact_consent ? (
+                  <>
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-green-100 text-green-800 text-xs font-bold">
+                      Acepta información{b.services_contact_consent_at ? ` desde el ${formatDay(b.services_contact_consent_at)}` : ''}
+                    </span>
+                    <ContactButtons
+                      phone={b.phone}
+                      email={b.email}
+                      whatsappText={`Hola, soy de Cornellà Local. Nos diste permiso para informarte de nuestros servicios de página web y vídeo para ${b.name}. ¿Te puedo contar cómo funciona?`}
+                      emailSubject={`Página web y vídeo para ${b.name} · Cornellà Local`}
+                    />
+                  </>
+                ) : (
+                  <span className="inline-block px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs font-semibold">
+                    Sin permiso para contactar
+                  </span>
+                )}
+              </article>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Instagram (@cornella_informa): qué publicar y qué borrar
+// ---------------------------------------------------------------------------
+const INSTAGRAM_DELETE_DAYS = 30;
+
+const instagramCaption = (b) => {
+  const barrio = b.neighborhood ? formatNeighborhood(b.neighborhood) : '';
+  return [
+    `✨ ${b.name}`,
+    `📍 ${barrio ? `${barrio}, ` : ''}Cornellà de Llobregat`,
+    b.subcategory ? `🏷️ ${b.subcategory}` : null,
+    '',
+    `Descubre sus ofertas en Cornellà Local 👉 ${businessPublicUrl(b)}`,
+    '',
+    '#Cornellà #CornellàDeLlobregat #ComercioLocal #CornellàLocal',
+  ].filter(line => line !== null).join('\n');
+};
+
+export const AdminInstagramScreen = ({ onNavigate, showToast }) => {
+  const [businesses, setBusinesses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState(null);
+  const [savingId, setSavingId] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .or('instagram_consent.eq.true,instagram_posted_at.not.is.null')
+          .order('name', { ascending: true })
+          .limit(500);
+        if (error) throw error;
+        setBusinesses(data || []);
+      } catch (error) {
+        console.error('Error cargando Instagram (admin):', error);
+        showToast('Error al cargar los negocios', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const toDelete = businesses.filter(b => !b.instagram_consent && b.instagram_posted_at);
+  const toPost = businesses.filter(b => b.instagram_consent && !b.instagram_posted_at
+    && b.verification_status === 'approved' && b.is_published);
+  const posted = businesses.filter(b => b.instagram_consent && b.instagram_posted_at);
+  const activeTab = tab || (toDelete.length > 0 ? 'delete' : 'post');
+
+  const setPosted = async (b, value, okMessage) => {
+    setSavingId(b.id);
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .update({ instagram_posted_at: value })
+        .eq('id', b.id)
+        .select()
+        .single();
+      if (error) throw error;
+      setBusinesses(prev => prev.map(x => (x.id === b.id ? data : x)));
+      showToast(okMessage, 'success');
+    } catch (error) {
+      console.error('Error actualizando instagram_posted_at:', error);
+      showToast('No se pudo guardar', 'error');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleCopy = async (b) => {
+    const ok = await copyToClipboard(instagramCaption(b));
+    showToast(ok ? 'Texto copiado: pégalo en Instagram' : 'No se pudo copiar el texto', ok ? 'success' : 'error');
+  };
+
+  const daysLeft = (b) => {
+    if (!b.instagram_consent_changed_at) return null;
+    const days = Math.floor((Date.now() - new Date(b.instagram_consent_changed_at).getTime()) / 86400000);
+    return INSTAGRAM_DELETE_DAYS - days;
+  };
+
+  const list = activeTab === 'delete' ? toDelete : activeTab === 'posted' ? posted : toPost;
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50">
+      <AdminHeader title="Instagram" subtitle="@cornella_informa · solo negocios con permiso" onBack={() => onNavigate('admin-dashboard')}>
+        <TabButtons
+          tabs={[
+            { key: 'delete', label: `Por borrar (${toDelete.length})` },
+            { key: 'post', label: `Por publicar (${toPost.length})` },
+            { key: 'posted', label: `Publicados (${posted.length})` },
+          ]}
+          value={activeTab}
+          onChange={setTab}
+        />
+      </AdminHeader>
+
+      <div className="p-4 pb-24 space-y-3">
+        {activeTab === 'delete' && (
+          <p className="text-xs text-slate-700 bg-red-50 border border-red-100 rounded-lg p-3 leading-relaxed">
+            Estos negocios han quitado el permiso. Borra sus publicaciones de Instagram en {INSTAGRAM_DELETE_DAYS} días como
+            máximo (es lo que dicen los textos legales) y márcalo aquí.
+          </p>
+        )}
+        {activeTab === 'post' && (
+          <p className="text-xs text-slate-700 bg-pink-50 border border-pink-100 rounded-lg p-3 leading-relaxed">
+            Negocios publicados que han dado permiso. Copia el texto, abre la foto de portada, publícalo y márcalo como publicado.
+            Solo puedes usar el nombre, la categoría, el barrio y la foto de portada.
+          </p>
+        )}
+
+        {loading && <p className="text-sm text-gray-500 text-center py-8">Cargando…</p>}
+        {!loading && list.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            <Camera size={36} className="mx-auto mb-2 opacity-40" />
+            <p className="text-sm">
+              {activeTab === 'delete' ? 'Nada que borrar' : activeTab === 'posted' ? 'Aún no has marcado ninguno como publicado' : 'Nada pendiente de publicar'}
+            </p>
+          </div>
+        )}
+
+        {!loading && list.map(b => {
+          const left = daysLeft(b);
+          return (
+            <article key={b.id} className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+              <div className="flex items-start gap-3">
+                {b.cover_photo ? (
+                  <img src={b.cover_photo} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0 bg-gray-100" />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                    <Store size={22} className="text-gray-500" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-bold text-slate-900 truncate">{b.name}</h2>
+                  <p className="text-xs text-gray-500 truncate">
+                    {b.subcategory || 'Comercio'}{b.neighborhood ? ` · ${formatNeighborhood(b.neighborhood)}` : ''}
+                  </p>
+                  {activeTab === 'delete' && (
+                    <p className={`text-xs font-semibold mt-1 ${left !== null && left <= 7 ? 'text-red-700' : 'text-slate-700'}`}>
+                      {left === null
+                        ? `Quitó el permiso: bórralo en ${INSTAGRAM_DELETE_DAYS} días como máximo`
+                        : left >= 0
+                          ? `Quitó el permiso el ${formatDay(b.instagram_consent_changed_at)} · quedan ${left} días`
+                          : `Plazo superado hace ${-left} días: bórralo ya`}
+                    </p>
+                  )}
+                  {activeTab !== 'delete' && b.instagram_posted_at && (
+                    <p className="text-xs text-slate-700 mt-1">Publicado el {formatDay(b.instagram_posted_at)}</p>
+                  )}
+                </div>
+              </div>
+
+              {activeTab === 'post' && (
+                <>
+                  <label htmlFor={`ig-caption-${b.id}`} className="sr-only">Texto para Instagram de {b.name}</label>
+                  <textarea
+                    id={`ig-caption-${b.id}`}
+                    readOnly
+                    value={instagramCaption(b)}
+                    rows={6}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs text-slate-800"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => handleCopy(b)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-gray-100 text-gray-800 text-xs font-semibold hover:bg-gray-200">
+                      <Copy size={14} /> Copiar texto
+                    </button>
+                    {b.cover_photo && (
+                      <a href={b.cover_photo} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-gray-100 text-gray-800 text-xs font-semibold hover:bg-gray-200">
+                        <ExternalLink size={14} /> Abrir foto
+                      </a>
+                    )}
+                    <button
+                      onClick={() => setPosted(b, new Date().toISOString(), 'Marcado como publicado')}
+                      disabled={savingId === b.id}
+                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-pink-700 text-white text-xs font-semibold hover:bg-pink-800 disabled:opacity-60"
+                    >
+                      <Check size={14} /> Ya lo he publicado
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {activeTab !== 'post' && (
+                <button
+                  onClick={() => setPosted(b, null, 'Marcado como borrado de Instagram')}
+                  disabled={savingId === b.id}
+                  className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold disabled:opacity-60 ${
+                    activeTab === 'delete' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  <Trash2 size={14} /> Ya lo he borrado de Instagram
+                </button>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Reseñas: revisar y retirar con motivo (el autor recibe un aviso)
+// ---------------------------------------------------------------------------
+export const AdminReviewsScreen = ({ onNavigate, showToast }) => {
+  const [reviews, setReviews] = useState([]);
+  const [businessNames, setBusinessNames] = useState({});
+  const [authors, setAuthors] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [confirmRemove, setConfirmRemove] = useState(null);
+  const [removeReason, setRemoveReason] = useState('');
+  const [removing, setRemoving] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(200);
+        if (error) throw error;
+        const list = data || [];
+        setReviews(list);
+
+        const businessIds = [...new Set(list.map(r => r.business_id).filter(Boolean))];
+        const userIds = [...new Set(list.map(r => r.user_id).filter(Boolean))];
+        const [bizRes, profRes] = await Promise.all([
+          businessIds.length ? supabase.from('businesses').select('id, name').in('id', businessIds) : Promise.resolve({ data: [] }),
+          userIds.length ? supabase.from('profiles').select('*').in('id', userIds) : Promise.resolve({ data: [] }),
+        ]);
+        if (bizRes.error) console.error('Error cargando negocios de reseñas:', bizRes.error);
+        if (profRes.error) console.error('Error cargando autores de reseñas:', profRes.error);
+        setBusinessNames(Object.fromEntries((bizRes.data || []).map(b => [b.id, b.name])));
+        setAuthors(Object.fromEntries((profRes.data || []).map(p => [p.id, p])));
+      } catch (error) {
+        console.error('Error cargando reseñas (admin):', error);
+        showToast('Error al cargar las reseñas', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const handleRemove = async () => {
+    if (!confirmRemove || removing) return;
+    setRemoving(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_remove_review', {
+        p_review_id: confirmRemove.id,
+        p_reason: removeReason.trim() || null,
+      });
+      if (error) {
+        if (isMissingDbObject(error)) {
+          showToast('Falta ejecutar supabase/panel-admin-servicios.sql', 'error');
+          return;
+        }
+        throw error;
+      }
+      if (!data?.success) throw new Error(data?.error || 'remove_failed');
+      setReviews(prev => prev.filter(r => r.id !== confirmRemove.id));
+      showToast('Reseña retirada. Hemos avisado a su autor.', 'success');
+      setConfirmRemove(null);
+      setRemoveReason('');
+    } catch (error) {
+      console.error('Error retirando reseña:', error);
+      showToast('No se pudo retirar la reseña', 'error');
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  const q = search.trim().toLowerCase();
+  const filtered = reviews
+    .filter(r => (filter === 'low' ? r.rating <= 2 : filter === 'text' ? !!(r.comment || '').trim() : true))
+    .filter(r => {
+      if (!q) return true;
+      const author = authors[r.user_id] || {};
+      return [businessNames[r.business_id], r.comment, author.full_name, author.email].some(v => (v || '').toLowerCase().includes(q));
+    });
+
+  return (
+    <>
+      <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50">
+        <AdminHeader title="Reseñas" subtitle={`${filtered.length} de ${reviews.length} (las 200 más recientes)`} onBack={() => onNavigate('admin-dashboard')}>
+          <div className="relative mt-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              aria-label="Buscar reseñas"
+              placeholder="Buscar por negocio, autor o texto…"
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-slate-900 placeholder:text-gray-500 focus:outline-none focus:border-primary"
+            />
+          </div>
+          <TabButtons
+            tabs={[
+              { key: 'all', label: 'Todas' },
+              { key: 'low', label: '1-2 estrellas' },
+              { key: 'text', label: 'Con comentario' },
+            ]}
+            value={filter}
+            onChange={setFilter}
+          />
+        </AdminHeader>
+
+        <div className="p-4 pb-24 space-y-3">
+          {loading && <p className="text-sm text-gray-500 text-center py-8">Cargando…</p>}
+          {!loading && filtered.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <Star size={36} className="mx-auto mb-2 opacity-40" />
+              <p className="text-sm">No hay reseñas</p>
+            </div>
+          )}
+          {!loading && filtered.map(r => {
+            const author = authors[r.user_id] || {};
+            return (
+              <article key={r.id} className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h2 className="font-bold text-slate-900 truncate">{businessNames[r.business_id] || `Negocio ${r.business_id}`}</h2>
+                    <p className="text-xs text-gray-500 truncate">
+                      {author.full_name || author.email || 'Usuario'} · {formatDay(r.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0" role="img" aria-label={`${r.rating} de 5 estrellas`}>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <Star key={n} size={14} className={n <= r.rating ? 'text-amber-500 fill-amber-500' : 'text-gray-300'} aria-hidden="true" />
+                    ))}
+                  </div>
+                </div>
+                {r.comment && <p className="text-sm text-slate-700 whitespace-pre-line break-words">{r.comment}</p>}
+                {r.owner_response && (
+                  <p className="text-xs text-slate-700 bg-gray-50 rounded-lg p-2">
+                    <span className="font-semibold">Respuesta del negocio:</span> {r.owner_response}
+                  </p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  {r.business_id && (
+                    <button
+                      onClick={() => onNavigate('business', { id: r.business_id })}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-50 text-blue-800 text-xs font-semibold hover:bg-blue-100"
+                    >
+                      <Eye size={14} /> Ver negocio
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setConfirmRemove(r); setRemoveReason(''); }}
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-red-50 text-red-700 text-xs font-semibold hover:bg-red-100"
+                  >
+                    <Trash2 size={14} /> Retirar
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+
+      {confirmRemove && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="remove-review-title">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className="text-center">
+              <h3 id="remove-review-title" className="text-lg font-bold text-slate-900 mb-1">¿Retirar esta reseña?</h3>
+              <p className="text-sm text-gray-600">
+                Dejará de verse y la valoración media de {businessNames[confirmRemove.business_id] || 'el negocio'} se recalculará.
+                Su autor recibirá un aviso con el motivo.
+              </p>
+            </div>
+            <div>
+              <label htmlFor="review-remove-reason" className="block text-sm font-semibold text-slate-700 mb-1">Motivo (lo verá el autor)</label>
+              <textarea
+                id="review-remove-reason"
+                value={removeReason}
+                onChange={e => setRemoveReason(e.target.value)}
+                rows={2}
+                maxLength={300}
+                placeholder="Ej.: contiene insultos / no es una experiencia real / es publicidad"
+                className="w-full rounded-xl border border-gray-200 p-3 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setConfirmRemove(null); setRemoveReason(''); }}
+                className="flex-1 h-12 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRemove}
+                disabled={removing}
+                className="flex-1 h-12 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-60"
+              >
+                {removing ? 'Retirando…' : 'Retirar reseña'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};

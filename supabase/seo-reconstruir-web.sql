@@ -75,6 +75,8 @@ CREATE TRIGGER businesses_mark_site_dirty_delete
   FOR EACH ROW EXECUTE FUNCTION public.mark_site_dirty();
 
 -- 2) Pedir el despliegue si hay cambios
+--    OJO: la versión vigente de run_site_rebuild() está en panel-admin-servicios.sql (apunta el resultado
+--    para el panel). Si vuelves a ejecutar este archivo, ejecuta después panel-admin-servicios.sql.
 CREATE OR REPLACE FUNCTION public.run_site_rebuild()
 RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
 AS $$

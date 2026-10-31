@@ -215,6 +215,8 @@ GRANT EXECUTE ON FUNCTION public.delete_user_account(uuid) TO authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 5) Descargar mis datos (derecho de acceso y portabilidad)
+--    OJO: la versión vigente está en panel-admin-servicios.sql (añade las solicitudes de servicios).
+--    Si vuelves a ejecutar este archivo, ejecuta después panel-admin-servicios.sql.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.export_my_data()
 RETURNS jsonb

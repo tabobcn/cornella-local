@@ -382,6 +382,11 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 - Instagram oficial: **@cornellalocal**; @cornella_informa hace de altavoz (publicaciones en colaboración).
 - `public/sw.js` (v8) no intercepta vídeos ni peticiones Range (una 206 no se puede cachear).
 
+### Anuncio 3D (2026-10-31)
+- `herramientas/videos/anuncio-3d/` (ver su README): 43 s vertical con un móvil 3D realista (three.js en Chromium,
+  sin GPU) que enseña las pantallas reales; un color de fondo por función y cierre «Muy pronto» con @cornellalocal.
+  Reutiliza las capturas de `../vecino`. Render ≈ 30 min con dos procesos. Música original en `music.py`.
+
 ---
 
 ## Reglas de Negocio Importantes

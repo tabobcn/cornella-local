@@ -44,3 +44,13 @@ herramientas/videos/intro-comic/*.mp4
 herramientas/videos/intro-comic/*.wav
 herramientas/videos/intro-comic/*.txt
 herramientas/videos/intro-comic/timeline.json
+herramientas/videos/anuncio-3d/node_modules/
+herramientas/videos/anuncio-3d/package-lock.json
+herramientas/videos/anuncio-3d/img/
+herramientas/videos/anuncio-3d/fonts/
+herramientas/videos/anuncio-3d/parts/
+herramientas/videos/anuncio-3d/stills/
+herramientas/videos/anuncio-3d/*.mp4
+herramientas/videos/anuncio-3d/*.wav
+herramientas/videos/anuncio-3d/*.txt
+herramientas/videos/anuncio-3d/*.log

@@ -1,0 +1,8 @@
+{
+  "name": "cornella-anuncio-3d",
+  "private": true,
+  "description": "Vídeo-anuncio 3D de Cornellà Local (solo herramienta local, no forma parte de la web)",
+  "dependencies": {
+    "three": "0.169.0"
+  }
+}

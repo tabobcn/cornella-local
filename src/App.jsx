@@ -11490,6 +11490,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [exportingData, setExportingData] = useState(false);
   const [pushPermissionStatus, setPushPermissionStatus] = useState('default');
 
@@ -11574,11 +11575,15 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
 
   // Borrar la cuenta de verdad: datos, negocio y acceso (los archivos se borran esa noche)
   const handleDeleteAccount = async () => {
-    if (deletingAccount) return;
+    if (deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'BORRAR') return;
     setDeletingAccount(true);
     try {
       const { data, error } = await supabase.rpc('delete_user_account');
       if (error) throw error;
+      if (data?.error === 'account_suspended') {
+        showToast?.('Tu cuenta está suspendida. Para borrarla, escríbenos a cornellalocal@gmail.com.', 'error');
+        return;
+      }
       if (!data?.success) throw new Error(data?.error || 'delete_failed');
       try {
         ['recentSearches', 'post-login-redirect', 'push-asked', 'push-disabled'].forEach(k => localStorage.removeItem(k));
@@ -11881,13 +11886,25 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
               cupones y avisos. Si tienes un negocio, también se borrará su ficha con sus ofertas y empleos.
               <strong className="block mt-1 text-slate-800">No se puede deshacer.</strong>
             </p>
-            <p className="text-xs text-gray-500 text-center mb-6">
+            <p className="text-xs text-gray-500 text-center mb-4">
               Si quieres guardar una copia, usa antes «Descargar mis datos».
             </p>
+            <label htmlFor="delete-confirm" className="block text-xs font-semibold text-slate-700 mb-1 text-center">
+              Escribe BORRAR para confirmar
+            </label>
+            <input
+              id="delete-confirm"
+              type="text"
+              autoComplete="off"
+              autoCapitalize="characters"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="w-full h-11 mb-5 px-3 rounded-xl border border-gray-200 text-center text-slate-900 tracking-widest focus:border-red-500 focus:outline-none"
+            />
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => setShowDeleteModal(false)}
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
                 disabled={deletingAccount}
                 className="flex-1 h-12 bg-gray-100 text-slate-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60"
               >
@@ -11896,7 +11913,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
               <button
                 type="button"
                 onClick={handleDeleteAccount}
-                disabled={deletingAccount}
+                disabled={deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'BORRAR'}
                 className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60"
               >
                 {deletingAccount ? 'Borrando…' : 'Borrar mi cuenta'}
@@ -12173,6 +12190,10 @@ export default function App() {
       // Verificar si ya existe una subscription
       let subscription = await registration.pushManager.getSubscription();
 
+      // Re-sincronización automática: solo vuelve a registrar la suscripción que ya existe en este
+      // navegador; nunca crea una nueva sin que el usuario lo pida
+      if (!subscription && silent) return false;
+
       if (!subscription) {
         // Crear nueva subscription
         subscription = await registration.pushManager.subscribe({
@@ -12220,10 +12241,12 @@ export default function App() {
         endpoint = subscription?.endpoint || null;
         if (subscription) await subscription.unsubscribe();
       }
-      if (user?.id) {
-        let query = supabase.from('push_subscriptions').delete().eq('user_id', user.id);
-        if (endpoint) query = query.eq('subscription->>endpoint', endpoint);
-        const { error } = await query;
+      if (user?.id && endpoint) {
+        const { error } = await supabase
+          .from('push_subscriptions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('subscription->>endpoint', endpoint);
         if (error) throw error;
       }
       setUserSettings(prev => ({ ...prev, pushEnabled: false }));
@@ -12313,34 +12336,26 @@ export default function App() {
     });
   }, [user?.id, pushPermission, pushSupported]);
 
-  // El switch de ajustes debe reflejar la suscripción real guardada en BD.
+  // El interruptor de Ajustes refleja ESTE dispositivo: permiso concedido + suscripción del navegador
   useEffect(() => {
-    const syncPushEnabledFromDatabase = async () => {
-      if (!user?.id) {
+    const syncPushEnabledFromDevice = async () => {
+      if (!user?.id || !('serviceWorker' in navigator) || typeof Notification === 'undefined') {
         setUserSettings(prev => ({ ...prev, pushEnabled: false }));
         return;
       }
-
       try {
-        const { data, error } = await supabase
-          .from('push_subscriptions')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .limit(1);
-
-        if (error) throw error;
-
+        const registration = await navigator.serviceWorker.getRegistration();
+        const subscription = await registration?.pushManager?.getSubscription();
         setUserSettings(prev => ({
           ...prev,
-          pushEnabled: (data || []).length > 0,
+          pushEnabled: Notification.permission === 'granted' && !!subscription,
         }));
       } catch {
         setUserSettings(prev => ({ ...prev, pushEnabled: false }));
       }
     };
 
-    syncPushEnabledFromDatabase();
+    syncPushEnabledFromDevice();
   }, [user?.id, pushPermission]);
 
   // Cargar negocio del propietario cuando cambie el usuario

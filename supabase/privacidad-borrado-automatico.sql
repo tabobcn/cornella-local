@@ -164,6 +164,11 @@ BEGIN
   IF v_uid IS NULL THEN
     RETURN json_build_object('success', false, 'error', 'not_authenticated');
   END IF;
+  IF v_target = v_uid AND EXISTS (SELECT 1 FROM public.profiles WHERE id = v_uid AND is_banned) THEN
+    -- Una cuenta suspendida no se borra sola (podría volver a registrarse y saltarse la suspensión).
+    -- La persona puede pedirlo por email y se valora caso a caso.
+    RETURN json_build_object('success', false, 'error', 'account_suspended');
+  END IF;
   IF v_target <> v_uid THEN
     IF NOT public.is_admin() THEN
       RETURN json_build_object('success', false, 'error', 'forbidden');
@@ -285,6 +290,9 @@ BEGIN
                                                    'estado', r.status, 'fecha', r.created_at) ORDER BY r.created_at), '[]'::jsonb)
         FROM public.reports r LEFT JOIN public.businesses b ON b.id = r.business_id
        WHERE r.user_id = v_uid),
+    'cupones_guardados', (
+      SELECT COALESCE(jsonb_agg(to_jsonb(c) - 'user_id'), '[]'::jsonb)
+        FROM public.saved_coupons c WHERE c.user_id = v_uid),
     'dispositivos_con_notificaciones', (
       SELECT COALESCE(jsonb_agg(jsonb_build_object('navegador', s.user_agent, 'activo', s.is_active,
                                                    'alta', s.created_at, 'ultimo_uso', s.last_used_at)), '[]'::jsonb)
@@ -323,8 +331,15 @@ BEGIN
     RETURN json_build_object('success', false, 'error', 'not_found');
   END IF;
 
-  -- Avisos que apuntan al negocio (dejarían enlaces rotos)
-  DELETE FROM public.notifications WHERE data->>'business_id' = p_business_id::text;
+  -- Las denuncias abiertas sobre el negocio se dan por resueltas: así quien avisó recibe la respuesta
+  UPDATE public.reports
+     SET status = 'resolved', reviewed_by = auth.uid(), reviewed_at = now(),
+         admin_notes = COALESCE(admin_notes || ' · ', '') || 'Negocio retirado'
+   WHERE business_id = p_business_id AND status NOT IN ('resolved', 'dismissed');
+  -- Avisos que apuntan al negocio (dejarían enlaces rotos), salvo las respuestas a denuncias
+  DELETE FROM public.notifications
+   WHERE data->>'business_id' = p_business_id::text
+     AND type IS DISTINCT FROM 'report_resolved';
   -- El negocio, con sus ofertas, empleos, reseñas, favoritos... (en cascada)
   DELETE FROM public.businesses WHERE id = p_business_id;
 
@@ -368,7 +383,7 @@ BEGIN
    WHERE ((verification_status = 'approved'
            AND COALESCE(status_changed_at, verified_at, updated_at, created_at) < now() - interval '2 days')
        OR (verification_status = 'rejected'
-           AND COALESCE(status_changed_at, updated_at, created_at) < now() - interval '30 days'))
+           AND GREATEST(COALESCE(status_changed_at, created_at), COALESCE(updated_at, created_at)) < now() - interval '30 days'))
      AND (COALESCE(cardinality(verification_documents), 0) > 0
           OR (jsonb_typeof(appeal_images) = 'array' AND jsonb_array_length(appeal_images) > 0));
   GET DIAGNOSTICS n = ROW_COUNT;
@@ -439,9 +454,9 @@ BEGIN
   TRUNCATE _privacy_refs, _privacy_files;
 
   INSERT INTO _privacy_refs (path)
-  SELECT DISTINCT split_part(
+  SELECT DISTINCT ltrim(split_part(
            regexp_replace(x, '^https?://[^/]+/storage/v1/object/(public|sign|authenticated)/[^/]+/', ''),
-           '?', 1)
+           '?', 1), '/')
     FROM (
       SELECT unnest(verification_documents) AS x FROM public.businesses
       UNION ALL SELECT jsonb_array_elements_text(appeal_images) FROM public.businesses WHERE jsonb_typeof(appeal_images) = 'array'
@@ -460,15 +475,19 @@ BEGIN
     FROM storage.objects o
    WHERE o.bucket_id IN ('verification-documents', 'job-applications', 'business-photos')
      AND o.name NOT LIKE '%.emptyFolderPlaceholder'
+     -- Solo nombres con caracteres normales: si un nombre lleva espacios o acentos, la URL guardada
+     -- va codificada (%20...) y no se puede comparar con seguridad → ese archivo no se toca
+     AND o.name ~ '^[A-Za-z0-9._/-]+$'
      AND o.created_at < now() - CASE WHEN o.bucket_id = 'business-photos' THEN interval '7 days' ELSE interval '1 day' END
      AND NOT EXISTS (SELECT 1 FROM _privacy_refs r WHERE r.path = o.name)
    ORDER BY o.created_at
    LIMIT 2000;
 
-  -- Seguro: si de golpe saldría más de la mitad de las fotos, algo raro pasa → no se tocan
+  -- Seguro: si de golpe saldrían más de 100 fotos y más de la mitad del total, algo raro pasa →
+  -- no se tocan y la Edge Function lo marca como aviso (revisar a mano)
   SELECT count(*) INTO v_photos_candidates FROM _privacy_files WHERE bucket = 'business-photos';
   SELECT count(*) INTO v_photos_total FROM storage.objects WHERE bucket_id = 'business-photos';
-  v_skip_photos := v_photos_candidates > 20 AND v_photos_candidates * 2 > v_photos_total;
+  v_skip_photos := v_photos_candidates > 100 AND v_photos_candidates * 2 > v_photos_total;
   IF v_skip_photos THEN
     DELETE FROM _privacy_files WHERE bucket = 'business-photos';
   END IF;

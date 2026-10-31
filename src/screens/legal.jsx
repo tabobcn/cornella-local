@@ -139,7 +139,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
       bullets: [
         'Tu cuenta — email, nombre y foto de perfil (los tuyos o los de Google si entras con Google): para crear y gestionar tu cuenta. Base: el contrato de uso (art. 6.1.b).',
         'Lo que haces en la app — favoritos, reseñas, 🔥 a ofertas, cupones que pides y avisos: para darte el servicio. Base: contrato.',
-        'Solicitudes de presupuesto — oficio, descripción, fotos, dirección, urgencia y teléfono: para que los negocios del oficio te den precio. Ven la descripción, las fotos y la dirección; tu teléfono solo lo ve el negocio cuyo presupuesto aceptes. Base: medidas previas a un contrato que pides tú (art. 6.1.b).',
+        'Solicitudes de presupuesto — oficio, descripción, fotos, dirección, urgencia y teléfono: para que los negocios del oficio te den precio. Los negocios verificados de ese oficio ven la descripción, las fotos y la dirección; tu teléfono solo lo ve el negocio cuyo presupuesto aceptes. Base: medidas previas a un contrato que pides tú (art. 6.1.b).',
         'Candidaturas a empleos — nombre, email, teléfono, carta y CV: para enviarlas al negocio de la oferta. Desde que las recibe, ese negocio es responsable de tus datos para su proceso de selección. Base: medidas previas a un contrato que pides tú.',
         'Si tienes un negocio — los datos de la ficha (nombre, dirección, teléfono, horario, fotos...): para publicarla. La web la pedimos para la verificación, pero no se muestra. Base: contrato.',
         'Documentos de verificación (alta de autónomo o modelo 036/037, factura o recibo a nombre del negocio, licencia...): para comprobar que el negocio es tuyo y evitar suplantaciones. No hace falta el DNI; si lo envías, tapa la foto y el número de soporte. Base: interés legítimo en evitar fraudes (art. 6.1.f).',
@@ -157,7 +157,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
       title: 'Cuánto tiempo los guardamos',
       content: 'Los guardamos solo mientras hacen falta. Cada noche un proceso automático borra lo que ya ha caducado:',
       bullets: [
-        'Cuenta y todo su contenido: mientras la tengas. Si la borras en Ajustes, se elimina al momento; sus archivos (fotos, CV, documentos) desaparecen como mucho en 7 días.',
+        'Cuenta y todo su contenido: mientras la tengas. Si la borras en Ajustes, tus datos se eliminan de la app al momento; tus archivos (fotos, CV, documentos) desaparecen como mucho en 7 días, y la página pública de tu negocio, si tenías, con la siguiente actualización de la web.',
         'Documentos de verificación: 2 días después de aprobar el negocio. Si se rechaza y no se vuelve a enviar, a los 30 días.',
         'CV: 2 días después de que termine el proceso (te contraten, te descarten o se cierre la oferta) y, como máximo, a los 90 días.',
         'Candidaturas, solicitudes de presupuesto (con sus respuestas) y cupones: 12 meses.',
@@ -176,7 +176,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
       title: 'Quién más puede ver tus datos',
       content: 'No vendemos ni cedemos tus datos. Solo llegan a:',
       bullets: [
-        'Los negocios con los que tú tratas: el de la oferta de empleo a la que te apuntas, los del oficio cuando pides presupuesto (sin tu teléfono hasta que aceptes) y el que valida tu cupón.',
+        'Los negocios con los que tú tratas: el de la oferta de empleo a la que te apuntas, los negocios verificados del oficio cuando pides presupuesto (sin tu teléfono hasta que aceptes) y el que valida tu cupón.',
         'Otros usuarios: tu nombre y tus reseñas se ven en la ficha del negocio. Tu perfil no es público.',
         'Supabase (base de datos, cuentas y sus emails, archivos y envío de avisos), con los datos en servidores de Frankfurt (UE).',
         'Vercel (alojamiento de la web y, si la aceptas, analítica).',
@@ -194,7 +194,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
       content: 'Puedes ejercerlos gratis y en cualquier momento. Lo más habitual lo haces tú mismo desde la app:',
       bullets: [
         'Acceso y portabilidad: Ajustes → «Descargar mis datos» te da un archivo con todo lo que guardamos de ti.',
-        'Supresión: Ajustes → «Borrar mi cuenta» lo borra todo al momento.',
+        'Supresión: Ajustes → «Borrar mi cuenta» borra tu cuenta y tus datos (los archivos, en 7 días como máximo). Si tu cuenta está suspendida, pídelo por email y lo valoraremos.',
         'Rectificación: cambia tu nombre y tu foto en Editar perfil, y la ficha de tu negocio en Editar negocio.',
         'Retirar el consentimiento: Instagram (Editar negocio), notificaciones (Ajustes) y cookies (Ajustes → Preferencias de cookies). Retirarlo no afecta a lo que se hizo antes.',
         'Oposición y limitación: por ejemplo, a las estadísticas o a la revisión de documentos.',

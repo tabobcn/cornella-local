@@ -259,6 +259,29 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 - **Emails pendientes**: falta el secreto `RESEND_API_KEY` y verificar el dominio cornellalocal.es en Resend
   (remitente `noreply@cornellalocal.es`). Hasta entonces `send-email` responde 500 "Email service not configured".
 
+### Privacidad y borrado automático (2026-10-31)
+- **SQL**: `supabase/privacidad-borrado-automatico.sql` (idempotente). Requiere desplegar antes la Edge Function
+  `privacy-cleanup` (`npx supabase functions deploy privacy-cleanup`).
+- **Cada noche (03:17 UTC)** pg_cron → `run_privacy_cleanup()` → Edge Function `privacy-cleanup` → `privacy_cleanup()`
+  (borra filas caducadas y devuelve los archivos sin uso) → los borra con la API de Storage. Los archivos de Storage
+  **no se pueden borrar con SQL** (trigger `protect_objects_delete`).
+- **Plazos** (los mismos que dice la Política de privacidad; si cambias uno, cambia los dos):
+  documentos de verificación 2 días tras aprobar (30 tras rechazar); CV 2 días tras contratado/descartado/oferta
+  cerrada, máx. 90; candidaturas, presupuestos y cupones 12 meses; avisos leídos 90 días, todos 6 meses;
+  denuncias cerradas y soporte 12 meses; estadísticas anónimas a 90 días y borradas a 24 meses; borradores 6 meses;
+  archivos sin uso 1 día (docs/CV) o 7 días (fotos).
+- **Archivo "sin uso"** = su ruta no aparece en `businesses.verification_documents/appeal_images/cover_photo/logo_url/
+  images`, `offers.image`, `budget_requests.photos`, `job_applications.cv_url`, `profiles.avatar_url`.
+  **Si añades una columna nueva que guarde fotos o archivos, añádela a `privacy_cleanup()`** o se borrarán.
+- Funciones: `delete_user_account(p_user_id)` (el propio usuario o un admin; un suspendido no puede borrarse solo),
+  `export_my_data()` (Ajustes → Descargar mis datos), `admin_remove_business(id, motivo)` (avisa al dueño y cierra
+  las denuncias), `profiles.ban_reason` (lo ve el usuario al entrar), `businesses.status_changed_at`.
+- Comprobar la última limpieza: `SELECT status_code, content FROM net._http_response ORDER BY created DESC LIMIT 1;`
+- Push: el interruptor de Ajustes es **por dispositivo**; al desactivarlo se anula la suscripción y se guarda
+  `push-disabled` en localStorage para que la re-sincronización silenciosa no la vuelva a crear.
+- Textos legales: `src/screens/legal.jsx` (privacidad, aviso legal, cookies) y `termsAndConditions` en
+  `src/data/mockData.js`. Si cambia una regla (límite de ofertas, reseñas, orden...), actualiza los términos.
+
 ---
 
 ## Reglas de Negocio Importantes

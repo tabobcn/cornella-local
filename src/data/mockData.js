@@ -710,7 +710,7 @@ export const termsAndConditions = {
       bullets: [
         "Debes tener 14 años o más (art. 7 de la Ley Orgánica 3/2018).",
         "La cuenta es personal: una por persona, y eres responsable de lo que se haga con ella. Guarda bien tu contraseña.",
-        "Puedes borrar tu cuenta cuando quieras en Ajustes → «Borrar mi cuenta»: se borra al momento con todos tus datos.",
+        "Puedes borrar tu cuenta cuando quieras en Ajustes → «Borrar mi cuenta»: tus datos se borran al momento y tus archivos en 7 días como máximo. Una cuenta suspendida no puede borrarse sola: pídelo por email.",
         "Puedes descargar tus datos en Ajustes → «Descargar mis datos».",
       ],
     },
@@ -762,7 +762,7 @@ export const termsAndConditions = {
       icon: "ClipboardList",
       content: "Puedes pedir presupuesto a los negocios de un oficio (fontanero, electricista, cerrajero...) o directamente a un negocio.",
       bullets: [
-        "La solicitud llega a un máximo de 10 negocios verificados del oficio, los mejor valorados. Ven la descripción, las fotos y la dirección; tu teléfono solo lo ve el negocio cuyo presupuesto aceptes.",
+        "Todos los negocios verificados de ese oficio pueden ver la solicitud en su panel, y avisamos al momento a los 10 mejor valorados. Ven la descripción, las fotos y la dirección; tu teléfono solo lo ve el negocio cuyo presupuesto aceptes.",
         "Puedes recibir varias respuestas y elegir una. A los demás negocios les avisamos de que no han sido elegidos.",
         "El acuerdo (precio, plazos, garantía) es solo entre tú y el negocio. Cornellà Local no cobra comisión ni forma parte del contrato; cualquier reclamación sobre el trabajo se dirige al negocio.",
       ],
@@ -776,7 +776,7 @@ export const termsAndConditions = {
         "Negocios: por defecto, de más nuevo a más antiguo. Puedes ordenarlos por valoración, nombre o distancia y filtrarlos por barrio, categoría o etiquetas.",
         "La etiqueta NUEVO aparece durante los 7 días siguientes a la publicación del negocio.",
         "Ofertas «Destacadas»: las 3 con más 🔥 de los vecinos. El resto, de la más reciente a la más antigua.",
-        "Presupuestos: los 10 negocios mejor valorados del oficio.",
+        "Presupuestos: la solicitud la ven todos los negocios verificados del oficio; el aviso inmediato llega a los 10 mejor valorados.",
         "Nadie paga por salir antes: no hay posiciones patrocinadas. Si algún día las hubiera, se marcarían claramente como «Patrocinado».",
       ],
     },

@@ -94,12 +94,15 @@ serve(async (req) => {
     }
   }
 
+  const photosSkipped = Number(data?.fotos_omitidas_por_seguridad ?? 0);
+  if (photosSkipped > 0) errors.push(`${photosSkipped} fotos sin uso no se han borrado por seguridad: revisar a mano`);
+
   const summary = {
     ok: errors.length === 0,
     filas: data?.rows ?? {},
     archivos_pendientes: files.length,
     archivos_borrados: removed,
-    fotos_omitidas_por_seguridad: data?.fotos_omitidas_por_seguridad ?? 0,
+    fotos_omitidas_por_seguridad: photosSkipped,
     errores: errors,
   };
   console.log('privacy-cleanup', JSON.stringify(summary));

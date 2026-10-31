@@ -217,6 +217,9 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   centrada para que las barras `fixed bottom-0 max-w-md mx-auto` sigan alineadas. `Navbar` inferior oculta en `lg`.
 - **SEO** — `npm run build` ejecuta `scripts/prerender-negocios.mjs`: genera `/negocio/<slug>-<id>`, `/negocios` y
   `sitemap.xml` con los negocios aprobados y publicados (los nuevos aparecen en el siguiente despliegue).
+  **Se regeneran solos cada noche** (`supabase/seo-reconstruir-web.sql`): un trigger marca `site_rebuild_state.dirty`
+  cuando cambia un negocio publicado y pg_cron (03:47 UTC) llama al Deploy Hook de Vercel guardado en el Vault
+  (`vercel_deploy_hook`) solo si hay cambios. Si añades columnas al prerender, añádelas al trigger.
   La app también abre `/negocio/<slug>-<id>` como deep link.
 - **Datos falsos eliminados** — presupuestos de demo, valoraciones aleatorias en cotizaciones, `aggregateRating` inventado.
 - **`supabase/security-hardening-v4.sql` parte A** (aplicada y verificada): RPC `get_budget_request_contact`, triggers

@@ -157,7 +157,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
       title: 'Cuánto tiempo los guardamos',
       content: 'Los guardamos solo mientras hacen falta. Cada noche un proceso automático borra lo que ya ha caducado:',
       bullets: [
-        'Cuenta y todo su contenido: mientras la tengas. Si la borras en Ajustes, tus datos se eliminan de la app al momento; tus archivos (fotos, CV, documentos) desaparecen como mucho en 7 días, y la página pública de tu negocio, si tenías, con la siguiente actualización de la web.',
+        'Cuenta y todo su contenido: mientras la tengas. Si la borras en Ajustes, tus datos se eliminan de la app al momento; tus archivos (fotos, CV, documentos) desaparecen como mucho en 7 días, y la página pública de tu negocio, si tenías, como mucho al día siguiente.',
         'Documentos de verificación: 2 días después de aprobar el negocio. Si se rechaza y no se vuelve a enviar, a los 30 días.',
         'CV: 2 días después de que termine el proceso (te contraten, te descarten o se cierre la oferta) y, como máximo, a los 90 días.',
         'Candidaturas, solicitudes de presupuesto (con sus respuestas) y cupones: 12 meses.',
@@ -332,11 +332,11 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
       id: 1,
       icon: 'User',
       title: 'Datos identificativos del titular',
-      content: 'En cumplimiento del artículo 10 de la Ley 34/2002, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE):',
+      content: 'Datos del titular de Cornellà Local (artículo 10 de la Ley 34/2002, de Servicios de la Sociedad de la Información y de Comercio Electrónico):',
       bullets: [
         'Titular: Carlos Taboada Valencia (persona física, no inscrita en el Registro Mercantil)',
         'NIF: 46462083J',
-        'Domicilio: Cornellà de Llobregat (Barcelona)',
+        'Localidad: Cornellà de Llobregat (Barcelona)',
         'Email: cornellalocal@gmail.com',
         'Sitio web: https://www.cornellalocal.es',
         'Naturaleza: proyecto personal, gratuito y sin ánimo de lucro para apoyar al comercio local.',

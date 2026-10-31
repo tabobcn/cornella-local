@@ -2582,7 +2582,17 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
       sunday: { enabled: false, morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
     },
     specialClosures: businessData?.special_closures || businessData?.specialClosures || [],
+    instagramConsent: !!businessData?.instagram_consent,
+    instagramFormat: businessData?.instagram_format || 'both',
   });
+
+  // Difusión en @cornella_informa: solo si la base de datos ya tiene las columnas
+  // (supabase/instagram-consent.sql). Así esta versión funciona antes y después de aplicarlo.
+  const supportsInstagram = !!businessData && Object.prototype.hasOwnProperty.call(businessData, 'instagram_consent');
+  const instagramFields = () => (supportsInstagram ? {
+    instagram_consent: !!formData.instagramConsent,
+    instagram_format: formData.instagramConsent ? (formData.instagramFormat || 'both') : null,
+  } : {});
 
   // Sincronizar formData cuando businessData cambia
   useEffect(() => {
@@ -2609,6 +2619,8 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
           sunday: { enabled: false, morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
         },
         specialClosures: businessData.special_closures || [],
+        instagramConsent: !!businessData.instagram_consent,
+        instagramFormat: businessData.instagram_format || 'both',
       });
     }
   }, [businessData?.id]);
@@ -2893,6 +2905,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
         special_closures: formData.specialClosures,
         cover_photo: formData.coverPhoto || null,
         images: formData.photos || [],
+        ...instagramFields(),
         updated_at: new Date().toISOString(),
       };
 
@@ -3055,6 +3068,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
           opening_hours: formData.schedule,
           special_closures: formData.specialClosures,
           ...(isAlreadyApproved ? {} : { verification_status: 'pending' }),
+          ...instagramFields(),
           updated_at: new Date().toISOString(),
         })
         .eq('id', businessData.id)
@@ -3401,6 +3415,53 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                       </button>
                     ))}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Difusión en Instagram (@cornella_informa), con permiso expreso del negocio */}
+            {supportsInstagram && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!formData.instagramConsent}
+                    onChange={(e) => setFormData(prev => ({ ...prev, instagramConsent: e.target.checked }))}
+                    className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-900">Quiero que @cornella_informa anuncie mi negocio</span>
+                    <span className="block text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      Gratis. Publicaremos el nombre, la categoría, el barrio y la foto de portada de tu negocio en Instagram para darte a conocer. Puedes quitar el permiso cuando quieras.
+                    </span>
+                  </span>
+                </label>
+                {formData.instagramConsent && (
+                  <fieldset className="pl-8">
+                    <legend className="text-xs font-medium text-gray-600 mb-2">¿Dónde prefieres aparecer?</legend>
+                    <div className="flex flex-wrap gap-2">
+                      {[['post', 'Publicación'], ['story', 'Historia'], ['both', 'Las dos']].map(([value, label]) => (
+                        <label
+                          key={value}
+                          className={`px-3 py-2 rounded-full text-xs font-medium cursor-pointer border transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-dark ${
+                            formData.instagramFormat === value
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="instagram-format"
+                            value={value}
+                            checked={formData.instagramFormat === value}
+                            onChange={() => setFormData(prev => ({ ...prev, instagramFormat: value }))}
+                            className="sr-only"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
                 )}
               </div>
             )}

@@ -94,7 +94,7 @@ export const SERVICE_CATEGORIES = [
   'Limpieza',
   'Mudanzas',
   'Pintor',
-  'Reparación móviles',
+  'Reparación de móviles',
   'Reformas',
   'Construcción',
   'Mantenimiento',

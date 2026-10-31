@@ -1,7 +1,7 @@
 // Service Worker para Cornellà Local PWA
-const CACHE_NAME = 'cornella-local-v6';
-const STATIC_CACHE = 'cornella-static-v6';
-const DYNAMIC_CACHE = 'cornella-dynamic-v6';
+const CACHE_NAME = 'cornella-local-v7';
+const STATIC_CACHE = 'cornella-static-v7';
+const DYNAMIC_CACHE = 'cornella-dynamic-v7';
 
 // Recursos estáticos para cachear al instalar
 const STATIC_ASSETS = [
@@ -53,6 +53,11 @@ self.addEventListener('fetch', (event) => {
 
   // Solo manejar peticiones HTTP/HTTPS
   if (!request.url.startsWith('http')) return;
+
+  // Recursos de otros dominios (foto de Google, QR, mapas, avatares generados...): que los
+  // gestione el navegador. Si el service worker los vuelve a pedir, la CSP (connect-src) los
+  // bloquea y salen rotos.
+  if (url.origin !== self.location.origin) return;
 
   // NO cachear peticiones a Supabase
   if (url.hostname.includes('supabase.co')) return;

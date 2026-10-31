@@ -418,6 +418,17 @@ const iconMap = {
   AlertTriangle, Cookie, Percent, Scale, SlidersHorizontal,
 };
 
+// Foto de perfil con respaldo: si no hay foto o no carga (p. ej. Google limita las peticiones),
+// se muestran las iniciales en vez del icono de imagen rota.
+export const UserAvatar = ({ url, name, className = '', fallbackClassName = '' }) => {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [url]);
+  if (url && !failed) {
+    return <img src={url} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} className={className} />;
+  }
+  return <div className={fallbackClassName} aria-hidden="true">{getInitials(name || 'U')}</div>;
+};
+
 export const Icon = ({ name, className = "", size = 24 }) => {
   const IconComponent = iconMap[name];
   if (!IconComponent) return null;
@@ -1684,13 +1695,12 @@ const DesktopSidebar = ({ user, currentPage, onNavigate, onAuth }) => (
         onClick={() => onNavigate('profile')}
         className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 text-left"
       >
-        {user.avatar_url ? (
-          <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" referrerPolicy="no-referrer" />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary-dark font-bold flex items-center justify-center">
-            {getInitials(user.full_name || user.email || 'U')}
-          </div>
-        )}
+        <UserAvatar
+          url={user.avatar_url}
+          name={user.full_name || user.email}
+          className="w-10 h-10 rounded-full object-cover shrink-0"
+          fallbackClassName="w-10 h-10 shrink-0 rounded-full bg-primary/10 text-primary-dark font-bold flex items-center justify-center"
+        />
         <div className="min-w-0">
           <p className="text-sm font-bold text-slate-900 truncate">{user.full_name || 'Mi cuenta'}</p>
           <p className="text-xs text-gray-600 truncate">{user.email}</p>
@@ -3552,14 +3562,14 @@ const BudgetRequestScreen = ({ onNavigate, onSubmitRequest, showToast, user }) =
     { id: 'albanil', name: 'Albañil y reformas', icon: 'Hammer', businessCount: 0 },
     { id: 'carpintero', name: 'Carpintero', icon: 'TreePine', businessCount: 0 },
     { id: 'cerrajero', name: 'Cerrajero', icon: 'Key', businessCount: 0 },
-    { id: 'climatizacion', name: 'Climatización', icon: 'Snowflake', businessCount: 0 },
+    { id: 'climatizacion', name: 'Climatización y calefacción', icon: 'Snowflake', businessCount: 0 },
     { id: 'electricista', name: 'Electricista', icon: 'Zap', businessCount: 0 },
     { id: 'fontanero', name: 'Fontanero', icon: 'Droplet', businessCount: 0 },
     { id: 'jardineria', name: 'Jardinería', icon: 'Flower2', businessCount: 0 },
     { id: 'limpieza', name: 'Limpieza', icon: 'Sparkles', businessCount: 0 },
     { id: 'mudanzas', name: 'Mudanzas', icon: 'Truck', businessCount: 0 },
     { id: 'pintor', name: 'Pintor', icon: 'Paintbrush', businessCount: 0 },
-    { id: 'reparacion', name: 'Reparación móviles/PC', icon: 'Smartphone', businessCount: 0 },
+    { id: 'reparacion', name: 'Reparación de móviles y PC', icon: 'Smartphone', businessCount: 0 },
   ]);
 
   // Cargar conteos reales desde Supabase
@@ -4971,10 +4981,14 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
           className="relative mb-4 group cursor-pointer"
           onClick={handleAvatarClick}
         >
-          <div
-            className="h-32 w-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-cover bg-center group-hover:opacity-90 transition-opacity"
-            style={{ backgroundImage: `url("${avatarUrl}")` }}
-          />
+          <div className="h-32 w-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gray-100 group-hover:opacity-90 transition-opacity">
+            <UserAvatar
+              url={avatarUrl && !avatarUrl.startsWith('data:image/svg+xml') ? avatarUrl : null}
+              name={user?.full_name || user?.email}
+              className="w-full h-full object-cover"
+              fallbackClassName="w-full h-full flex items-center justify-center bg-primary/10 text-primary-dark text-4xl font-bold"
+            />
+          </div>
           <div className="absolute bottom-1 right-1 bg-primary text-white rounded-full p-1.5 shadow-md border-2 border-white flex items-center justify-center group-hover:bg-blue-700 transition-colors">
             <Camera size={16} />
           </div>
@@ -9029,14 +9043,14 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
     'albanil': 'Albañil y reformas',
     'carpintero': 'Carpintero',
     'cerrajero': 'Cerrajero',
-    'climatizacion': 'Climatización',
+    'climatizacion': 'Climatización y calefacción',
     'electricista': 'Electricista',
     'fontanero': 'Fontanero',
     'jardineria': 'Jardinería',
     'limpieza': 'Limpieza',
     'mudanzas': 'Mudanzas',
     'pintor': 'Pintor',
-    'reparacion': 'Reparación móviles/PC',
+    'reparacion': 'Reparación de móviles y PC',
   };
 
   // Combinar y filtrar solicitudes (excluir las expiradas sin aceptar)
@@ -10154,28 +10168,28 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
 
   const unreadCount = notificationsState.filter(n => !n.isRead).length;
 
-  const markAsRead = async (id) => {
-    // Optimistic update local + parent (para actualizar badge)
-    const updater = prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n);
-    setNotificationsState(updater);
-    if (onUpdateNotifications) onUpdateNotifications(updater);
+  // Al pulsar una notificación ya se ha "visto": se quita al momento de la lista y del contador
+  // y se borra de la base de datos. Si el borrado falla, se vuelve a mostrar.
+  const removeNotification = async (notification) => {
+    const id = notification.id;
+    const withoutIt = prev => prev.filter(n => n.id !== id);
+    setNotificationsState(withoutIt);
+    if (onUpdateNotifications) onUpdateNotifications(withoutIt);
 
-    // Persistir en Supabase
-    if (user?.id) {
-      try {
-        const { error } = await supabase
-          .from('notifications')
-          .update({ is_read: true })
-          .eq('id', id)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-      } catch (error) {
-        // Revert on error
-        const revert = prev => prev.map(n => n.id === id ? { ...n, isRead: false } : n);
-        setNotificationsState(revert);
-        if (onUpdateNotifications) onUpdateNotifications(revert);
-      }
+    if (!user?.id) return;
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error borrando la notificación:', error);
+      const restore = prev => (prev.some(n => n.id === id) ? prev : [notification, ...prev]);
+      setNotificationsState(restore);
+      if (onUpdateNotifications) onUpdateNotifications(restore);
+      if (showToast) showToast('No se pudo borrar la notificación', 'error');
     }
   };
 
@@ -10209,7 +10223,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
   };
 
   const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
+    removeNotification(notification);
     if (notification.actionRoute) {
       onNavigate(notification.actionRoute, notification.actionParams || {});
     }
@@ -11317,11 +11331,12 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
         <div className="flex flex-col items-center gap-3 py-2">
           <div className="relative">
             <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
-              {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white text-3xl font-bold">{(user?.full_name || user?.email || 'U')[0].toUpperCase()}</span>
-              )}
+              <UserAvatar
+                url={user?.avatar_url}
+                name={user?.full_name || user?.email}
+                className="w-full h-full object-cover"
+                fallbackClassName="text-white text-3xl font-bold"
+              />
             </div>
             <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-dark transition-colors shadow-md">
               {uploadingAvatar ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Camera className="text-white" size={16} />}
@@ -12937,13 +12952,15 @@ export default function App() {
 
         // También incluir los IDs de categoría en minúsculas (compatibilidad con presupuestos legacy)
         // Mapa de nombre → id: { 'Fontanero': 'fontanero', 'Electricista': 'electricista', ... }
-        const serviceNameToId = {
-          'Albañil y reformas': 'albanil', 'Carpintero': 'carpintero', 'Cerrajero': 'cerrajero',
-          'Climatización': 'climatizacion', 'Electricista': 'electricista', 'Fontanero': 'fontanero',
-          'Jardinería': 'jardineria', 'Limpieza': 'limpieza', 'Mudanzas': 'mudanzas',
-          'Pintor': 'pintor', 'Reparación móviles/PC': 'reparacion',
+        // (los nombres deben coincidir EXACTAMENTE con las subcategorías de src/data/mockData.js)
+        const serviceNameToLegacy = {
+          'Albañil y reformas': ['albanil'], 'Carpintero': ['carpintero'], 'Cerrajero': ['cerrajero'],
+          'Climatización y calefacción': ['climatizacion', 'Climatización'],
+          'Electricista': ['electricista'], 'Fontanero': ['fontanero'],
+          'Jardinería': ['jardineria'], 'Limpieza': ['limpieza'], 'Mudanzas': ['mudanzas'],
+          'Pintor': ['pintor'], 'Reparación de móviles y PC': ['reparacion', 'Reparación móviles/PC'],
         };
-        const legacyIds = subcategoryNames.map(n => serviceNameToId[n]).filter(Boolean);
+        const legacyIds = subcategoryNames.flatMap(n => serviceNameToLegacy[n] || []);
         const allCategoryVariants = [...new Set([...subcategoryNames, ...legacyIds])];
 
         // 3. Cargar presupuestos de TODAS esas categorías (nombres + IDs legacy)

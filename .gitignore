@@ -37,3 +37,10 @@ herramientas/videos/vecino/*.wav
 herramientas/videos/vecino/*.txt
 herramientas/videos/vecino/timeline-*.json
 herramientas/videos/vecino/build.log
+herramientas/videos/intro-comic/shots/
+herramientas/videos/intro-comic/parts/
+herramientas/videos/intro-comic/frames/
+herramientas/videos/intro-comic/*.mp4
+herramientas/videos/intro-comic/*.wav
+herramientas/videos/intro-comic/*.txt
+herramientas/videos/intro-comic/timeline.json

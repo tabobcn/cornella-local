@@ -628,6 +628,7 @@ export const AdminAllBusinessesScreen = ({ onNavigate, showToast }) => {
     if (status === 'approved') return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">Aprobado</span>;
     if (status === 'pending') return <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">Pendiente</span>;
     if (status === 'rejected') return <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">Rechazado</span>;
+    if (status === 'draft') return <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-bold rounded-full">Borrador (sin enviar)</span>;
     return null;
   };
 
@@ -1018,11 +1019,13 @@ export const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
                       isAppeal ? 'bg-amber-100 text-amber-800' :
                       business.verification_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                       business.verification_status === 'approved' ? 'bg-green-100 text-green-700' :
+                      business.verification_status === 'draft' ? 'bg-gray-100 text-gray-700' :
                       'bg-red-100 text-red-700'
                     }`}>
                       {isAppeal ? '🔄 Apelación enviada' :
                        business.verification_status === 'pending' ? '⏳ Pendiente' :
                        business.verification_status === 'approved' ? '✅ Aprobado' :
+                       business.verification_status === 'draft' ? '📝 Borrador (sin enviar)' :
                        '❌ Rechazado'}
                     </div>
 

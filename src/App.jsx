@@ -5124,6 +5124,29 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
           </div>
         )}
 
+        {/* Alta empezada pero sin enviar: faltan pasos */}
+        {businessStatus === 'draft' && (
+          <div className="bg-blue-50 rounded-2xl p-5 border border-blue-200">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-primary-dark shrink-0">
+                <Store size={24} />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-lg font-bold text-slate-900 mb-1">Termina tu alta</h4>
+                <p className="text-sm text-slate-600 mb-3">
+                  Completa la información, el horario, las fotos y los documentos y envía la solicitud. Cuando la aprobemos, tu negocio se publicará tal cual.
+                </p>
+                <button
+                  onClick={() => onNavigate('edit-business', { initialStep: 1 })}
+                  className="w-full h-11 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors"
+                >
+                  Continuar el alta
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Negocio pendiente de validación */}
         {businessStatus === 'pending' && (
           <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200">
@@ -12264,6 +12287,8 @@ export default function App() {
           setBusinessStatus('validated');
         } else if (business.verification_status === 'pending') {
           setBusinessStatus('pending');
+        } else if (business.verification_status === 'draft') {
+          setBusinessStatus('draft');
         } else if (business.verification_status === 'rejected') {
           setBusinessStatus('rejected');
         }
@@ -12351,8 +12376,18 @@ export default function App() {
       // Verificación de negocio
       case 'business_approved':
         return {
-          route: 'edit-business',
-          params: { businessId: data.business_id, initialStep: 3 }
+          route: 'owner-dashboard',
+          params: {}
+        };
+      case 'business_submitted':
+        return {
+          route: 'profile',
+          params: {}
+        };
+      case 'business_pending_review':
+        return {
+          route: 'admin-approve-businesses',
+          params: {}
         };
       case 'business_rejected':
         return {
@@ -12419,6 +12454,10 @@ export default function App() {
               'application_hired': 'bg-green-600',
               'report_resolved': 'bg-green-500',
               'new_report': 'bg-orange-600',
+              'business_approved': 'bg-green-700',
+              'business_rejected': 'bg-red-600',
+              'business_submitted': 'bg-amber-600',
+              'business_pending_review': 'bg-blue-600',
             };
             return iconBgMap[type] || 'bg-gray-500';
           };
@@ -12479,6 +12518,10 @@ export default function App() {
               'application_hired': 'bg-green-600',
               'report_resolved': 'bg-green-500',
               'new_report': 'bg-orange-600',
+              'business_approved': 'bg-green-700',
+              'business_rejected': 'bg-red-600',
+              'business_submitted': 'bg-amber-600',
+              'business_pending_review': 'bg-blue-600',
             };
             return iconBgMap[type] || 'bg-gray-500';
           };
@@ -13447,7 +13490,7 @@ export default function App() {
   }, []);
 
   // Función para registrar un negocio (pasa a estado pendiente)
-  const registerBusiness = async () => {
+  const registerBusiness = async (data = tempBusinessData) => {
     if (!user?.id) {
       showToast('Debes iniciar sesión primero', 'error');
       throw new Error('Usuario no autenticado');
@@ -13458,15 +13501,15 @@ export default function App() {
       // Preparar datos para insertar
       const businessToInsert = {
         owner_id: user.id,
-        name: tempBusinessData.name || 'Mi Negocio',
+        name: data?.name || 'Mi Negocio',
         // cif: campo no existe en la tabla (se elimina)
-        category_id: tempBusinessData.category ? parseInt(tempBusinessData.category) : null,
-        subcategory: tempBusinessData.subcategory || '',
-        address: tempBusinessData.address || '',
-        neighborhood: tempBusinessData.barrio || '',
+        category_id: data?.category ? parseInt(data.category) : null,
+        subcategory: data?.subcategory || '',
+        address: data?.address || '',
+        neighborhood: data?.barrio || '',
         description: '',
         phone: '',
-        verification_status: 'pending',
+        // verification_status lo fija la base de datos: 'draft' (borrador) hasta que se envía la solicitud
         is_verified: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -13485,9 +13528,9 @@ export default function App() {
       }
 
 
-      setBusinessStatus('pending');
+      setBusinessStatus(newBusiness?.verification_status === 'draft' ? 'draft' : 'pending');
       setBusinessData(newBusiness);
-      showToast('¡Negocio registrado! Ahora completa tu perfil', 'success');
+      showToast('¡Empezamos! Completa los 4 pasos y envía la solicitud', 'success');
 
       return newBusiness;
     } catch (error) {
@@ -13528,6 +13571,10 @@ export default function App() {
   // Función para actualizar datos del negocio
   const updateBusiness = (data) => {
     setBusinessData(prev => ({ ...prev, ...data }));
+    const statusMap = { approved: 'validated', pending: 'pending', rejected: 'rejected', draft: 'draft' };
+    if (data?.verification_status && statusMap[data.verification_status]) {
+      setBusinessStatus(statusMap[data.verification_status]);
+    }
   };
 
   // Función para eliminar el negocio permanentemente
@@ -14014,7 +14061,7 @@ export default function App() {
       case 'notifications':
         return <NotificationsScreen onNavigate={navigate} dynamicNotifications={dynamicNotifications} user={user} onUpdateNotifications={setDynamicNotifications} showToast={showToast} />;
       case 'business-data':
-        return <BusinessDataScreen onNavigate={navigate} onSaveBusinessData={setTempBusinessData} user={user} businessData={businessData} showToast={showToast} />;
+        return <BusinessDataScreen onNavigate={navigate} onSaveBusinessData={setTempBusinessData} onRegisterBusiness={registerBusiness} user={user} businessData={businessData} showToast={showToast} />;
       case 'business-verification':
         return <BusinessVerificationScreen onNavigate={navigate} onRegisterBusiness={registerBusiness} user={user} />;
       case 'registration-success':

@@ -1848,7 +1848,7 @@ export const CreateJobOfferScreen = ({ onNavigate, businessData, onCreateJobOffe
 // ==============================================
 
 // Pantalla de Datos del Comercio (Paso 1)
-export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, businessData, showToast }) => {
+export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, onRegisterBusiness, user, businessData, showToast }) => {
   const [formData, setFormData] = useState({
     businessName: '',
     cif: '',
@@ -1857,10 +1857,12 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
     address: '',
     barrio: '',
   });
+  const [creating, setCreating] = useState(false);
+  const creatingRef = useRef(false);
 
   // Detectar si el usuario ya tiene un negocio registrado
   useEffect(() => {
-    if (businessData?.id) {
+    if (businessData?.id && !creatingRef.current) {
       showToast('Ya tienes un negocio registrado. Te redirigimos para editarlo.', 'info');
       const timeoutId = setTimeout(() => {
         onNavigate('edit-business');
@@ -1871,7 +1873,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
 
   // Todas las categorías, renombrando "Más" a "Otros"
   const availableCategories = categories.map(cat =>
-    cat.id === 8 ? { ...cat, name: 'Otros' } : cat
+    cat.name === 'Más' ? { ...cat, name: 'Otros' } : cat
   );
 
   // Obtener subcategorías de la categoría seleccionada
@@ -1889,24 +1891,37 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
     });
   };
 
-  const handleSubmit = (e) => {
+  // Crea el negocio como borrador y lleva a los 4 pasos (información, horario, fotos y
+  // documentos). La solicitud solo llega al administrador al pulsar "Enviar solicitud".
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validar que el barrio esté seleccionado
-    if (!formData.barrio) {
+    if (!formData.barrio || creating) {
       return;
     }
-    // Guardar los datos del negocio temporalmente
-    if (onSaveBusinessData) {
-      onSaveBusinessData({
-        name: formData.businessName,
-        cif: formData.cif,
-        category: formData.category,
-        subcategory: formData.subcategory,
-        address: formData.address,
-        barrio: formData.barrio,
-      });
+    const payload = {
+      name: formData.businessName,
+      cif: formData.cif,
+      category: formData.category,
+      subcategory: formData.subcategory,
+      address: formData.address,
+      barrio: formData.barrio,
+    };
+    if (onSaveBusinessData) onSaveBusinessData(payload);
+    if (!onRegisterBusiness) {
+      onNavigate('business-verification');
+      return;
     }
-    onNavigate('business-verification');
+    setCreating(true);
+    creatingRef.current = true;
+    try {
+      await onRegisterBusiness(payload);
+      onNavigate('edit-business', { initialStep: 1 });
+    } catch (err) {
+      // registerBusiness ya muestra el aviso de error
+      creatingRef.current = false;
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -1927,11 +1942,11 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
       {/* Progress */}
       <div className="px-4 pt-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-primary text-sm font-bold">PASO 1 DE 3</span>
-          <span className="text-gray-500 text-sm">33%</span>
+          <span className="text-primary text-sm font-bold">ALTA DE TU NEGOCIO</span>
+          <span className="text-gray-500 text-sm">Empezamos</span>
         </div>
         <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: '33%' }} />
+          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: '10%' }} />
         </div>
       </div>
 
@@ -1940,7 +1955,7 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Información básica</h1>
           <p className="text-gray-500 text-sm">
-            Introduce la información básica para registrar tu negocio en Cornellà Local.
+            Empieza con lo básico. Después completarás 4 pasos (información, horario, fotos y documentos) y enviarás la solicitud. Al aprobarla, tu negocio se publica tal cual.
           </p>
         </div>
 
@@ -2068,9 +2083,10 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, user, busin
         <div className="mt-8 pb-20">
           <button
             type="submit"
-            className="w-full h-14 rounded-xl bg-primary text-white font-bold text-base shadow-lg shadow-primary/25 hover:bg-blue-700 active:scale-[0.98] transition-all"
+            disabled={creating}
+            className="w-full h-14 rounded-xl bg-primary text-white font-bold text-base shadow-lg shadow-primary/25 hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-60"
           >
-            Siguiente
+            {creating ? 'Creando tu ficha…' : 'Siguiente'}
           </button>
         </div>
       </form>
@@ -2530,6 +2546,56 @@ export const BusinessAppealScreen = ({ onNavigate, businessData, user, showToast
 };
 
 // Pantalla de Editar Datos del Negocio (Completa con pestañas)
+// Prepara una foto en el propio móvil antes de subirla: la portada se recorta al centro en
+// formato 16:9 (1600x900, como se ve en la cabecera de la ficha) y el resto se reduce a 1600 px
+// como máximo. Todas se guardan en JPEG (mucho más ligeras que la foto original del móvil).
+export const prepareImage = async (file, { cover = false, max = 1600, quality = 0.85 } = {}) => {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    let sx = 0, sy = 0, sw = bitmap.width, sh = bitmap.height;
+    if (cover) {
+      const target = 16 / 9;
+      if (sw / sh > target) { const nw = Math.round(sh * target); sx = Math.round((sw - nw) / 2); sw = nw; }
+      else { const nh = Math.round(sw / target); sy = Math.round((sh - nh) / 2); sh = nh; }
+    }
+    const scale = Math.min(1, max / Math.max(sw, sh));
+    const w = Math.max(1, Math.round(sw * scale));
+    const h = Math.max(1, Math.round(sh * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, w, h);
+    if (bitmap.close) bitmap.close();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    if (!blob) return file;
+    return new File([blob], 'foto.jpg', { type: 'image/jpeg' });
+  } catch (e) {
+    console.error('No se pudo procesar la imagen; se sube la original:', e);
+    return file;
+  }
+};
+
+// Revisa si una foto sirve como portada (horizontal y con resolución suficiente)
+const checkCoverPhoto = async (file) => {
+  const warnings = [];
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const { width, height } = bitmap;
+    if (bitmap.close) bitmap.close();
+    const ratio = width / height;
+    if (ratio < 1) warnings.push('La foto es vertical: en la portada solo se verá la franja central.');
+    else if (ratio < 1.3) warnings.push('La foto es casi cuadrada: se recortará arriba y abajo.');
+    if (width < 1000) warnings.push('Tiene poca resolución y puede verse borrosa en pantallas grandes.');
+  } catch (e) {
+    console.error('No se pudo revisar la portada:', e);
+  }
+  return warnings;
+};
+
 export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, showToast, initialStep }) => {
   const [activeTab, setActiveTab] = useState('store'); // 'store', 'schedule', 'gallery'
   const [currentStep, setCurrentStep] = useState(initialStep || 1); // 1=store, 2=schedule, 3=gallery, 4=documents
@@ -2583,7 +2649,6 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
     },
     specialClosures: businessData?.special_closures || businessData?.specialClosures || [],
     instagramConsent: !!businessData?.instagram_consent,
-    instagramFormat: businessData?.instagram_format || 'both',
   });
 
   // Difusión en @cornella_informa: solo si la base de datos ya tiene las columnas
@@ -2591,7 +2656,6 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
   const supportsInstagram = !!businessData && Object.prototype.hasOwnProperty.call(businessData, 'instagram_consent');
   const instagramFields = () => (supportsInstagram ? {
     instagram_consent: !!formData.instagramConsent,
-    instagram_format: formData.instagramConsent ? (formData.instagramFormat || 'both') : null,
   } : {});
 
   // Sincronizar formData cuando businessData cambia
@@ -2620,13 +2684,12 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
         },
         specialClosures: businessData.special_closures || [],
         instagramConsent: !!businessData.instagram_consent,
-        instagramFormat: businessData.instagram_format || 'both',
       });
     }
   }, [businessData?.id]);
 
   const availableCategories = categories.map(cat =>
-    cat.id === 8 ? { ...cat, name: 'Otros' } : cat
+    cat.name === 'Más' ? { ...cat, name: 'Otros' } : cat
   );
 
   const selectedCategory = categories.find(cat => cat.id === parseInt(formData.category));
@@ -2758,14 +2821,16 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
     }));
   };
 
-  const uploadPhotoToStorage = async (file, type, index = null) => {
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showToast('La imagen no puede superar 5MB', 'error'); return; }
+  const uploadPhotoToStorage = async (originalFile, type, index = null) => {
+    if (!originalFile) return;
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowed.includes(file.type)) { showToast('Solo se permiten imágenes JPG, PNG o WEBP', 'error'); return; }
+    if (!allowed.includes(originalFile.type)) { showToast('Solo se permiten imágenes JPG, PNG o WEBP', 'error'); return; }
+    if (originalFile.size > 25 * 1024 * 1024) { showToast('La imagen es demasiado grande (máx. 25 MB)', 'error'); return; }
     setUploadingPhoto(type === 'cover' ? 'cover' : index);
     try {
-      const fileExt = file.name.split('.').pop();
+      const file = await prepareImage(originalFile, { cover: type === 'cover' });
+      if (file.size > 5 * 1024 * 1024) { showToast('La imagen no puede superar 5MB', 'error'); return; }
+      const fileExt = file.type === 'image/jpeg' ? 'jpg' : (file.name.split('.').pop() || 'jpg');
       const ownerId = businessData?.owner_id || user?.id || 'unknown';
       const fileName = `${ownerId}/${type}-${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
@@ -2793,6 +2858,30 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
     } finally {
       setUploadingPhoto(null);
     }
+  };
+
+  // Portada: si no es horizontal o tiene poca resolución, se enseña cómo quedará y se pregunta
+  const [coverReview, setCoverReview] = useState(null); // { file, previewUrl, warnings }
+  const closeCoverReview = () => {
+    if (coverReview?.previewUrl) URL.revokeObjectURL(coverReview.previewUrl);
+    setCoverReview(null);
+  };
+  const handleCoverSelected = async (file) => {
+    if (!file) return;
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) { showToast('Solo se permiten imágenes JPG, PNG o WEBP', 'error'); return; }
+    const warnings = await checkCoverPhoto(file);
+    if (warnings.length === 0) {
+      await uploadPhotoToStorage(file, 'cover');
+      return;
+    }
+    const preview = await prepareImage(file, { cover: true });
+    setCoverReview({ file, previewUrl: URL.createObjectURL(preview), warnings });
+  };
+  const confirmCoverReview = async () => {
+    const file = coverReview?.file;
+    closeCoverReview();
+    if (file) await uploadPhotoToStorage(file, 'cover');
   };
 
   const removePhoto = (index) => {
@@ -2934,8 +3023,10 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
 
       setSaved(true);
       setTimeout(() => setSaved(false), TIMING.refreshCooldown);
+      return true;
     } catch (err) {
       setError('Error al guardar los cambios');
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -2966,9 +3057,8 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
 
   // Validar Paso 3: Fotos (al menos 1 foto)
   const validateStep3 = () => {
-    const totalPhotos = formData.photos.length + (formData.coverPhoto ? 1 : 0);
-    if (totalPhotos === 0) {
-      setError('Debes subir al menos 1 foto antes de publicar');
+    if (!formData.coverPhoto) {
+      setError('Añade una foto de portada: es la imagen principal de tu ficha');
       return false;
     }
     return true;
@@ -2991,9 +3081,49 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
       setActiveTab('gallery');
     } else if (currentStep === 3) {
       // Paso 3 → Paso 4 (Fotos → Documentos)
+      if (!validateStep3()) return;
       await handleSave();
       setCurrentStep(4);
       setActiveTab('documents');
+    }
+  };
+
+  // Alta: con los 4 pasos completos, el borrador pasa a "pendiente" y llega al administrador
+  const isDraft = businessData?.verification_status === 'draft';
+  const handleSubmitApplication = async () => {
+    setError('');
+    if (!validateStep1()) { setCurrentStep(1); setActiveTab('store'); return; }
+    if (!validateStep2()) { setCurrentStep(2); setActiveTab('schedule'); return; }
+    if (!validateStep3()) { setCurrentStep(3); setActiveTab('gallery'); return; }
+    if (verificationDocuments.length === 0) {
+      setError('Sube al menos un documento para que podamos comprobar que el negocio es tuyo');
+      return;
+    }
+    setIsPublishing(true);
+    try {
+      const saved = await handleSave();
+      if (!saved) throw new Error('No se pudieron guardar los datos');
+      const { data, error } = await supabase
+        .from('businesses')
+        .update({
+          verification_status: 'pending',
+          verification_documents: verificationDocuments,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', businessData.id)
+        .eq('owner_id', user?.id)
+        .select('verification_status')
+        .single();
+      if (error) throw error;
+      if (data?.verification_status !== 'pending') throw new Error('La solicitud no cambió de estado');
+      if (onUpdateBusiness) onUpdateBusiness({ verification_status: 'pending' });
+      showToast('📨 ¡Solicitud enviada! Te avisaremos cuando la revisemos', 'success');
+      onNavigate('profile');
+    } catch (err) {
+      console.error('Error enviando la solicitud:', err);
+      setError('No se pudo enviar la solicitud. Inténtalo de nuevo.');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -3223,7 +3353,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                 <label className="absolute bottom-3 right-3 bg-black/60 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:bg-black/80 transition-colors cursor-pointer">
                   {uploadingPhoto === 'cover' ? <div className="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin" /> : <Camera size={14} />}
                   {uploadingPhoto === 'cover' ? 'Subiendo...' : 'Editar portada'}
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadPhotoToStorage(e.target.files?.[0], 'cover')} />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleCoverSelected(f); }} />
                 </label>
               </div>
             </div>
@@ -3430,39 +3560,12 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                     className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <span>
-                    <span className="block text-sm font-semibold text-slate-900">Quiero que @cornella_informa anuncie mi negocio</span>
+                    <span className="block text-sm font-semibold text-slate-900">Quiero que @cornella_informa anuncie mi negocio, para que llegue a más personas</span>
                     <span className="block text-xs text-gray-500 mt-0.5 leading-relaxed">
-                      Gratis. Publicaremos el nombre, la categoría, el barrio y la foto de portada de tu negocio en Instagram para darte a conocer. Puedes quitar el permiso cuando quieras.
+                      Gratis. Podremos publicar el nombre, la categoría, el barrio y la foto de portada de tu negocio en Instagram. Puedes quitar el permiso cuando quieras.
                     </span>
                   </span>
                 </label>
-                {formData.instagramConsent && (
-                  <fieldset className="pl-8">
-                    <legend className="text-xs font-medium text-gray-600 mb-2">¿Dónde prefieres aparecer?</legend>
-                    <div className="flex flex-wrap gap-2">
-                      {[['post', 'Publicación'], ['story', 'Historia'], ['both', 'Las dos']].map(([value, label]) => (
-                        <label
-                          key={value}
-                          className={`px-3 py-2 rounded-full text-xs font-medium cursor-pointer border transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-dark ${
-                            formData.instagramFormat === value
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="instagram-format"
-                            value={value}
-                            checked={formData.instagramFormat === value}
-                            onChange={() => setFormData(prev => ({ ...prev, instagramFormat: value }))}
-                            className="sr-only"
-                          />
-                          {label}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                )}
               </div>
             )}
           </div>
@@ -3653,8 +3756,8 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                           {uploadingPhoto === 'cover' ? <div className="w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin" /> : <Plus className="text-primary" size={24} />}
                         </div>
                         <span className="text-sm font-medium text-gray-600">{uploadingPhoto === 'cover' ? 'Subiendo...' : 'Añadir Foto'}</span>
-                        <span className="text-xs text-gray-500">Portada</span>
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadPhotoToStorage(e.target.files?.[0], 'cover')} />
+                        <span className="text-xs text-gray-500">Portada · mejor en horizontal</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleCoverSelected(f); }} />
                       </label>
                     )}
                   </div>
@@ -3754,9 +3857,12 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
               </div>
             ) : (
             <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Verificación Oficial</h3>
-              <p className="text-sm text-gray-500 mb-6">
-                Sube documentos que verifiquen tu negocio (CIF, licencia comercial, etc.) para obtener el badge de verificación oficial.
+              <h3 className="text-lg font-bold text-slate-900 mb-2">{isDraft ? 'Último paso: comprueba que es tu negocio' : 'Verificación Oficial'}</h3>
+              <p className="text-sm text-gray-500 mb-3">
+                Sube al menos un documento que demuestre que el negocio es tuyo: alta de autónomo o modelo 036/037, una factura o recibo a nombre del negocio, o la licencia de actividad.
+              </p>
+              <p className="text-xs text-gray-500 mb-6 bg-gray-50 border border-gray-200 rounded-xl p-3 leading-relaxed">
+                🔒 Los documentos son privados: solo los ve el administrador para verificarte. Si subes el DNI, tapa la foto y el número de soporte; solo necesitamos comprobar el nombre.
               </p>
 
               {/* Status Card */}
@@ -4004,6 +4110,34 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   )}
                 </button>
               )
+            ) : isDraft ? (
+              // Borrador → enviar la solicitud con todo completo
+              <button
+                onClick={handleSubmitApplication}
+                disabled={isSaving || isPublishing}
+                className={`flex-1 h-12 rounded-xl text-white font-bold text-sm shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+                  isPublishing ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-700 hover:bg-green-800 shadow-green-500/25'
+                }`}
+              >
+                {isPublishing ? (
+                  <>
+                    <RefreshCw size={18} className="animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Check size={18} />
+                    Enviar solicitud
+                  </>
+                )}
+              </button>
+            ) : businessData?.verification_status === 'rejected' ? (
+              <button
+                onClick={() => onNavigate('business-appeal')}
+                className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-sm flex items-center justify-center gap-2"
+              >
+                Ver el motivo y reenviar
+              </button>
             ) : (
               <div className="flex-1 h-12 rounded-xl bg-amber-100 text-amber-700 font-medium text-sm flex items-center justify-center gap-2">
                 <Clock size={16} />
@@ -4013,6 +4147,42 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
           )}
         </div>
       </div>
+
+      {/* Revisión de la portada: cómo quedará y por qué no es ideal */}
+      {coverReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cover-review-title">
+          <div className="absolute inset-0 bg-black/50" onClick={closeCoverReview} />
+          <div className="relative bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h3 id="cover-review-title" className="text-lg font-bold text-slate-900">Así quedará tu portada</h3>
+              <p className="text-xs text-gray-500 mt-1">La portada se muestra en horizontal (rectangular).</p>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100">
+                <img src={coverReview.previewUrl} alt="Vista previa de la portada recortada" className="w-full h-full object-cover" />
+              </div>
+              <ul className="space-y-1.5">
+                {coverReview.warnings.map(w => (
+                  <li key={w} className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>{w}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-gray-500">Consejo: haz la foto con el móvil en horizontal, por ejemplo de la fachada o del interior del local.</p>
+            </div>
+            <div className="p-4 pt-0 flex gap-2">
+              <label className="flex-1 h-11 rounded-xl border-2 border-gray-300 text-gray-700 font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-gray-50">
+                Elegir otra
+                <input type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; closeCoverReview(); handleCoverSelected(f); }} />
+              </label>
+              <button onClick={confirmCoverReview} className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-sm">
+                Usar esta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Cierre Especial */}
       {showClosureModal && (

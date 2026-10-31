@@ -387,6 +387,14 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   sin GPU) que enseña las pantallas reales; un color de fondo por función y cierre «Muy pronto» con @cornellalocal.
   Reutiliza las capturas de `../vecino`. Render ≈ 30 min con dos procesos. Música original en `music.py`.
 
+### Vídeo «Cornellà sale del móvil» y 2 fallos del panel (2026-11-01)
+- `herramientas/videos/maqueta-3d/` (ver su README): una maqueta 3D del barrio sale de la pantalla del móvil;
+  búsqueda por categoría/barrio/etiqueta, oferta de producto, aviso de favorito, presupuesto de pintor y panel del
+  negocio. Capturas extra con `vecino/capture-viral.cjs`.
+- Fallos vistos al grabarlo: en «Ofertas de Empleo» del negocio el salario salía siempre «0 € - 0 €» (ahora el
+  rango, la nota del negocio o «A convenir») y faltaba el tipo de contrato; «Publicada Hace 4 días» → «hace».
+  En los presupuestos recibidos, el sello de verificado se iba junto al precio cuando el nombre ocupaba 2 líneas.
+
 ---
 
 ## Reglas de Negocio Importantes

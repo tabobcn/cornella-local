@@ -54,3 +54,14 @@ herramientas/videos/anuncio-3d/*.mp4
 herramientas/videos/anuncio-3d/*.wav
 herramientas/videos/anuncio-3d/*.txt
 herramientas/videos/anuncio-3d/*.log
+herramientas/videos/maqueta-3d/node_modules/
+herramientas/videos/maqueta-3d/package-lock.json
+herramientas/videos/maqueta-3d/img/
+herramientas/videos/maqueta-3d/fonts/
+herramientas/videos/maqueta-3d/parts/
+herramientas/videos/maqueta-3d/stills/
+herramientas/videos/maqueta-3d/*.mp4
+herramientas/videos/maqueta-3d/*.wav
+herramientas/videos/maqueta-3d/*.txt
+herramientas/videos/maqueta-3d/*.log
+herramientas/videos/maqueta-3d/*.jpg

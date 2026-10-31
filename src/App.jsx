@@ -9860,11 +9860,11 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                 isAccepted ? 'border-green-300 bg-green-50' :
                 hasAcceptedAnother ? 'border-gray-200 opacity-50' : 'border-gray-100'
               }`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <button
                       onClick={() => quote.businessId && onNavigate('business', { id: quote.businessId, returnTo: 'my-budget-requests', returnParams: { selectedRequestId: selectedRequest.id } })}
-                      className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-lg font-bold text-gray-600 hover:bg-primary/10 hover:text-primary transition-colors"
+                      className="w-12 h-12 shrink-0 bg-gray-100 rounded-full flex items-center justify-center text-lg font-bold text-gray-600 hover:bg-primary/10 hover:text-primary transition-colors"
                     >
                       {getInitials(quote.businessName)}
                     </button>
@@ -9875,8 +9875,8 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                           className="font-bold text-slate-900 hover:text-primary transition-colors text-left"
                         >
                           {quote.businessName}
+                          {quote.verified && <BadgeCheck className="inline-block text-white fill-primary ml-1 align-[-2px]" size={16} aria-label="Verificado" />}
                         </button>
-                        {quote.verified && <BadgeCheck className="text-white fill-primary shrink-0" size={16} aria-label="Verificado" />}
                         {isAccepted && <span className="px-2 py-0.5 bg-green-700 text-white text-[10px] font-bold rounded-full">ELEGIDO</span>}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -9892,7 +9892,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <div className="flex flex-col items-end gap-1">
                       <p className="text-2xl font-bold text-primary">{formatCurrency(quote.price, false)}</p>
                       {!acceptedRequests[selectedRequest.id] && cheapestQuote && quote.id === cheapestQuote.id && (
@@ -13162,6 +13162,8 @@ export default function App() {
             id: job.id,
             title: job.title,
             type: job.type,
+            contract: job.contract,
+            modality: job.modality,
             salary: job.salary_min && job.salary_max
               ? `${(job.salary_min / 1000).toFixed(0)}-${(job.salary_max / 1000).toFixed(0)}k €/año`
               : job.salary_note || 'A convenir',
@@ -13699,6 +13701,8 @@ export default function App() {
         id: data.id,
         title: data.title,
         type: data.type,
+        contract: data.contract,
+        modality: data.modality,
         salary: data.salary_min && data.salary_max
           ? `${(data.salary_min / 1000).toFixed(0)}-${(data.salary_max / 1000).toFixed(0)}k €/año`
           : data.salary_note || 'A convenir',

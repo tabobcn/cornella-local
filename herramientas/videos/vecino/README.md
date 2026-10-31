@@ -16,3 +16,8 @@ node herramientas/videos/vecino/render.cjs herramientas/videos/vecino/m2-ofertas
 herramientas/videos/vecino/build-all.sh                   # los 4 vídeos con su música
 ```
 Necesita lo mismo que `../README.md` (Playwright, ffmpeg, Python con numpy y scipy).
+
+`capture-viral.cjs` hace las capturas extra del vídeo «Cornellà sale del móvil» (`../maqueta-3d`): filtros por
+barrio, categoría y etiqueta, oferta de producto (zapatillas), presupuesto de pintor, avisos de favoritos y el
+panel del negocio (estadísticas, candidaturas y empleos). `node herramientas/videos/vecino/capture-viral.cjs`
+(o `buscar,ofertas,pres,negocio` para solo algunas).

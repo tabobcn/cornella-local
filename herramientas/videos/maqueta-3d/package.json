@@ -1,0 +1,8 @@
+{
+  "name": "cornella-maqueta-3d",
+  "private": true,
+  "description": "Vídeo «Cornellà sale del móvil» (maqueta 3D) (solo herramienta local, no forma parte de la web)",
+  "dependencies": {
+    "three": "0.169.0"
+  }
+}

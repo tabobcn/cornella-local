@@ -4,7 +4,7 @@ import { ApplicationSkeleton } from '../components/LoadingSkeletons';
 import { DeactivateConfirmModal, DeleteConfirmModal } from '../components/ConfirmModal';
 import { SUCCESS_MESSAGES, TIMING } from '../constants';
 import { categories } from '../data/mockData';
-import { formatCurrency, formatDate, formatRelativeTime } from '../utils/formatters';
+import { formatDate, formatRelativeTime } from '../utils/formatters';
 import { formatSupabaseError } from '../utils/helpers';
 import { getTagsBySubcategory, hasTagsForSubcategory } from '../data/businessTagsByCategory';
 import { getTagsForCategory } from '../data/businessTags';
@@ -1131,13 +1131,13 @@ export const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOf
                   </div>
                   <h3 className="text-slate-900 text-lg font-bold leading-tight">{job.title}</h3>
                   <p className="text-primary text-base font-bold leading-normal mt-0.5">
-                    {formatCurrency(job.salaryMin || 0, false)} - {formatCurrency(job.salaryMax || 0, false)}
+                    {job.salary || 'A convenir'}
                   </p>
                   <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                     <MapPin size={14} />
                     <span>{job.location}</span>
-                    <span className="text-gray-300">•</span>
-                    <span>{job.contract}</span>
+                    {job.contract && <span className="text-gray-300">•</span>}
+                    {job.contract && <span>{job.contract}</span>}
                   </div>
                 </div>
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center border ${
@@ -1154,7 +1154,7 @@ export const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOf
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Clock size={14} />
-                  <span>Publicada {job.postedAgo}</span>
+                  <span>Publicada {(job.postedAgo || '').toLowerCase()}</span>
                 </div>
                 <button
                   onClick={() => handleDelete(job)}

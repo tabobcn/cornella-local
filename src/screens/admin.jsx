@@ -134,17 +134,17 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
             <div className="text-center text-gray-500 py-10">Sin resultados</div>
           ) : filtered.map(u => (
             <div key={u.id} className={`bg-white rounded-xl p-4 shadow-sm flex items-center gap-3 ${u.is_banned ? 'opacity-60 border border-red-200' : ''}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${u.is_banned ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${u.is_banned ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary-dark'}`}>
                 {u.is_banned ? <UserX size={18} /> : (u.full_name || u.email || '?')[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="font-semibold text-slate-800 text-sm truncate">{u.full_name || 'Sin nombre'}</p>
-                  {u.is_admin && <span className="text-[10px] bg-primary/10 text-primary font-semibold px-1.5 py-0.5 rounded-full">Admin</span>}
+                  {u.is_admin && <span className="text-[10px] bg-primary/10 text-primary-dark font-semibold px-1.5 py-0.5 rounded-full">Admin</span>}
                   {u.is_banned && <span className="text-[10px] bg-red-100 text-red-600 font-semibold px-1.5 py-0.5 rounded-full">Baneado</span>}
                 </div>
                 <p className="text-xs text-gray-500 truncate">{u.email}</p>
-                <p className="text-[10px] text-gray-300">{new Date(u.created_at).toLocaleDateString('es-ES')}</p>
+                {u.created_at && <p className="text-[10px] text-gray-500">{new Date(u.created_at).toLocaleDateString('es-ES')}</p>}
               </div>
               {!u.is_admin && (
                 <div className="flex gap-1.5 shrink-0">
@@ -281,7 +281,7 @@ export const AdminSupportScreen = ({ onNavigate }) => {
     <div className="mx-auto min-h-screen w-full max-w-md relative overflow-x-hidden shadow-2xl bg-gray-50">
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center px-4 py-4">
-          <button aria-label="Volver" onClick={() => onNavigate('admin')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+          <button aria-label="Volver" onClick={() => onNavigate('admin-dashboard')} className="text-slate-800 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
             <ArrowLeft size={24} />
           </button>
           <div className="flex-1 text-center pr-10">
@@ -297,7 +297,7 @@ export const AdminSupportScreen = ({ onNavigate }) => {
               key={tab.id}
               onClick={() => setFilter(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                filter === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                filter === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               {tab.label}
@@ -344,7 +344,7 @@ export const AdminSupportScreen = ({ onNavigate }) => {
               }
               <p className="text-sm text-gray-600 leading-relaxed mb-3">{m.message}</p>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-300">{new Date(m.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-xs text-gray-500">{new Date(m.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                 {m.status !== 'resolved' && (
                   <button onClick={() => markResolved(m.id)} className="text-xs bg-green-700 text-white px-3 py-1 rounded-lg hover:bg-green-800 transition-colors">
                     Marcar resuelto
@@ -406,7 +406,8 @@ export const AdminDashboard = ({ onNavigate, user }) => {
           supabase
             .from('offers')
             .select('*', { count: 'exact', head: true })
-            .eq('status', 'active'),
+            .eq('status', 'active')
+            .gt('expires_at', new Date().toISOString()),
           supabase
             .from('jobs')
             .select('*', { count: 'exact', head: true })

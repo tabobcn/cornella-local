@@ -25,10 +25,7 @@ import {
   ShieldAlert, UserCog, BarChart3, XCircle, UserX, ShieldOff, CheckCircle, AlertTriangle, Cookie, Percent, Scale, Download
 } from 'lucide-react';
 
-import {
-  categories, navItems, termsAndConditions,
-  userReviews, userJobApplications, businessOffers
-} from './data/mockData';
+import { categories } from './data/mockData';
 
 // Utilidades y Helpers
 import { LIMITS, TIMING, ERROR_MESSAGES, SUCCESS_MESSAGES, SERVICE_CATEGORIES, REGEX_PATTERNS } from './constants';
@@ -187,14 +184,14 @@ export const VerificationDocumentCard = ({ documentRef, index, onRemove, layout 
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={!signedUrl}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${signedUrl ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-gray-100 text-gray-500 pointer-events-none'}`}
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${signedUrl ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-gray-100 text-gray-600 pointer-events-none'}`}
           >
             <ExternalLink size={16} />
           </a>
           {onRemove && (
             <button aria-label="Eliminar"
               onClick={() => onRemove(documentRef)}
-              className="w-9 h-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors"
+              className="w-9 h-9 bg-red-50 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors"
             >
               <Trash2 size={16} />
             </button>
@@ -1766,7 +1763,7 @@ const DesktopAside = ({ user, onNavigate, onAuth }) => (
       <p className="font-bold text-slate-900">Llévala en el móvil</p>
       <div className="flex items-center gap-3">
         <img
-          src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=https%3A%2F%2Fwww.cornellalocal.es"
+          src="/qr-cornellalocal.png"
           alt="Código QR de www.cornellalocal.es"
           className="w-20 h-20 rounded-lg border border-gray-100"
           loading="lazy"
@@ -2160,6 +2157,15 @@ const takeAuthRedirect = () => {
 // Poner a true si se ofrece como ventaja de un plan premium.
 export const SHOW_BUSINESS_WEBSITE = false;
 
+// Avatar con las iniciales, dibujado aquí mismo (antes se pedía a ui-avatars.com, un servicio externo
+// que recibía el nombre de la persona)
+export const initialsAvatar = (name, bg = '#4b71c3') => {
+  const initials = String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='128' height='128' fill='${bg}'/>`
+    + `<text x='50%' y='50%' dy='.35em' text-anchor='middle' font-family='Inter,Arial,sans-serif' font-size='52' font-weight='600' fill='#fff'>${initials.replace(/[<>&'"]/g, '')}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+};
+
 // Etiqueta "NUEVO": solo durante los primeros días desde que se aprobó (publicó) el negocio
 export // Aviso del límite de ofertas: 1 cada 7 días por negocio, contando desde la última publicada
 // (aunque se haya borrado). Si se conoce la fecha de la última, se dice cuándo se puede publicar.
@@ -2293,12 +2299,17 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
             const { data: biz } = await supabase.from('businesses').select('name').eq('id', data.business_id).maybeSingle();
             businessName = biz?.name || '';
           }
+          // Una oferta pasada de fecha o pausada, o un empleo cerrado, ya no está disponible
+          const ended = kind === 'coupon'
+            ? (data?.status !== 'active' || data?.is_visible === false || (data?.expires_at && new Date(data.expires_at) <= new Date()))
+            : data?.status !== 'active';
           if (active) setItem(data ? {
             title: data.title,
             subtitle: businessName,
             image: kind === 'coupon' ? data.image || null : null,
-            badge: kind === 'coupon' ? (data.discount_label || (data.discount_value ? `-${data.discount_value}%` : '')) : '',
+            badge: kind === 'coupon' && !ended ? (data.discount_label || (data.discount_value ? `-${data.discount_value}%` : '')) : '',
             description: data.description,
+            ended,
           } : null);
         }
       } catch (err) {
@@ -2371,6 +2382,14 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
         {!loading && !item && (
           <p className="text-gray-500">Este contenido ya no está disponible o no existe.</p>
         )}
+        {item?.ended && (
+          <div className="rounded-2xl bg-gray-100 p-4 text-center">
+            <p className="font-bold text-gray-800">{kind === 'coupon' ? 'Esta oferta ha terminado' : 'Esta oferta de empleo ya está cerrada'}</p>
+            <button onClick={() => onNavigate('offers', kind === 'job-detail' ? { tab: 'jobs' } : {})} className="mt-2 text-sm font-semibold text-primary-dark underline">
+              {kind === 'coupon' ? 'Ver las ofertas activas' : 'Ver otras ofertas de empleo'}
+            </button>
+          </div>
+        )}
         {item?.rating != null && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Star size={16} className="text-yellow-500 fill-yellow-500" />
@@ -2395,7 +2414,11 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
         </div>
 
         <div className="flex flex-col gap-3 items-center text-center">
-          <p className="text-sm text-gray-600">{lead}</p>
+          <p className="text-sm text-gray-600">
+            {item?.ended
+              ? (kind === 'coupon' ? 'Crea tu cuenta gratis para conseguir los códigos de las ofertas activas.' : 'Crea tu cuenta gratis para apuntarte a las ofertas de empleo abiertas.')
+              : lead}
+          </p>
           <GuestAuthButtons onAuth={(mode) => onAuth(mode, kind, { id, ...params })} />
         </div>
       </div>
@@ -2999,7 +3022,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
               <span className="text-xs text-gray-500">Filtros activos:</span>
 
               {selectedBarrio && (
-                <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary-dark px-3 py-1 rounded-full text-sm font-medium">
                   <MapPin size={14} />
                   {barrios.find(b => b.id === selectedBarrio)?.name}
                   <button aria-label="Cerrar"
@@ -3178,7 +3201,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                         {business.cover_photo || (business.images && business.images[0]) ? (
                           <img src={business.cover_photo || business.images[0]} alt={business.name} loading="lazy" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-bold text-base">
+                          <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary-dark font-bold text-base">
                             {business.name?.charAt(0).toUpperCase() || '?'}
                           </div>
                         )}
@@ -4562,7 +4585,7 @@ const OfferCard = ({ offer, isFired, onFire, onNavigate }) => (
           className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-bold transition-all ${
             isFired
               ? 'bg-orange-100 text-orange-500 scale-105'
-              : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-400'
+              : 'bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-400'
           }`}
         >
           🔥 <span>{offer.fireCount > 0 ? offer.fireCount : ''}</span>
@@ -4737,7 +4760,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
                     <div className="px-4 pt-6 pb-3 flex items-center gap-2">
                       <span className="text-lg">🔥</span>
                       <h3 className="text-slate-900 text-lg font-bold">Destacadas</h3>
-                      <span className="text-xs text-orange-500 font-semibold bg-orange-50 px-2 py-0.5 rounded-full">Top {destacadas.length}</span>
+                      <span className="text-xs text-orange-800 font-semibold bg-orange-50 px-2 py-0.5 rounded-full">Top {destacadas.length}</span>
                     </div>
                     <div className="px-4 space-y-4">
                       {destacadas.map(offer => (
@@ -4769,7 +4792,6 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
           <div className="w-full">
             <div className="px-4 pt-6 pb-3 flex items-center justify-between">
               <h3 className="text-slate-900 text-lg font-bold">Empleo Local</h3>
-              <button className="text-primary text-xs font-semibold bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition">Ver alertas</button>
             </div>
             <div className="px-4 space-y-4 pb-6">
               {loadingJobs ? (
@@ -4840,7 +4862,7 @@ const OffersPage = ({ onNavigate, user = null, userOffers = [], initialTab = 'of
                             </span>
                           )}
                           {job.urgent && (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-600 border border-red-100">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-100">
                               Urgente
                             </span>
                           )}
@@ -5418,7 +5440,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 </div>
                 <div>
                   <span className="font-medium text-red-700 block text-sm">Eliminar negocio</span>
-                  <span className="text-xs text-red-500">Acción permanente e irreversible</span>
+                  <span className="text-xs text-red-700">Acción permanente e irreversible</span>
                 </div>
               </button>
             </div>
@@ -6133,7 +6155,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                     <button
                       key={i}
                       onClick={() => onNavigate('home', { filterTag: tag })}
-                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary-dark text-xs font-semibold hover:bg-primary/20 transition-colors"
                     >
                       {tag}
                     </button>
@@ -6415,7 +6437,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
               {sortedReviews.slice(0, 10).map(review => (
                 <div key={review.id} className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${review.user === "Tú" ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${review.user === "Tú" ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary-dark"}`}>
                       {review.avatar}
                     </div>
                     <div className="flex-1">
@@ -6624,13 +6646,9 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
           .select('code, status')
           .eq('offer_id', couponId)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         if (data) {
-          if (!redemptionCode && data.status === 'pending' && offer?.max_uses) {
-        // Código nuevo: el contador de cupones disponibles baja al momento
-        setOffer(prev => prev ? { ...prev, claimed_count: (prev.claimed_count ?? prev.redemption_count ?? 0) + 1 } : prev);
-      }
-      setRedemptionCode(data.code);
+          setRedemptionCode(data.code);
           setRedemptionStatus(data.status);
         }
       } catch (_) {
@@ -6681,7 +6699,6 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
     validUntil: formattedExpiry,
     type: offer.is_flash ? 'Oferta Flash' : 'Oferta',
     code: 'CORNELLA' + offer.id.substring(0, 8).toUpperCase(),
-    qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${offer.id}`,
     discount: offer.discount_label ||
               (offer.discount_type === '2x1' ? '2x1' :
                offer.discount_type === 'free' ? 'GRATIS' :
@@ -6689,17 +6706,20 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
     originalPrice: offer.original_price,
     discountedPrice: offer.discounted_price,
     conditions: [
-      'Válido una vez por persona',
-      'No acumulable con otras ofertas',
-      'Presentar cupón antes de pagar',
-      'Sujeto a disponibilidad'
+      '1 código por persona',
+      `Válido hasta el ${formattedExpiry}`,
+      'Enseña el código en el negocio antes de pagar',
+      ...(offer.max_uses ? [`Hasta agotar los ${offer.max_uses} cupones`] : []),
     ],
     location: {
       address: offer.businesses?.address || 'Cornellà de Llobregat',
-      city: 'Barcelona, España',
-      distance: '1.2 km'
+      city: 'Cornellà de Llobregat (Barcelona)',
     }
   };
+  // Terminada: pasada de fecha, pausada o retirada por el negocio
+  const isEnded = offer.status !== 'active' || offer.is_visible === false
+    || (offer.expires_at && new Date(offer.expires_at) <= new Date());
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${coupon.location.address}, Cornellà de Llobregat`)}`;
 
   const isCurrentCouponSaved = isCouponSaved ? isCouponSaved(coupon.id) : false;
 
@@ -6736,9 +6756,14 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
         showToast?.(data.error === 'offer_unavailable' ? 'Esta oferta ya no está disponible' : 'No se pudo obtener el código. Inténtalo de nuevo.', 'error');
         return;
       }
+      // Código nuevo: el contador de cupones disponibles baja al momento
+      if (!redemptionCode && offer?.max_uses) {
+        setOffer(prev => prev ? { ...prev, claimed_count: (prev.claimed_count ?? prev.redemption_count ?? 0) + 1 } : prev);
+      }
       setRedemptionCode(data.code);
       setRedemptionStatus(data.status);
     } catch (err) {
+      console.error('Error obteniendo código de cupón:', err);
       showToast?.('No se pudo obtener el código. Inténtalo de nuevo.', 'error');
     } finally {
       setRedemptionLoading(false);
@@ -6797,14 +6822,28 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
           </h1>
 
           <div className="flex items-center gap-2 mb-8">
-            <Clock className="text-primary" size={20} />
-            <p className="text-primary font-medium text-sm">Válido hasta el {coupon.validUntil}</p>
+            <Clock className={isEnded ? 'text-gray-500' : 'text-primary'} size={20} />
+            <p className={`font-medium text-sm ${isEnded ? 'text-gray-600' : 'text-primary-dark'}`}>
+              {isEnded ? `Terminó el ${coupon.validUntil}` : `Válido hasta el ${coupon.validUntil}`}
+            </p>
             <span className="w-1 h-1 rounded-full bg-gray-300 mx-1"></span>
             <p className="text-gray-500 text-sm">{coupon.type}</p>
           </div>
 
           {/* Sección de código de redención */}
-          {offer.max_uses && (offer.claimed_count ?? offer.redemption_count ?? 0) >= offer.max_uses && !redemptionCode ? (
+          {isEnded && redemptionStatus !== 'validated' ? (
+            /* Oferta terminada */
+            <div className="relative w-full bg-gray-100 rounded-2xl p-5 flex flex-col items-center gap-2 mb-6 text-center">
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                <Clock className="text-gray-600" size={24} />
+              </div>
+              <p className="font-bold text-gray-800">Esta oferta ha terminado</p>
+              <p className="text-sm text-gray-600">Ya no se pueden conseguir ni usar códigos. Mira las ofertas que están activas ahora.</p>
+              <button onClick={() => onNavigate('offers')} className="mt-1 px-5 py-2 rounded-xl bg-primary text-white text-sm font-semibold">
+                Ver ofertas activas
+              </button>
+            </div>
+          ) : offer.max_uses && (offer.claimed_count ?? offer.redemption_count ?? 0) >= offer.max_uses && !redemptionCode ? (
             /* Oferta agotada */
             <div className="relative w-full bg-gray-100 rounded-2xl p-5 flex flex-col items-center gap-2 mb-6">
               <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
@@ -6906,11 +6945,16 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-gray-900">{coupon.location.address}</p>
               <p className="text-xs text-gray-500 truncate">{coupon.location.city}</p>
-              <p className="text-xs text-primary font-semibold mt-1">A {coupon.location.distance} de ti</p>
             </div>
-            <button aria-label="Cómo llegar" className="size-10 flex items-center justify-center rounded-full bg-primary text-white shadow-md hover:bg-primary/90 transition-colors">
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Cómo llegar"
+              className="size-10 flex items-center justify-center rounded-full bg-primary text-white shadow-md hover:bg-primary/90 transition-colors"
+            >
               <Navigation size={20} />
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -7207,9 +7251,16 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
             <h1 className="text-2xl font-bold text-slate-900 leading-tight mb-2">
               {job.title}
             </h1>
-            <button className="text-primary font-semibold hover:underline text-base">
-              {job.company}
-            </button>
+            {job.businessId ? (
+              <button
+                onClick={() => onNavigate('business', { id: job.businessId, returnTo: 'job-detail', returnParams: { id: job.id } })}
+                className="text-primary-dark font-semibold hover:underline text-base"
+              >
+                {job.company}
+              </button>
+            ) : (
+              <p className="text-primary-dark font-semibold text-base">{job.company}</p>
+            )}
             <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
               <MapPin size={16} className="text-gray-500" />
               <span>{job.location}</span>
@@ -7242,7 +7293,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <CreditCard className="text-white" size={18} />
               </div>
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">Salario Bruto Anual</span>
+              <span className="text-xs font-bold text-primary-dark uppercase tracking-wider">Salario Bruto Anual</span>
             </div>
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(job.salaryMin || 0, false)} - {formatCurrency(job.salaryMax || 0, false)}
@@ -7310,10 +7361,15 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
               </div>
               <div className="p-4 bg-white">
                 <p className="text-sm text-gray-600 mb-2">{job.address}</p>
-                <button className="text-primary text-sm font-semibold hover:underline flex items-center gap-1">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${job.address || job.location || ''}, Cornellà de Llobregat`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-dark text-sm font-semibold hover:underline flex items-center gap-1"
+                >
                   Ver en mapa
                   <ChevronRight size={16} />
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -7391,7 +7447,7 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
             >
               <Upload size={20} />
               Inscribirme
-              <span className="text-sm bg-white/20 px-3 py-1 rounded-lg">Subir CV</span>
+              <span className="text-sm bg-primary-dark px-3 py-1 rounded-lg">Subir CV</span>
             </button>
           )}
 
@@ -8003,11 +8059,15 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Star className="text-yellow-500 fill-yellow-500" size={16} />
-                      <span className="font-bold text-slate-900">{business.rating}</span>
-                      <span className="text-gray-500 text-sm">({business.review_count || business.reviews || 0})</span>
-                    </div>
+                    {(business.review_count || business.reviews || 0) > 0 ? (
+                      <div className="flex items-center gap-1">
+                        <Star className="text-yellow-500 fill-yellow-500" size={16} />
+                        <span className="font-bold text-slate-900">{Number(business.rating || 0).toFixed(1)}</span>
+                        <span className="text-gray-500 text-sm">({business.review_count || business.reviews})</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 text-sm">Sin reseñas aún</span>
+                    )}
                     {business.distance && (
                       <div className="flex items-center gap-1 text-gray-500 text-sm">
                         <MapPin size={14} />
@@ -8160,7 +8220,7 @@ const UserReviewsScreen = ({ onNavigate, user, showToast }) => {
       {/* Summary Section */}
       <div className="px-4 py-6 bg-white">
         <div className="flex flex-col items-center justify-center gap-2">
-          <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase">
+          <div className="bg-primary/10 text-primary-dark px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase">
             Tu impacto
           </div>
           <h3 className="text-slate-900 tracking-tight text-3xl font-bold leading-tight text-center">
@@ -8410,7 +8470,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
           return {
             id: app.id,
             company: business.name,
-            companyLogo: business.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(business.name)}&background=4b71c3&color=fff`,
+            companyLogo: business.logo_url || initialsAvatar(business.name),
             position: job.title,
             location: job.location || 'Cornellà',
             salary: job.salary_min && job.salary_max
@@ -8567,7 +8627,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
       </div>
 
       {/* Stats Summary */}
-      <div className="flex w-full overflow-x-auto gap-3 px-6 py-6 pb-2">
+      <div className="flex w-full overflow-x-auto gap-3 px-6 py-6 pb-2" tabIndex={0} role="region" aria-label="Resumen de tus candidaturas">
         <div className="flex min-w-[140px] flex-1 flex-col gap-1 rounded-xl p-4 border border-gray-200 bg-white shadow-sm">
           <div className="flex items-center gap-2">
             <FileText className="text-primary" size={20} />
@@ -8578,7 +8638,7 @@ const UserJobsScreen = ({ onNavigate, user, showToast }) => {
         <div className="flex min-w-[140px] flex-1 flex-col gap-1 rounded-xl p-4 border border-primary/20 bg-primary/5 shadow-sm">
           <div className="flex items-center gap-2">
             <UserSearch className="text-primary" size={20} />
-            <p className="text-primary text-sm font-medium">Entrevistas</p>
+            <p className="text-primary-dark text-sm font-medium">Entrevistas</p>
           </div>
           <p className="text-primary text-2xl font-bold leading-tight">{stats.interviews}</p>
         </div>
@@ -9369,7 +9429,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                     <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span className={`flex items-center gap-1 ${
                         request.urgency === 'urgent' ? 'text-red-500' :
-                        request.urgency === 'this-week' ? 'text-amber-500' : 'text-green-500'
+                        request.urgency === 'this-week' ? 'text-amber-700' : 'text-green-700'
                       }`}>
                         <Clock size={12} />
                         {request.urgencyLabel}
@@ -9417,7 +9477,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                           </span>
                         )}
                         {serviceStatus[request.id]?.cancelled && (
-                          <span className="px-3 py-1.5 bg-gray-100 text-gray-500 text-xs font-medium rounded-full">
+                          <span className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
                             No realizado
                           </span>
                         )}
@@ -9975,7 +10035,7 @@ const ConsentedMapEmbed = ({ address }) => {
     >
       <Icon name="MapPin" size={32} className="text-primary" />
       <p className="text-sm font-semibold text-slate-700">Mostrar mapa</p>
-      <p className="text-xs text-gray-500 leading-relaxed">
+      <p className="text-xs text-gray-600 leading-relaxed">
         Cargar el mapa instalará cookies propias de Google.
         <br />
         Toca para cargarlo solo esta vez.
@@ -11387,10 +11447,12 @@ const EditProfileScreen = ({ onNavigate, user, setUser, showToast }) => {
         .upload(fileName, file, { cacheControl: '3600', upsert: true });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('business-photos').getPublicUrl(fileName);
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+      const { error: profileError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+      if (profileError) throw profileError;
       setUser(prev => ({ ...prev, avatar_url: publicUrl }));
       showToast('Foto de perfil actualizada', 'success');
     } catch (err) {
+      console.error('Error guardando la foto de perfil:', err);
       showToast('Error al subir la foto', 'error');
     } finally {
       setUploadingAvatar(false);
@@ -11674,7 +11736,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${settings.pushEnabled ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-500'}`}>
+                  <div className={`p-2 rounded-lg ${settings.pushEnabled ? 'bg-primary/10 text-primary-dark' : 'bg-gray-100 text-gray-600'}`}>
                     {settings.pushEnabled ? <BellRing size={20} /> : <BellOff size={20} />}
                   </div>
                   <div>
@@ -11889,7 +11951,7 @@ const SettingsScreen = ({ onNavigate, userSettings, updateSettings, onResetOnboa
         {/* Versión de la app */}
         <div className="text-center py-6">
           <p className="text-xs text-gray-500">Cornellà Local v1.0.0</p>
-          <p className="text-[10px] text-gray-300 mt-1">Hecho con ❤️ en Cornellà</p>
+          <p className="text-[10px] text-gray-500 mt-1">Hecho con ❤️ en Cornellà</p>
         </div>
       </div>
 
@@ -12054,8 +12116,9 @@ export default function App() {
       supabase.from('profiles')
         .select('*')
         .eq('id', session.user.id)
-        .single()
-        .then(({ data }) => {
+        .maybeSingle()
+        .then(({ data, error: profileError }) => {
+          if (profileError) console.error('Error leyendo el perfil:', profileError);
           if (data) {
             // Comprobar si la cuenta está baneada
             if (data.is_banned === true) {
@@ -12071,20 +12134,18 @@ export default function App() {
             // Perfil existe: actualizar estado con los datos del perfil que usa la app
             const { id, full_name, avatar_url, is_admin, is_banned } = data;
             setUser(prev => ({ ...prev, id, full_name, avatar_url, is_admin, is_banned }));
-          } else {
-            // Perfil no existe: crearlo
+          } else if (!profileError) {
+            // Perfil no existe: crearlo (si la lectura falló no se toca, para no pisar datos)
             supabase.from('profiles').upsert({
               id: session.user.id,
               email: session.user.email,
               full_name: displayName,
               avatar_url: avatar,
-            }, { onConflict: 'id' }).then(() => {
-            }).catch(err => {
+            }, { onConflict: 'id' }).then(({ error: upsertError }) => {
+              if (upsertError) console.error('Error creando el perfil:', upsertError);
             });
           }
-        })
-        .catch(err => {
-        });
+        }, (err) => console.error('Error sincronizando el perfil:', err));
     };
 
     // onAuthStateChange es la fuente principal de verdad
@@ -13044,7 +13105,9 @@ export default function App() {
             timeLeft,
             expiresSoon: diffHours < 8 && diffHours > 0,
             createdAt: offer.created_at,
-            status: offer.status,
+            // Una oferta pasada de fecha está terminada aunque en la BD siga como 'active'
+            status: diffMs <= 0 ? 'expired' : offer.status,
+            expiresAt: offer.expires_at,
             isVisible: offer.is_visible,
             redemptions: offer.redemption_count || 0,
             claimed: offer.claimed_count ?? offer.redemption_count ?? 0,
@@ -13657,7 +13720,7 @@ export default function App() {
       // Preparar datos para insertar
       const businessToInsert = {
         owner_id: user.id,
-        name: data?.name || 'Mi Negocio',
+        name: (data?.name || '').trim() || 'Mi Negocio',
         // cif: campo no existe en la tabla (se elimina)
         category_id: data?.category ? parseInt(data.category) : null,
         subcategory: data?.subcategory || '',

@@ -17,6 +17,7 @@ import {
   barrios,
   createPrivateSignedUrl,
   getPrivateStoragePath,
+  initialsAvatar,
 } from '../App.jsx';
 
 const PrivateStorageLink = ({ bucketName, fileRef, children, className }) => {
@@ -416,7 +417,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
               <p className={`text-xl font-bold ${activeFilter === 'all' ? 'text-white' : 'text-slate-900'}`}>
                 {incomingRequests.filter(r => !ignoredRequests.includes(r.id)).length}
               </p>
-              <p className={`text-[10px] ${activeFilter === 'all' ? 'text-white/80' : 'text-gray-500'}`}>Todas</p>
+              <p className={`text-[10px] ${activeFilter === 'all' ? 'text-white' : 'text-gray-500'}`}>Todas</p>
             </button>
             <button
               onClick={() => setActiveFilter('new')}
@@ -429,7 +430,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
               <p className={`text-xl font-bold ${activeFilter === 'new' ? 'text-white' : 'text-red-500'}`}>
                 {incomingRequests.filter(r => r.status === 'new' && !ignoredRequests.includes(r.id)).length}
               </p>
-              <p className={`text-[10px] ${activeFilter === 'new' ? 'text-white/80' : 'text-gray-500'}`}>Nuevas</p>
+              <p className={`text-[10px] ${activeFilter === 'new' ? 'text-white' : 'text-gray-500'}`}>Nuevas</p>
             </button>
             <button
               onClick={() => setActiveFilter('replied')}
@@ -442,7 +443,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
               <p className={`text-xl font-bold ${activeFilter === 'replied' ? 'text-white' : 'text-blue-500'}`}>
                 {incomingRequests.filter(r => r.status === 'replied').length}
               </p>
-              <p className={`text-[10px] ${activeFilter === 'replied' ? 'text-white/80' : 'text-gray-500'}`}>Enviadas</p>
+              <p className={`text-[10px] ${activeFilter === 'replied' ? 'text-white' : 'text-gray-500'}`}>Enviadas</p>
             </button>
             <button
               onClick={() => setActiveFilter('accepted')}
@@ -455,7 +456,7 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
               <p className={`text-xl font-bold ${activeFilter === 'accepted' ? 'text-white' : 'text-green-500'}`}>
                 {incomingRequests.filter(r => r.status === 'accepted').length}
               </p>
-              <p className={`text-[10px] ${activeFilter === 'accepted' ? 'text-white/80' : 'text-gray-500'}`}>Ganadas</p>
+              <p className={`text-[10px] ${activeFilter === 'accepted' ? 'text-white' : 'text-gray-500'}`}>Ganadas</p>
             </button>
           </div>
 
@@ -493,8 +494,8 @@ export const IncomingBudgetRequestsScreen = ({ onNavigate, businessData, showToa
                   <p className="text-sm text-gray-600 line-clamp-2 mb-2">{request.description}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
                     <span className={`flex items-center gap-1 ${
-                      request.urgency === 'urgent' ? 'text-red-500 font-medium' :
-                      request.urgency === 'this-week' ? 'text-amber-500' : 'text-green-500'
+                      request.urgency === 'urgent' ? 'text-red-700 font-medium' :
+                      request.urgency === 'this-week' ? 'text-amber-700' : 'text-green-700'
                     }`}>
                       {request.urgency === 'urgent' && <Zap size={12} />}
                       {request.urgencyLabel}
@@ -871,9 +872,11 @@ export const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibi
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${
                     offer.status === 'active'
                       ? 'bg-green-50 text-green-700 ring-green-600/20'
-                      : 'bg-yellow-50 text-yellow-700 ring-yellow-600/20'
+                      : offer.status === 'expired'
+                        ? 'bg-gray-100 text-gray-700 ring-gray-500/20'
+                        : 'bg-yellow-50 text-yellow-800 ring-yellow-600/20'
                   }`}>
-                    {offer.status === 'active' ? 'ACTIVA' : 'PAUSADA'}
+                    {offer.status === 'active' ? 'ACTIVA' : offer.status === 'expired' ? 'TERMINADA' : 'PAUSADA'}
                   </span>
                   {offer.expiresSoon && (
                     <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700">
@@ -886,7 +889,12 @@ export const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibi
                 <div className={`flex items-center gap-1 text-xs font-medium mt-1 ${
                   offer.expiresSoon ? 'text-red-600' : 'text-gray-500'
                 }`}>
-                  {offer.timeLeft ? (
+                  {offer.status === 'expired' ? (
+                    <>
+                      <Timer size={16} />
+                      <span>Terminó el {offer.expiresAt ? new Date(offer.expiresAt).toLocaleDateString('es-ES') : '—'}</span>
+                    </>
+                  ) : offer.timeLeft ? (
                     <>
                       <Timer size={16} />
                       <span>Termina en {offer.timeLeft}</span>
@@ -925,21 +933,26 @@ export const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibi
 
             {/* Actions */}
             <div className="flex items-center justify-between">
+              {offer.status === 'expired' ? (
+                <span className="text-sm text-gray-600">Puedes publicar otra cuando pasen 7 días desde la última.</span>
+              ) : (
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={offer.isVisible}
                   onChange={() => handleToggleVisibility(offer.id)}
+                  aria-label={offer.isVisible ? `Pausar la oferta ${offer.title}` : `Reactivar la oferta ${offer.title}`}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
-                <span className={`ms-2 text-sm font-medium ${offer.isVisible ? 'text-gray-900' : 'text-gray-500'}`}>
+                <span className={`ms-2 text-sm font-medium ${offer.isVisible ? 'text-gray-900' : 'text-gray-600'}`}>
                   {offer.isVisible ? 'Visible' : 'Pausada'}
                 </span>
               </label>
+              )}
               <button
                 onClick={() => handleDeleteOffer(offer)}
-                className="flex items-center justify-center h-9 px-4 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm font-medium gap-1.5"
+                className="flex items-center justify-center h-9 px-4 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors text-sm font-medium gap-1.5"
               >
                 <Trash2 size={16} />
                 Borrar
@@ -1140,7 +1153,7 @@ export const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOf
                 </div>
                 <button
                   onClick={() => handleDelete(job)}
-                  className="flex items-center justify-center h-9 px-4 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm font-medium gap-1.5"
+                  className="flex items-center justify-center h-9 px-4 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors text-sm font-medium gap-1.5"
                 >
                   <Trash2 size={16} />
                   Borrar
@@ -1248,7 +1261,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
               name: app.full_name,
               email: app.email,
               phone: app.phone || 'No proporcionado',
-              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(app.full_name)}&background=4b71c3&color=fff&size=128`,
+              avatar: initialsAvatar(app.full_name),
               experience: app.phone || app.email, // Mostrar contacto como "experiencia"
               cv: app.cv_url || null
             }
@@ -1451,7 +1464,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
           </div>
           <div className="bg-amber-50 rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-amber-600">{counts.reviewing}</p>
-            <p className="text-[10px] font-medium text-amber-600 uppercase">Revisión</p>
+            <p className="text-[10px] font-medium text-amber-800 uppercase">Revisión</p>
           </div>
           <div className="bg-purple-50 rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-purple-600">{counts.interview}</p>
@@ -1534,7 +1547,7 @@ export const BusinessCandidatesScreen = ({ onNavigate, user, businessData, showT
                       </div>
                       <p className="text-xs text-gray-500 truncate">{c.candidate.experience}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{c.jobTitle}</span>
+                        <span className="text-[10px] text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">{c.jobTitle}</span>
                         {c.candidate.cv && (
                           <span className="text-[10px] text-red-600 bg-red-50 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <FileText size={10} />
@@ -2529,7 +2542,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
             ) : (
               <>
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                  errors.license ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary'
+                  errors.license ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary-dark'
                 }`}>
                   <Upload size={24} />
                 </div>
@@ -2581,7 +2594,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
             ) : (
               <>
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                  errors.id ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary'
+                  errors.id ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary-dark'
                 }`}>
                   <Camera size={24} />
                 </div>
@@ -2605,7 +2618,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
             <Lock size={16} />
           </div>
           <div>
-            <h4 className="text-primary text-sm font-bold">Datos Protegidos</h4>
+            <h4 className="text-primary-dark text-sm font-bold">Datos Protegidos</h4>
             <p className="text-gray-500 text-xs mt-1">
               Tu información se encripta de forma segura y solo se utiliza para fines de verificación.
             </p>
@@ -3254,11 +3267,11 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
       // Debug: ver qué tags se están guardando
 
       const dataToUpdate = {
-        name: formData.name,
-        description: formData.description,
-        phone: formData.phone,
-        website: formData.website,
-        address: formData.address,
+        name: (formData.name || '').trim(),
+        description: (formData.description || '').trim(),
+        phone: (formData.phone || '').trim(),
+        website: (formData.website || '').trim(),
+        address: (formData.address || '').trim(),
         neighborhood: formData.neighborhood,
         category_id: parseInt(formData.category),
         subcategory: formData.subcategory,
@@ -3458,11 +3471,11 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
       const { error: updateError } = await supabase
         .from('businesses')
         .update({
-          name: formData.name,
-          description: formData.description,
-          phone: formData.phone,
-          website: formData.website,
-          address: formData.address,
+          name: (formData.name || '').trim(),
+          description: (formData.description || '').trim(),
+          phone: (formData.phone || '').trim(),
+          website: (formData.website || '').trim(),
+          address: (formData.address || '').trim(),
           neighborhood: formData.neighborhood,
           category_id: parseInt(formData.category),
           subcategory: formData.subcategory,
@@ -4813,11 +4826,11 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
               }`}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                formData.discountType === 'percentage' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'
+                formData.discountType === 'percentage' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
               }`}>
                 <span className="text-lg font-bold">%</span>
               </div>
-              <span className={`text-xs font-semibold ${formData.discountType === 'percentage' ? 'text-primary' : 'text-gray-600'}`}>
+              <span className={`text-xs font-semibold ${formData.discountType === 'percentage' ? 'text-primary-dark' : 'text-gray-600'}`}>
                 Porcentaje
               </span>
             </button>
@@ -4831,11 +4844,11 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
               }`}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                formData.discountType === '2x1' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'
+                formData.discountType === '2x1' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
               }`}>
                 <span className="text-sm font-bold">2x1</span>
               </div>
-              <span className={`text-xs font-semibold ${formData.discountType === '2x1' ? 'text-primary' : 'text-gray-600'}`}>
+              <span className={`text-xs font-semibold ${formData.discountType === '2x1' ? 'text-primary-dark' : 'text-gray-600'}`}>
                 2x1
               </span>
             </button>
@@ -4849,11 +4862,11 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
               }`}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                formData.discountType === 'free' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'
+                formData.discountType === 'free' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
               }`}>
                 <PartyPopper size={20} />
               </div>
-              <span className={`text-xs font-semibold ${formData.discountType === 'free' ? 'text-primary' : 'text-gray-600'}`}>
+              <span className={`text-xs font-semibold ${formData.discountType === 'free' ? 'text-primary-dark' : 'text-gray-600'}`}>
                 Gratis
               </span>
             </button>
@@ -5009,8 +5022,11 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
               </div>
             </div>
             <button
+              role="switch"
+              aria-checked={!!formData.isFlash}
+              aria-label="Oferta Flash"
               onClick={() => handleChange('isFlash', !formData.isFlash)}
-              className={`w-14 h-7 rounded-full transition-colors ${formData.isFlash ? 'bg-amber-500' : 'bg-gray-300'}`}
+              className={`w-14 h-7 shrink-0 rounded-full transition-colors ${formData.isFlash ? 'bg-amber-600' : 'bg-gray-400'}`}
             >
               <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform ${formData.isFlash ? 'translate-x-7' : 'translate-x-0.5'}`} />
             </button>
@@ -5025,8 +5041,11 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
               <p className="text-xs text-gray-500">Solo los primeros {formData.limitedUnits} clientes</p>
             </div>
             <button
+              role="switch"
+              aria-checked={!!formData.isLimited}
+              aria-label="Unidades limitadas"
               onClick={() => handleChange('isLimited', !formData.isLimited)}
-              className={`w-14 h-7 rounded-full transition-colors ${formData.isLimited ? 'bg-primary' : 'bg-gray-300'}`}
+              className={`w-14 h-7 shrink-0 rounded-full transition-colors ${formData.isLimited ? 'bg-primary' : 'bg-gray-400'}`}
             >
               <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform ${formData.isLimited ? 'translate-x-7' : 'translate-x-0.5'}`} />
             </button>
@@ -5062,7 +5081,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-slate-700">VISTA PREVIA</h3>
-            <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+            <span className="text-xs text-green-700 font-medium flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               En vivo
             </span>
@@ -5092,7 +5111,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
                       FLASH
                     </span>
                   )}
-                  <span className="text-xs text-amber-600 flex items-center gap-1">
+                  <span className="text-xs text-amber-700 flex items-center gap-1">
                     <Clock size={12} />
                     {formData.isFlash ? '8h' : '5 días'}
                   </span>
@@ -5205,7 +5224,7 @@ export const ValidateCodeScreen = ({ onNavigate, user, showToast }) => {
         {/* Instrucciones */}
         <div className="bg-primary/10 rounded-2xl p-4 flex gap-3">
           <Ticket className="text-primary shrink-0 mt-0.5" size={20} />
-          <p className="text-sm text-primary font-medium leading-relaxed">
+          <p className="text-sm text-primary-dark font-medium leading-relaxed">
             El cliente te muestra un código en su móvil (ej. <span className="font-mono font-bold">CL-A7X3</span>). Introdúcelo aquí para validar el descuento y que quede registrado.
           </p>
         </div>
@@ -5733,8 +5752,8 @@ export const BusinessStatsScreen = ({
         {/* KPIs principales — filtrados por período */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { icon: <Users size={20} />, color: 'bg-primary/10 text-primary', value: periodApplications, label: 'Candidaturas', sub: pendingApplications > 0 ? `${pendingApplications} pendientes` : null, subColor: 'text-amber-600' },
-            { icon: <FileText size={20} />, color: 'bg-purple-100 text-purple-600', value: periodBudgets, label: 'Presupuestos', sub: newBudgets > 0 ? `${newBudgets} nuevos` : null, subColor: 'text-green-600' },
+            { icon: <Users size={20} />, color: 'bg-primary/10 text-primary-dark', value: periodApplications, label: 'Candidaturas', sub: pendingApplications > 0 ? `${pendingApplications} pendientes` : null, subColor: 'text-amber-700' },
+            { icon: <FileText size={20} />, color: 'bg-purple-100 text-purple-600', value: periodBudgets, label: 'Presupuestos', sub: newBudgets > 0 ? `${newBudgets} nuevos` : null, subColor: 'text-green-700' },
             { icon: <Eye size={20} />, color: 'bg-green-100 text-green-600', value: businessViews, label: 'Vistas negocio', sub: `${totalViews} total`, subColor: 'text-gray-500' },
             { icon: <MousePointerClick size={20} />, color: 'bg-cyan-100 text-cyan-600', value: businessClicks, label: 'Clics', sub: `tel · web · mapa`, subColor: 'text-gray-500' },
             { icon: <Heart size={20} />, color: 'bg-red-100 text-red-500', value: realFavorites === null ? '…' : realFavorites, label: 'En favoritos', sub: null },
@@ -5922,62 +5941,4 @@ export const BusinessStatsScreen = ({
   );
 };
 
-// Pantalla de Bienvenida para Propietarios
-export const OwnerWelcomeScreen = ({ onNavigate }) => (
-  <div className="bg-white font-display text-slate-900 overflow-x-hidden antialiased">
-    <div className="relative flex h-screen w-full flex-col justify-between">
-      {/* Status bar placeholder */}
-      <div className="h-10 w-full shrink-0"></div>
-
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-y-auto">
-        {/* Hero Image */}
-        <div className="px-4 py-2 shrink-0">
-          <div
-            className="w-full aspect-[4/3] bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden rounded-2xl bg-gray-100 shadow-sm"
-            style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDPV8advjKx2CN0Bxn58fgZtHNDFnRxUWy1g3oBiP3IZHBaKQ4NKj_uETI0YTgkP5S69p_Yn7TYXAtBZ3RMDe87WcfIfljXtBI7i3yS8RDjIWG7Df2emLsDKFFS1YRMycYX4GrGbMbR4Qp3EmKDeh5itBCIZuj3b4kUEE1rm0ez-HUj3LvJnEcrtiQwpGQB8jOarobmPMNEA6AU09oKKjgxM7CrAXA1RKZ_fXmGYLLn33yAB4eCcZRLaTuY8DEgPQT4gqiI95_2WhFs")' }}
-          >
-            <div className="w-full h-full bg-gradient-to-t from-black/10 to-transparent"></div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex flex-col items-center px-6 mt-6">
-          <h1 className="text-slate-900 tracking-tight text-[32px] font-bold leading-[1.1] text-center mb-4">
-            Impulsa tu negocio<br/>en Cornellà
-          </h1>
-          <p className="text-slate-500 text-base font-normal leading-relaxed text-center max-w-xs mx-auto">
-            Llega a más vecinos, publica ofertas flash y gestiona presupuestos desde un solo lugar.
-          </p>
-        </div>
-
-        {/* Page Indicators */}
-        <div className="flex w-full flex-row items-center justify-center gap-2 mt-8 mb-4">
-          <div className="h-2 w-8 rounded-full bg-primary transition-all duration-300"></div>
-          <div className="h-2 w-2 rounded-full bg-slate-200"></div>
-          <div className="h-2 w-2 rounded-full bg-slate-200"></div>
-        </div>
-      </div>
-
-      {/* Bottom Actions */}
-      <div className="w-full px-6 pb-8 pt-4 bg-white">
-        <button
-          onClick={() => onNavigate('business-data')}
-          className="w-full flex cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary text-white hover:bg-blue-700 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-blue-500/20 mb-4"
-        >
-          <span className="text-[17px] font-semibold leading-normal tracking-wide">Comenzar Registro</span>
-        </button>
-
-        <button
-          onClick={() => onNavigate('login')}
-          className="w-full flex items-center justify-center text-primary text-[15px] font-medium hover:opacity-80 transition-opacity py-2"
-        >
-          ¿Ya tienes cuenta? <span className="font-bold ml-1">Iniciar sesión</span>
-        </button>
-
-        <div className="h-2"></div>
-      </div>
-    </div>
-  </div>
-);
 

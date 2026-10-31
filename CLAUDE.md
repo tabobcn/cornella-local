@@ -309,6 +309,21 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   aprobado (uno por dueño, sin suspendidos) + push opcional a `?nav=notifications`; historial en `admin_broadcasts`
   (solo admins); bloquea un segundo envío en 2 minutos. Solo información del servicio, nunca publicidad propia.
 - Los avisos de la campana se muestran enteros (antes se cortaban a 2 líneas y no se leían los motivos).
+
+### Auditoría completa (2026-10-31)
+- **SQL `supabase/auditoria-arreglos.sql`**: (1) las políticas "Admins can update/delete any profile" se consultaban
+  a sí mismas → *infinite recursion* en CUALQUIER update de `profiles` (editar perfil/foto, banear, sync al entrar).
+  Ahora usan `is_admin()`. **Regla: una política nunca puede hacer `SELECT ... FROM` su propia tabla; usar
+  `(select public.is_admin())`.** (2) `get_or_create_redemption` no daba códigos de ofertas caducadas o sin empezar.
+  (3) Datos: media de valoraciones, perfiles que faltaban, nombres con espacios.
+- **Ofertas caducadas**: en la BD siguen `status='active'`; la app decide por `expires_at` (listas, cupón, ficha de
+  invitado, panel del dueño = "TERMINADA", contador del admin). No contar "activas" solo por `status`.
+- **Sin servicios externos de imagen**: el QR es `public/qr-cornellalocal.png` y los avatares de iniciales se dibujan
+  con `initialsAvatar()` (antes ui-avatars.com recibía nombres de candidatos). CSP `img-src` ya no los permite.
+- **Cupón**: sin distancia ni condiciones inventadas; "Cómo llegar" abre Google Maps; el contador de cupones solo baja
+  al sacar un código nuevo. **Empleo**: el nombre del negocio abre su ficha y "Ver en mapa" funciona.
+- Herramientas de la auditoría (scratchpad, no en el repo): cruce código↔esquema (tablas, columnas, RPC y
+  parámetros), botones sin acción, rutas inexistentes, recorrido de todas las pantallas con axe.
 - **Fallos corregidos**: (1) pulsar un aviso no lo borraba de la BD porque se comprobaba que el id fuera UUID y
   `notifications.id` es un número → al reabrir la app volvía el "1". Ahora los avisos solo de pantalla llevan
   `isLocal`. (2) Los enlaces `?nav=...` (los de los push) acababan en Inicio al abrir la app en frío con sesión:

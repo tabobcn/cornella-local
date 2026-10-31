@@ -649,11 +649,12 @@ export const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibi
             <div className="flex items-center gap-1.5 text-sm mb-3">
               <Ticket size={14} className="text-amber-500" />
               <span className="text-gray-600">
-                <span className="font-bold text-gray-900">{offer.redemptions}</span>
-                {offer.maxUses ? <span className="text-gray-500">/{offer.maxUses}</span> : ''} canjeados
+                <span className="font-bold text-gray-900">{offer.claimed ?? offer.redemptions}</span>
+                {offer.maxUses ? <span className="text-gray-500">/{offer.maxUses}</span> : ''} entregados
+                <span className="text-gray-500"> · {offer.redemptions} validados en tienda</span>
               </span>
-              {offer.maxUses && offer.redemptions >= offer.maxUses && (
-                <span className="ml-1 text-xs font-bold text-red-500">· AGOTADA</span>
+              {offer.maxUses && (offer.claimed ?? offer.redemptions) >= offer.maxUses && (
+                <span className="ml-1 text-xs font-bold text-red-600">· AGOTADA</span>
               )}
             </div>
 
@@ -3452,7 +3453,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
 
                 {/* Web */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Sitio web</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Sitio web <span className="font-normal">(opcional · no se muestra en tu ficha)</span></label>
                   <div className="relative">
                     <input aria-label="Sitio web"
                       type="url"

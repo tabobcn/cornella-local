@@ -2149,6 +2149,10 @@ const takeAuthRedirect = () => {
   }
 };
 
+// La web del negocio se pide en el alta pero no se muestra en la ficha pública.
+// Poner a true si se ofrece como ventaja de un plan premium.
+export const SHOW_BUSINESS_WEBSITE = false;
+
 // Etiqueta "NUEVO": solo durante los primeros días desde que se aprobó (publicó) el negocio
 export const NEW_BUSINESS_DAYS = 7;
 export const isRecentlyPublished = (business, days = NEW_BUSINESS_DAYS) => {
@@ -6134,7 +6138,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                 <span className="text-white font-bold">Presupuesto</span>
               </button>
             )}
-            {business?.website && (
+            {SHOW_BUSINESS_WEBSITE && business?.website && (
               <button aria-label="Sitio web"
                 onClick={handleWebClick}
                 className="size-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
@@ -6591,7 +6595,11 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
           .eq('user_id', user.id)
           .single();
         if (data) {
-          setRedemptionCode(data.code);
+          if (!redemptionCode && data.status === 'pending' && offer?.max_uses) {
+        // Código nuevo: el contador de cupones disponibles baja al momento
+        setOffer(prev => prev ? { ...prev, claimed_count: (prev.claimed_count ?? prev.redemption_count ?? 0) + 1 } : prev);
+      }
+      setRedemptionCode(data.code);
           setRedemptionStatus(data.status);
         }
       } catch (_) {
@@ -6765,7 +6773,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
           </div>
 
           {/* Sección de código de redención */}
-          {offer.max_uses && offer.redemption_count >= offer.max_uses && !redemptionCode ? (
+          {offer.max_uses && (offer.claimed_count ?? offer.redemption_count ?? 0) >= offer.max_uses && !redemptionCode ? (
             /* Oferta agotada */
             <div className="relative w-full bg-gray-100 rounded-2xl p-5 flex flex-col items-center gap-2 mb-6">
               <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
@@ -6774,7 +6782,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
                 <XCircle className="text-red-500" size={24} />
               </div>
               <p className="font-bold text-gray-700">Oferta agotada</p>
-              <p className="text-sm text-gray-500">Se han canjeado los {offer.max_uses} usos disponibles</p>
+              <p className="text-sm text-gray-500">Ya se han entregado los {offer.max_uses} cupones disponibles</p>
             </div>
           ) : redemptionStatus === 'validated' ? (
             /* Código ya canjeado */
@@ -6805,6 +6813,11 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
               <div className="text-center">
                 <p className="text-white font-bold text-lg">¿Quieres usar este descuento?</p>
                 <p className="text-white/70 text-sm mt-1">Genera tu código único y muéstralo en el negocio</p>
+                {offer.max_uses ? (
+                  <p className="mt-2 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white">
+                    Quedan {Math.max(0, offer.max_uses - (offer.claimed_count ?? offer.redemption_count ?? 0))} de {offer.max_uses} cupones
+                  </p>
+                ) : null}
               </div>
               <button
                 onClick={handleGetCode}
@@ -10210,7 +10223,9 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
     setNotificationsState(withoutIt);
     if (onUpdateNotifications) onUpdateNotifications(withoutIt);
 
-    if (!user?.id) return;
+    // Los avisos creados solo en pantalla (p. ej. "Presupuesto enviado") no están en la base de datos
+    const isStored = typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id);
+    if (!user?.id || !isStored) return;
     try {
       const { error } = await supabase
         .from('notifications')
@@ -12390,6 +12405,11 @@ export default function App() {
           route: 'owner-dashboard',
           params: {}
         };
+      case 'new_budget_request':
+        return {
+          route: 'incoming-budget-requests',
+          params: {}
+        };
       case 'business_submitted':
         return {
           route: 'profile',
@@ -12469,6 +12489,7 @@ export default function App() {
               'business_rejected': 'bg-red-600',
               'business_submitted': 'bg-amber-600',
               'business_pending_review': 'bg-blue-600',
+              'new_budget_request': 'bg-teal-700',
             };
             return iconBgMap[type] || 'bg-gray-500';
           };
@@ -12533,6 +12554,7 @@ export default function App() {
               'business_rejected': 'bg-red-600',
               'business_submitted': 'bg-amber-600',
               'business_pending_review': 'bg-blue-600',
+              'new_budget_request': 'bg-teal-700',
             };
             return iconBgMap[type] || 'bg-gray-500';
           };
@@ -12896,6 +12918,7 @@ export default function App() {
             status: offer.status,
             isVisible: offer.is_visible,
             redemptions: offer.redemption_count || 0,
+            claimed: offer.claimed_count ?? offer.redemption_count ?? 0,
             maxUses: offer.max_uses || null,
           };
         });

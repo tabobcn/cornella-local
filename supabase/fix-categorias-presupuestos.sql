@@ -6,7 +6,8 @@
 -- calefacción", "Reparación de móviles y PC", "Cerrajero"... La política RLS
 -- compara por igualdad, así que esos negocios no veían las solicitudes.
 -- 1) Normaliza las solicitudes existentes.
--- 2) El push de "nueva solicitud" usa los nombres correctos (y acepta los antiguos).
+-- 2) La solicitud nueva llega a los negocios con los nombres correctos (y acepta los antiguos):
+--    aviso dentro de la app + push; las urgentes van marcadas con 🚨.
 -- ============================================================================
 BEGIN;
 
@@ -37,6 +38,8 @@ AS $$
 DECLARE
   b record;
   v_category text;
+  v_urgent boolean := (NEW.urgency = 'urgent');
+  v_title text;
 BEGIN
   v_category := CASE lower(COALESCE(NEW.category, ''))
     WHEN 'albanil' THEN 'Albañil y reformas'
@@ -54,6 +57,7 @@ BEGIN
     WHEN 'reparación móviles/pc' THEN 'Reparación de móviles y PC'
     ELSE NEW.category
   END;
+  v_title := CASE WHEN v_urgent THEN '🚨 Presupuesto URGENTE' ELSE '💼 Nueva solicitud de presupuesto' END;
 
   FOR b IN
     SELECT bz.id, bz.name, bz.owner_id
@@ -63,16 +67,21 @@ BEGIN
        AND bz.owner_id IS NOT NULL
        AND bz.owner_id IS DISTINCT FROM NEW.user_id
      ORDER BY bz.rating DESC NULLS LAST
-     LIMIT 5
+     LIMIT 10
   LOOP
+    -- Aviso dentro de la app (antes solo había push)
+    INSERT INTO public.notifications (user_id, type, title, message, icon, data, is_read)
+    VALUES (b.owner_id, 'new_budget_request', v_title,
+            v_category || ': ' || left(COALESCE(NEW.description, ''), 90),
+            'FileText', jsonb_build_object('request_id', NEW.id, 'business_id', b.id, 'urgent', v_urgent), false);
     BEGIN
       PERFORM public.send_push_notification(
         target_user_id := b.owner_id,
-        notification_title := '💼 Nueva solicitud de presupuesto',
+        notification_title := v_title,
         notification_message := 'Tienes una nueva solicitud en ' || v_category,
         notification_url := 'https://www.cornellalocal.es/?nav=incoming-budget-requests',
         notification_type := 'new_budget_request',
-        require_interaction := false,
+        require_interaction := v_urgent,
         notification_metadata := jsonb_build_object(
           'business_id', b.id,
           'business_name', b.name,

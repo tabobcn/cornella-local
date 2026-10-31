@@ -750,7 +750,7 @@ export const termsAndConditions = {
       icon: "Tag",
       content: "Los negocios verificados pueden publicar ofertas y empleos con estas reglas:",
       bullets: [
-        "Cada negocio puede publicar 1 oferta cada 7 días. Una oferta normal dura 5 días y una oferta flash, 8 horas. La foto es obligatoria.",
+        "Cada negocio puede publicar 1 oferta cada 7 días, contando desde la última que publicó aunque la haya borrado. Así las ofertas son pocas y de verdad. Una oferta normal dura 5 días y una oferta flash, 8 horas; una vez publicada no se pueden cambiar sus fechas ni sus cupones, solo pausarla. La foto es obligatoria.",
         "Los cupones son limitados: el negocio decide cuántos hay, cada persona puede sacar 1 código por oferta y, cuando se acaban, no se entregan más.",
         "El negocio debe respetar en su local los códigos que ha entregado mientras la oferta esté vigente, y es el responsable de las condiciones y los precios que anuncia.",
         "Las ofertas de empleo deben cumplir la ley laboral y no pueden discriminar. El negocio recibe las candidaturas, decide y es responsable de los datos de los candidatos durante su selección. Los CV se borran solos al terminar el proceso.",

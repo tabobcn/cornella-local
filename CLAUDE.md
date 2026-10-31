@@ -296,11 +296,11 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 | **Candidaturas** | Al contratar uno → resto se auto-rechaza automáticamente |
 | **Presupuestos** | Al aceptar uno → resto se notifica como "no seleccionado" |
 | **OAuth** | Perfil creado desde `session.user.user_metadata` (no espera query profiles) |
-| **Ofertas** | Duración normal = 5 días; flash = 8 horas; límite 1 oferta cada 7 días |
+| **Ofertas** | Duración normal = 5 días; flash = 8 horas; límite 1 oferta cada 7 días **garantizado en la BD** (`supabase/limite-ofertas.sql`: cuenta desde la última publicada aunque se borre, tabla `offer_publications`; fechas, flash y cupones no se pueden cambiar tras publicar). Premium en el futuro: subir `v_weekly_limit` en `offer_publish_block_reason()` |
 | **Teléfono presupuesto** | Oculto para ambas partes hasta que el usuario acepte una cotización |
 | **Fotos en oferta** | Obligatorio subir imagen para poder publicar |
-| **Ban de usuarios** | Admin banea desde AdminUsersScreen → `is_banned=true` en profiles → próximo login hace signOut automático |
-| **Delete usuarios** | Delete en admin hace ban primero + luego delete; si hay FK el usuario queda baneado. El auth user de Supabase sigue existiendo (no hay Edge Function de borrado); si el usuario vuelve a registrarse, el check `is_banned` lo expulsa si el perfil persiste |
+| **Ban de usuarios** | Admin suspende desde AdminUsersScreen con motivo → `is_banned=true` + `ban_reason` → al entrar ve el motivo y se hace signOut. Un suspendido no puede borrar su propia cuenta |
+| **Delete usuarios** | Borrado real con la RPC `delete_user_account` (usuario o admin): perfil, negocios y cuenta de acceso; los archivos los borra la limpieza nocturna. Con el mismo email podría volver a registrarse: para impedirlo, suspender |
 
 ---
 

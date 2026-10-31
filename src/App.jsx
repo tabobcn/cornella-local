@@ -2155,7 +2155,18 @@ const takeAuthRedirect = () => {
 export const SHOW_BUSINESS_WEBSITE = false;
 
 // Etiqueta "NUEVO": solo durante los primeros días desde que se aprobó (publicó) el negocio
-export const NEW_BUSINESS_DAYS = 7;
+export // Aviso del límite de ofertas: 1 cada 7 días por negocio, contando desde la última publicada
+// (aunque se haya borrado). Si se conoce la fecha de la última, se dice cuándo se puede publicar.
+const offerLimitMessage = (lastCreatedAt) => {
+  if (lastCreatedAt) {
+    const next = new Date(new Date(lastCreatedAt).getTime() + 7 * 864e5);
+    const when = next.toLocaleString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+    return `Solo puedes publicar 1 oferta cada 7 días. Podrás publicar la siguiente el ${when}.`;
+  }
+  return 'Solo puedes publicar 1 oferta cada 7 días, contando desde la última que publicaste (aunque la hayas borrado).';
+};
+
+const NEW_BUSINESS_DAYS = 7;
 export const isRecentlyPublished = (business, days = NEW_BUSINESS_DAYS) => {
   const since = business?.verified_at || business?.created_at;
   if (!since) return false;
@@ -13725,17 +13736,26 @@ export default function App() {
       return;
     }
 
-    // Verificar límite de 1 oferta cada 7 días
+    // Límite de 1 oferta cada 7 días. Lo garantiza la base de datos (offer_publish_block_reason y el
+    // trigger offers_enforce_rules); aquí solo se avisa antes, con la fecha si se conoce.
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const { data: recentOffers } = await supabase
       .from('offers')
-      .select('id')
+      .select('created_at')
       .eq('business_id', businessData.id)
       .gte('created_at', sevenDaysAgo.toISOString())
+      .order('created_at', { ascending: false })
       .limit(1);
-    if (recentOffers?.length > 0) {
-      showToast('Solo puedes crear 1 oferta cada 7 días', 'warning');
+    const { data: blockReason, error: blockError } = await supabase
+      .rpc('offer_publish_block_reason', { p_business_id: businessData.id });
+    if (blockError) console.error('offer_publish_block_reason:', blockError);
+    if (recentOffers?.length > 0 || blockReason === 'offer_weekly_limit') {
+      showToast(offerLimitMessage(recentOffers?.[0]?.created_at), 'warning');
+      return;
+    }
+    if (blockReason === 'offer_business_not_approved') {
+      showToast('Tu negocio debe estar aprobado para crear ofertas', 'warning');
       return;
     }
 
@@ -13818,7 +13838,11 @@ export default function App() {
       showToast(SUCCESS_MESSAGES.created, 'success');
       return data;
     } catch (error) {
-      showToast('Error al publicar la oferta', 'error');
+      console.error('Error creando oferta:', error);
+      const reason = String(error?.message || '');
+      if (reason.includes('offer_weekly_limit')) showToast(offerLimitMessage(), 'warning');
+      else if (reason.includes('offer_business_not_approved')) showToast('Tu negocio debe estar aprobado para crear ofertas', 'warning');
+      else showToast('Error al publicar la oferta', 'error');
       throw error;
     }
   };

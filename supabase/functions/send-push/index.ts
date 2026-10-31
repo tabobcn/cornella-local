@@ -31,6 +31,57 @@ const VAPID_SUBJECT     = Deno.env.get('VAPID_SUBJECT') || 'mailto:noreply@corne
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') || Deno.env.get('PROJECT_URL') || '';
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY') || '';
 
+// La clave de servicio que envía la base de datos (Vault) puede no coincidir literalmente con
+// SUPABASE_SERVICE_ROLE_KEY: Supabase ha cambiado su sistema de claves. Se acepta si coincide o si
+// la API de Auth la reconoce como clave de servicio (verificación real en el servidor, no basta con
+// leer el contenido del token). El resultado se guarda 10 minutos para no repetirlo en cada envío.
+const verifiedServiceKeys = new Map<string, number>();
+async function isServiceKey(key: string): Promise<boolean> {
+  if (!key) return false;
+  if (SERVICE_ROLE_KEY && key === SERVICE_ROLE_KEY) return true;
+  const at = verifiedServiceKeys.get(key);
+  if (at && Date.now() - at < 10 * 60 * 1000) return true;
+  if (!SUPABASE_URL) return false;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    await r.body?.cancel();
+    if (r.ok) {
+      verifiedServiceKeys.set(key, Date.now());
+      return true;
+    }
+  } catch (_) {
+    // error de red: se trata como no válida
+  }
+  return false;
+}
+
+// Cuando el servicio de push responde 404/410 la suscripción ya no existe (navegador desinstalado,
+// datos borrados...): se marca como inactiva para no volver a intentarlo.
+async function markSubscriptionExpired(endpoint: string, key: string): Promise<void> {
+  if (!SUPABASE_URL || !key || !endpoint) return;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?subscription->>endpoint=eq.${encodeURIComponent(endpoint)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ is_active: false }),
+      },
+    );
+    await r.body?.cancel();
+    console.log('[PUSH] Suscripción caducada desactivada:', r.status);
+  } catch (e) {
+    console.error('[PUSH] No se pudo desactivar la suscripción caducada:', e);
+  }
+}
+
 function decodeJwtPayload(jwt: string): { sub?: string; role?: string } | null {
   try {
     const parts = jwt.split('.');
@@ -197,7 +248,7 @@ serve(async (req) => {
     const claims = decodeJwtPayload(callerJwt);
 
     if (claims?.role === 'service_role') {
-      if (!SERVICE_ROLE_KEY || callerJwt !== SERVICE_ROLE_KEY) {
+      if (!(await isServiceKey(callerJwt))) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
     } else if (claims?.role !== 'authenticated') {
@@ -252,6 +303,9 @@ serve(async (req) => {
     if (!ok) {
       const text = await res.text().catch(() => '');
       console.error('[PUSH] Error:', res.status, text);
+      if ((res.status === 410 || res.status === 404) && claims?.role === 'service_role') {
+        await markSubscriptionExpired(subscription.endpoint, callerJwt);
+      }
       return new Response(JSON.stringify({ error: `Push service ${res.status}`, expired: res.status === 410 || res.status === 404 }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 

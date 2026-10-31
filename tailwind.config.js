@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#567ac7",
+        primary: "#4b71c3",
         "primary-dark": "#405b94",
         "background-light": "#f6f7f8",
         "background-dark": "#14171e",
@@ -15,7 +15,7 @@ export default {
         "surface-dark": "#1a2235",
       },
       fontFamily: {
-        display: ["Inter", "Plus Jakarta Sans", "system-ui", "sans-serif"],
+        display: ["Inter", "system-ui", "sans-serif"],
         body: ["Inter", "system-ui", "sans-serif"],
       },
       borderRadius: {

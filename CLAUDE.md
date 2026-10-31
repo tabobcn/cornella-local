@@ -203,6 +203,64 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 
 ---
 
+## Cambios 2026-10-30 (auditoría + mejoras)
+
+- **Seguridad BD** — `supabase/security-hardening-v3.sql`: perfiles solo visibles para su dueño y admins (`is_admin()`),
+  buckets `verification-documents` y `job-applications` privados (URLs firmadas), trigger `businesses_protect_privileged`
+  (el propietario no puede autoverificarse ni tocar rating/contadores), cupones con `auth.uid()`, estadísticas solo
+  propietario/admin, `notify_budget_quote_result` creada (antes no existía), rating calculado por trigger, funciones de
+  email/push y de triggers sin EXECUTE para anon/authenticated. **Pendiente de aplicar si no se ha hecho.**
+- **Modo invitado** — sin sesión se entra a `home`. Páginas públicas en `GUEST_PAGES`; `business`/`coupon`/`job-detail`
+  muestran `GuestTeaser` (vista previa + pedir cuenta); el resto `GuestGate`. `saveAuthRedirect()` guarda adónde iba el
+  invitado y tras el login se le lleva allí (localStorage `post-login-redirect`, caduca en 1 h).
+- **Escritorio (≥1024px)** — grid `[1fr_28rem_1fr]`: `DesktopSidebar` | app | `DesktopAside`. La columna central queda
+  centrada para que las barras `fixed bottom-0 max-w-md mx-auto` sigan alineadas. `Navbar` inferior oculta en `lg`.
+- **SEO** — `npm run build` ejecuta `scripts/prerender-negocios.mjs`: genera `/negocio/<slug>-<id>`, `/negocios` y
+  `sitemap.xml` con los negocios aprobados y publicados (los nuevos aparecen en el siguiente despliegue).
+  La app también abre `/negocio/<slug>-<id>` como deep link.
+- **Datos falsos eliminados** — presupuestos de demo, valoraciones aleatorias en cotizaciones, `aggregateRating` inventado.
+- **`supabase/security-hardening-v4.sql` parte A** (aplicada y verificada): RPC `get_budget_request_contact`, triggers
+  `reviews_enforce_rules` y `budget_quotes_protect`. Parte B (privilegios por columna) solo tras publicar el código nuevo.
+- **`supabase/fix-triggers-rotos.sql`** — 5 funciones de trigger usaban columnas inexistentes y deshacían el INSERT:
+  cotizaciones, solicitudes de presupuesto, empleos y push de aceptado/rechazado. El script termina con una consulta
+  que lista triggers con columnas inexistentes (debe dar 0 filas). Los envíos de email/push ya no bloquean la operación.
+  **Aplicado y verificado en producción.**
+- **`supabase/performance-rls-indexes.sql`** (aplicado): 80 políticas con `(select auth.uid())` / `(select public.is_admin())`
+  (se evalúan una vez por consulta), 6 índices de claves foráneas, 1 política duplicada eliminada.
+  Las políticas nuevas deben escribirse ya así. Los "índices sin usar" del asesor NO se borran (pocos datos).
+
+### Estructura y reglas nuevas (2026-10-30, tarde)
+- **App dividida**: `src/screens/owner.jsx` (propietario), `src/screens/admin.jsx` (admin) y `src/screens/legal.jsx`
+  (textos legales) se cargan con `React.lazy` (`lazyNamed` en App.jsx) dentro de un único `<Suspense>` alrededor de
+  `renderPage()`. Importan de `../App.jsx` lo que comparten (`Icon`, `Navbar`, `formatNeighborhood`...): si una pantalla
+  movida necesita algo nuevo de App.jsx, **exportarlo allí**. JS inicial: 136 KB → 94 KB gzip.
+- **Fuente Inter servida desde el propio dominio** (`src/assets/fonts`, sin Google Fonts). CSP sin fonts.googleapis.
+- **Accesibilidad (Lighthouse 100, axe 0)** — reglas para código nuevo:
+  - Color principal `primary` = `#4b71c3` (cumple 4,5:1 con blanco). Sobre fondos azulados usar `text-primary-dark`.
+  - Texto secundario `text-gray-500`/`text-slate-500` como mínimo (nunca 400 para texto).
+  - Fondos con `text-white`: verde ≥ `green-700`, rojo ≥ `red-600`, naranja/ámbar ≥ `700`, azul ≥ `blue-600`.
+  - Todo botón con solo un icono lleva `aria-label`. Todo campo de formulario lleva etiqueta (`aria-label` o `htmlFor`).
+  - No anidar botones/enlaces (tarjeta clicable = contenedor + botón «estirado» `after:absolute after:inset-0`).
+  - Un solo `<main id="contenido">` (en App); las pantallas usan `<div>`. H1: si la pantalla no tiene, añadirla a
+    `PAGE_TITLES` (título de pestaña + H1 oculto) o pintar su propio `<h1>` y añadirla a `PAGES_WITH_OWN_H1`.
+  - Nombres de icono para `<Icon name>` deben existir en `iconMap` (si no, no se pinta nada).
+- **Fallos corregidos**: recuperar contraseña se colgaba (`CheckCircle` sin importar), `showToast` sin pasar a 4
+  pantallas, ruta `business-budget` con datos demo, `?nav=login` no abría el login sin sesión, 5 iconos invisibles.
+- **Registro con Google** también en la pantalla de registro.
+
+### Push y emails desde la base de datos (2026-10-31)
+- Requieren la extensión **pg_net** (activada con `supabase/fix-push-pgnet.sql`). Sin ella no sale ningún aviso.
+- `send_push_notification` ya **no** desactiva suscripciones al fallar; `send-push` las desactiva solo si el servicio de
+  push responde 404/410 (caducadas).
+- Las Edge Functions `send-push` y `send-email` aceptan la clave del Vault (`supabase_service_role_key`) si coincide con
+  `SUPABASE_SERVICE_ROLE_KEY` **o** si `/auth/v1/admin` la reconoce (Supabase cambió su sistema de claves y ya no
+  coinciden literalmente). Desplegar: `npx supabase functions deploy send-push` / `send-email` (verify_jwt activo).
+- Respuestas de las llamadas: `SELECT status_code, content FROM net._http_response ORDER BY created DESC`.
+- **Emails pendientes**: falta el secreto `RESEND_API_KEY` y verificar el dominio cornellalocal.es en Resend
+  (remitente `noreply@cornellalocal.es`). Hasta entonces `send-email` responde 500 "Email service not configured".
+
+---
+
 ## Reglas de Negocio Importantes
 
 | Regla | Descripción |
@@ -226,7 +284,7 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 ## Archivos Clave del Proyecto
 
 ### Código Principal
-- **`src/App.jsx`** (~20,900 líneas): Toda la aplicación
+- **`src/App.jsx`** (~14.000 líneas): App, pantallas de usuario e invitado (owner/admin/legal en `src/screens/`)
   - ~30-600: Componentes reutilizables (Icon, Toast, EmptyState, skeletons, PullToRefreshIndicator...)
   - ~600-3,800: Pantallas de usuario (Home, Businesses, Offers, Jobs, Budgets...)
   - ~3,800-6,200: OffersPage (con fuegos 🔥), CouponDetailPage, BusinessDetailPage inicio

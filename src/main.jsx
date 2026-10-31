@@ -31,6 +31,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </>
 )
 
+// Quitar la pantalla de carga de index.html en cuanto React ha pintado
+requestAnimationFrame(() => window.dispatchEvent(new Event('app-ready')))
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((error) => {

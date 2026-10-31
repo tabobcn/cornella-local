@@ -9,6 +9,33 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+
+// La clave de servicio que envía la base de datos (Vault) puede no coincidir literalmente con
+// SUPABASE_SERVICE_ROLE_KEY: Supabase ha cambiado su sistema de claves. Se acepta si coincide o si
+// la API de Auth la reconoce como clave de servicio (verificación real en el servidor, no basta con
+// leer el contenido del token). El resultado se guarda 10 minutos para no repetirlo en cada envío.
+const verifiedServiceKeys = new Map<string, number>();
+async function isServiceKey(key: string): Promise<boolean> {
+  if (!key) return false;
+  if (SUPABASE_SERVICE_KEY && key === SUPABASE_SERVICE_KEY) return true;
+  const at = verifiedServiceKeys.get(key);
+  if (at && Date.now() - at < 10 * 60 * 1000) return true;
+  if (!SUPABASE_URL) return false;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    await r.body?.cancel();
+    if (r.ok) {
+      verifiedServiceKeys.set(key, Date.now());
+      return true;
+    }
+  } catch (_) {
+    // error de red: se trata como no válida
+  }
+  return false;
+}
 
 const ALLOWED_EMAIL_TYPES = new Set([
   'new_budget_request',
@@ -371,7 +398,7 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization') || '';
     const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-    if (!SUPABASE_SERVICE_KEY || bearer !== SUPABASE_SERVICE_KEY) {
+    if (!(await isServiceKey(bearer))) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },

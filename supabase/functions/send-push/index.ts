@@ -57,6 +57,31 @@ async function isServiceKey(key: string): Promise<boolean> {
   return false;
 }
 
+// Cuando el servicio de push responde 404/410 la suscripción ya no existe (navegador desinstalado,
+// datos borrados...): se marca como inactiva para no volver a intentarlo.
+async function markSubscriptionExpired(endpoint: string, key: string): Promise<void> {
+  if (!SUPABASE_URL || !key || !endpoint) return;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?subscription->>endpoint=eq.${encodeURIComponent(endpoint)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ is_active: false }),
+      },
+    );
+    await r.body?.cancel();
+    console.log('[PUSH] Suscripción caducada desactivada:', r.status);
+  } catch (e) {
+    console.error('[PUSH] No se pudo desactivar la suscripción caducada:', e);
+  }
+}
+
 function decodeJwtPayload(jwt: string): { sub?: string; role?: string } | null {
   try {
     const parts = jwt.split('.');
@@ -278,6 +303,9 @@ serve(async (req) => {
     if (!ok) {
       const text = await res.text().catch(() => '');
       console.error('[PUSH] Error:', res.status, text);
+      if ((res.status === 410 || res.status === 404) && claims?.role === 'service_role') {
+        await markSubscriptionExpired(subscription.endpoint, callerJwt);
+      }
       return new Response(JSON.stringify({ error: `Push service ${res.status}`, expired: res.status === 410 || res.status === 404 }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 

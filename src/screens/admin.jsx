@@ -110,7 +110,7 @@ export const AdminUsersScreen = ({ onNavigate, showToast }) => {
             </button>
             <div className="flex-1 text-center pr-10">
               <h2 className="text-slate-900 text-lg font-bold">Usuarios</h2>
-              {!loading && <p className="text-xs text-gray-500">{filtered.length} de {users.length} registrados</p>}
+              {!loading && <p className="text-xs text-gray-500">{filtered.length} de {users.length} {users.length === 1 ? 'registrado' : 'registrados'}</p>}
             </div>
           </div>
           <div className="px-4 pb-3">
@@ -468,7 +468,7 @@ export const AdminDashboard = ({ onNavigate, user }) => {
     {
       id: 'approve-businesses',
       title: 'Aprobar Negocios',
-      description: `${stats.pendingBusinesses} pendientes`,
+      description: stats.pendingBusinesses === 1 ? '1 pendiente' : `${stats.pendingBusinesses} pendientes`,
       icon: Store,
       color: 'blue',
       badge: stats.pendingBusinesses,
@@ -486,7 +486,7 @@ export const AdminDashboard = ({ onNavigate, user }) => {
     {
       id: 'users',
       title: 'Usuarios',
-      description: `${stats.totalUsers} registrados`,
+      description: stats.totalUsers === 1 ? '1 registrado' : `${stats.totalUsers} registrados`,
       icon: Users,
       color: 'green',
       route: 'admin-users'
@@ -2458,7 +2458,7 @@ export const AdminServicesScreen = ({ onNavigate, showToast }) => {
                 className="w-full h-10 pl-9 pr-4 rounded-xl border border-gray-200 bg-white text-sm text-slate-900 placeholder:text-gray-500 focus:outline-none focus:border-primary"
               />
             </div>
-            <p className="text-xs text-gray-600">{withoutWeb.length} negocios aprobados sin web · {consentCount} aceptan información</p>
+            <p className="text-xs text-gray-600">{withoutWeb.length === 1 ? '1 negocio aprobado' : `${withoutWeb.length} negocios aprobados`} sin web · {consentCount === 1 ? '1 acepta' : `${consentCount} aceptan`} información</p>
             {withoutWeb.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 <Globe size={36} className="mx-auto mb-2 opacity-40" />

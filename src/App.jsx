@@ -392,6 +392,30 @@ const getBusinessStatus = (openingHours) => {
   return { isOpen: false, status: 'closed', message: 'Cerrado' };
 };
 
+// Horario semanal en filas legibles (lunes a domingo) para la ficha pública
+const WEEK_DAYS = [
+  ['monday', 'Lunes'], ['tuesday', 'Martes'], ['wednesday', 'Miércoles'], ['thursday', 'Jueves'],
+  ['friday', 'Viernes'], ['saturday', 'Sábado'], ['sunday', 'Domingo'],
+];
+const weeklyScheduleRows = (openingHours) => {
+  if (!openingHours || typeof openingHours !== 'object') return [];
+  return WEEK_DAYS.map(([key, label]) => {
+    const d = openingHours[key];
+    const parts = d?.enabled
+      ? [d.morning, d.afternoon].filter(p => p?.start && p?.end).map(p => `${p.start} - ${p.end}`)
+      : [];
+    return { key, label, hours: parts.length ? parts.join(', ') : 'Cerrado', closed: parts.length === 0 };
+  });
+};
+
+// Número para wa.me (solo móviles españoles: 6xx / 7xx); null si no es un móvil
+const whatsappNumber = (phone) => {
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (digits.startsWith('0034')) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith('34')) digits = digits.slice(2);
+  return digits.length === 9 && /^[67]/.test(digits) ? `34${digits}` : null;
+};
+
 // ==============================================
 // COMPONENTES REUTILIZABLES
 // ==============================================
@@ -2051,12 +2075,47 @@ const FlashOfferCard = ({ offer, onClick, onExpire }) => {
 };
 
 // Tarjeta de categoría
+// Un color suave por categoría para distinguirlas de un vistazo (clases literales para Tailwind)
+const CATEGORY_TINTS = {
+  blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+  green: 'bg-green-50 text-green-700 ring-green-100',
+  orange: 'bg-orange-50 text-orange-700 ring-orange-100',
+  purple: 'bg-purple-50 text-purple-700 ring-purple-100',
+  pink: 'bg-pink-50 text-pink-700 ring-pink-100',
+  red: 'bg-red-50 text-red-700 ring-red-100',
+  slate: 'bg-slate-100 text-slate-700 ring-slate-200',
+  teal: 'bg-teal-50 text-teal-700 ring-teal-100',
+};
+
+// Negocio sin foto: degradado del color de su categoría con la inicial (en vez de un icono genérico)
+const CATEGORY_GRADIENTS = {
+  blue: 'from-blue-500 to-blue-700',
+  green: 'from-green-600 to-emerald-700',
+  orange: 'from-orange-500 to-red-600',
+  purple: 'from-purple-500 to-indigo-700',
+  pink: 'from-pink-500 to-rose-600',
+  red: 'from-red-500 to-rose-700',
+  slate: 'from-slate-500 to-slate-700',
+  teal: 'from-teal-500 to-cyan-700',
+};
+// overText: el nombre va encima de la foto (abajo), así que la inicial sube y no se pinta el icono
+const BusinessCoverPlaceholder = ({ name, categoryId, large = false, overText = false }) => {
+  const cat = categories.find(c => c.id === Number(categoryId));
+  const initial = (name || '').trim().charAt(0).toUpperCase() || '?';
+  return (
+    <div aria-hidden="true" className={`absolute inset-0 bg-gradient-to-br ${CATEGORY_GRADIENTS[cat?.color] || CATEGORY_GRADIENTS.blue} flex items-center justify-center`}>
+      <span className={`font-bold text-white/90 drop-shadow-sm leading-none ${large ? 'text-8xl' : overText ? 'text-5xl -translate-y-4' : 'text-6xl'}`}>{initial}</span>
+      {cat && !overText && <Icon name={cat.icon} size={large ? 28 : 22} className={`absolute ${large ? 'bottom-12' : 'bottom-3'} right-4 text-white/60`} />}
+    </div>
+  );
+};
+
 const CategoryCard = ({ category, onNavigate }) => (
   <button
     onClick={() => onNavigate('category', { id: category.id })}
     className="flex flex-col items-center gap-2 group cursor-pointer"
   >
-    <div className="w-16 h-16 rounded-full bg-slate-100 shadow-sm flex items-center justify-center text-slate-900 group-hover:scale-105 group-hover:bg-primary group-hover:text-white transition-all duration-300 ring-1 ring-slate-200 group-hover:ring-primary">
+    <div className={`w-16 h-16 rounded-full shadow-sm flex items-center justify-center ring-1 group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:ring-primary transition-all duration-300 ${CATEGORY_TINTS[category.color] || CATEGORY_TINTS.slate}`}>
       <Icon name={category.icon} size={28} />
     </div>
     <span className="text-xs font-semibold text-slate-900 group-hover:text-primary transition-colors">{category.name}</span>
@@ -2262,8 +2321,8 @@ const GuestGate = ({ page, onNavigate, onAuth }) => {
   );
 };
 
-// Vista previa de un negocio, oferta o empleo: se ve el nombre y lo básico;
-// el resto (dirección, teléfono, horario, cupón, reseñas) pide cuenta
+// Vista previa de un negocio, oferta o empleo. De un negocio se ven sin cuenta los datos básicos
+// (dirección, teléfono, horario); las ofertas, reseñas y favoritos piden cuenta
 const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2280,16 +2339,29 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
         if (kind === 'business') {
           const { data } = await supabase
             .from('businesses')
-            .select('id, name, subcategory, neighborhood, cover_photo, images, rating, review_count, description')
+            .select('id, name, subcategory, neighborhood, cover_photo, images, rating, review_count, description, address, phone, opening_hours, special_closures')
             .eq('id', id)
             .maybeSingle();
+          // Cierre especial hoy (vacaciones, festivo...): manda sobre el horario normal
+          const now = new Date();
+          const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          const closedToday = Array.isArray(data?.special_closures)
+            && data.special_closures.some(c => String(c?.date || '').slice(0, 10) === todayIso);
+          const schedule = weeklyScheduleRows(data?.opening_hours);
           if (active) setItem(data ? {
+            businessId: data.id,
             title: data.name,
             subtitle: [data.subcategory, formatNeighborhood(data.neighborhood)].filter(Boolean).join(' · '),
             image: data.cover_photo || data.images?.[0] || null,
             rating: data.review_count > 0 ? Number(data.rating) : null,
             reviews: data.review_count || 0,
             description: data.description,
+            address: data.address?.trim() || '',
+            phone: data.phone?.trim() || '',
+            schedule,
+            openState: closedToday
+              ? { isOpen: false, message: 'Cerrado hoy' }
+              : (schedule.length ? getBusinessStatus(data.opening_hours) : null),
           } : null);
         } else {
           const table = kind === 'coupon' ? 'offers' : 'jobs';
@@ -2325,11 +2397,9 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
 
   const locked = {
     business: [
-      { icon: 'MapPin', label: 'Dirección y cómo llegar' },
-      { icon: 'Phone', label: 'Teléfono y WhatsApp' },
-      { icon: 'Clock', label: 'Horario y cierres especiales' },
       { icon: 'Tag', label: 'Ofertas y cupones' },
       { icon: 'Star', label: 'Reseñas de vecinos' },
+      { icon: 'Heart', label: 'Guardar en favoritos' },
     ],
     coupon: [
       { icon: 'Ticket', label: 'Tu código de descuento' },
@@ -2344,12 +2414,17 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
   }[kind] || [];
 
   const lead = {
-    business: 'Crea tu cuenta gratis para ver todos los datos de este comercio.',
+    business: 'Crea tu cuenta gratis para ver sus ofertas, leer y dejar reseñas y guardarlo en favoritos.',
     coupon: 'Crea tu cuenta gratis para conseguir el código y canjear la oferta.',
     'job-detail': 'Crea tu cuenta gratis para ver la oferta completa y apuntarte.',
   }[kind];
 
   const goBack = () => (params.returnTo ? onNavigate(params.returnTo, params.returnParams || {}) : onNavigate(kind === 'business' ? 'home' : 'offers'));
+
+  // Llamar, WhatsApp o Cómo llegar cuentan como clic para las estadísticas del negocio
+  const trackGuestClick = () => {
+    if (item?.businessId) supabase.rpc('increment_business_clicks', { business_id: item.businessId }).then(() => {}, () => {});
+  };
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md bg-white font-display flex flex-col">
@@ -2401,6 +2476,85 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
           <p className="text-gray-600 leading-relaxed line-clamp-3">{item.description}</p>
         )}
 
+        {kind === 'business' && item && (item.address || item.phone || item.schedule?.length > 0) && (
+          <section aria-label="Datos del comercio" className="rounded-2xl border border-gray-100 p-4 flex flex-col gap-4">
+            {item.address && (
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <MapPin size={18} className="text-primary" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900">{item.address}</p>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${item.address}, Cornellà de Llobregat`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={trackGuestClick}
+                    className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-primary-dark hover:underline"
+                  >
+                    <Navigation size={14} aria-hidden="true" /> Cómo llegar
+                  </a>
+                </div>
+              </div>
+            )}
+            {item.phone && (
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Phone size={18} className="text-primary" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900">{item.phone}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    <a
+                      href={`tel:${item.phone.replace(/\s/g, '')}`}
+                      onClick={trackGuestClick}
+                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-dark"
+                    >
+                      <Phone size={14} aria-hidden="true" /> Llamar
+                    </a>
+                    {whatsappNumber(item.phone) && (
+                      <a
+                        href={`https://wa.me/${whatsappNumber(item.phone)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={trackGuestClick}
+                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800"
+                      >
+                        <MessageCircle size={14} aria-hidden="true" /> WhatsApp
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {item.schedule?.length > 0 && (
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Clock size={18} className="text-primary" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-slate-900">Horario</p>
+                    {item.openState && (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.openState.isOpen ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+                        {item.openState.message}
+                      </span>
+                    )}
+                  </div>
+                  <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-sm">
+                    {item.schedule.map(row => (
+                      <div key={row.key} className="contents">
+                        <dt className="text-gray-600">{row.label}</dt>
+                        <dd className={row.closed ? 'text-gray-500' : 'text-slate-800'}>{row.hours}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
         <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 flex flex-col gap-3">
           {locked.map(row => (
             <div key={row.label} className="flex items-center gap-3 text-gray-500">
@@ -2428,17 +2582,17 @@ const GuestTeaser = ({ kind, id, params = {}, onNavigate, onAuth }) => {
 
 // Franja superior para invitados en las pantallas públicas (en escritorio va en la barra lateral)
 const GuestBanner = ({ onAuth }) => (
-  <div className="lg:hidden mx-auto w-full max-w-md bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between gap-3">
-    <p className="text-xs leading-snug text-white/80">Estás viendo Cornellà Local como invitado</p>
-    <div className="flex items-center gap-2 shrink-0">
-      <button onClick={() => onAuth('login')} className="text-xs font-semibold text-white/90 hover:text-white px-2 py-1">Entrar</button>
-      <button onClick={() => onAuth('register')} className="text-xs font-bold bg-white text-slate-900 rounded-full px-3 py-1.5 hover:bg-gray-100">Crear cuenta</button>
+  <div className="lg:hidden mx-auto w-full max-w-md bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center justify-between gap-3">
+    <p className="text-xs leading-snug text-slate-700">Estás como invitado</p>
+    <div className="flex items-center gap-1 shrink-0">
+      <button onClick={() => onAuth('login')} className="text-xs font-semibold text-primary-dark hover:underline px-2 py-1.5">Entrar</button>
+      <button onClick={() => onAuth('register')} className="text-xs font-bold bg-primary text-white rounded-full px-3 py-1.5 hover:bg-primary-dark">Crear cuenta gratis</button>
     </div>
   </div>
 );
 
 
-const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, userOffers = [], notifications = [], params = {}, showToast }) => {
+const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, userOffers = [], notifications = [], params = {}, showToast, isGuest = false, onAuth }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedBarrio, setSelectedBarrio] = useState(null);
@@ -2933,8 +3087,9 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
     {/* Header */}
     <header className="sticky top-0 z-30 bg-gray-50/90 backdrop-blur-md border-b border-gray-100 transition-colors">
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <div className="flex items-center">
+      <div className={`flex items-center justify-between px-4 pt-4 pb-2 ${isGuest ? 'lg:hidden' : ''}`}>
+        {/* En escritorio el logo ya está en la barra lateral */}
+        <div className="flex items-center lg:hidden">
           <img
             src="/logo.png"
             alt="Cornellà Local"
@@ -2943,9 +3098,11 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             className="h-9 w-auto object-contain"
           />
         </div>
+        {/* Un invitado no tiene avisos: la campana solo con cuenta */}
+        {!isGuest && (
         <button aria-label="Notificaciones"
           onClick={() => onNavigate('notifications')}
-          className="relative p-2 text-slate-800 hover:bg-gray-100 rounded-full transition-colors"
+          className="relative ml-auto p-2 text-slate-800 hover:bg-gray-100 rounded-full transition-colors"
         >
           <Bell size={24} />
           {(notifications?.filter(n => !n.isRead).length || 0) > 0 && (
@@ -2954,16 +3111,18 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
             </span>
           )}
         </button>
+        )}
       </div>
       {/* Search */}
-      <div className="px-4 pb-4">
+      <div className={`px-4 pb-4 ${isGuest ? 'lg:pt-4' : ''}`}>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search className="text-gray-500 group-focus-within:text-primary transition-colors" size={20} />
           </div>
           <input
             className="block w-full p-3 pl-10 pr-20 text-sm text-gray-900 border-none rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-primary placeholder-gray-400 transition-all"
-            placeholder="Buscar comercios, servicios, ofertas..."
+            placeholder="Busca un comercio o servicio"
+            aria-label="Buscar comercios, servicios y ofertas"
             type="text"
             value={inputValue}
             onChange={handleSearchChange}
@@ -3014,7 +3173,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
 
     {/* Resultados de búsqueda */}
     {showSearchResults && (
-      <div className="absolute top-[140px] left-0 right-0 z-20 bg-white mx-4 rounded-2xl shadow-xl border border-gray-100 max-h-[60vh] overflow-y-auto">
+      <div className={`absolute top-[140px] ${isGuest ? 'lg:top-[92px]' : ''} left-0 right-0 z-20 bg-white mx-4 rounded-2xl shadow-xl border border-gray-100 max-h-[60vh] overflow-y-auto`}>
         {/* Filtros activos */}
         {(selectedBarrio || hasActiveFilters) && (
           <div className="p-3 border-b border-gray-100 bg-gray-50/50">
@@ -3258,7 +3417,28 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
         </div>
       )}
 
-      {/* Ofertas Flash */}
+      {/* Bienvenida para quien entra sin cuenta (en escritorio ya lo explica la barra lateral) */}
+      {isGuest && (
+        <section className="lg:hidden mx-4 rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 leading-tight">Los comercios de Cornellà, en tu móvil</h2>
+            <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+              Mira horarios, teléfonos y cómo llegar sin registrarte. Con tu cuenta gratis consigues cupones de descuento y pides presupuestos.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => onAuth?.('register')} className="flex-1 h-11 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-dark transition-colors">
+              Crear cuenta gratis
+            </button>
+            <button onClick={() => onAuth?.('login')} className="h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-slate-800 hover:bg-gray-50 transition-colors">
+              Entrar
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Ofertas Flash: si no hay ninguna, no se enseña la sección */}
+      {(loadingOffers || allFlashOffers.length > 0) && (
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
@@ -3279,16 +3459,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           <div className="flex gap-4 px-4 pb-4 overflow-hidden" aria-hidden="true">
             {[0, 1].map(i => <div key={i} className="w-64 h-40 shrink-0 rounded-2xl bg-gray-100 animate-pulse" />)}
           </div>
-        ) : allFlashOffers.length === 0 ? (
-          <div className="mx-4 mb-2 flex items-center gap-3 rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-3">
-            <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center shrink-0">
-              <Zap className="text-yellow-600" size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-900">Ahora mismo no hay ofertas flash</p>
-              <p className="text-xs text-gray-500 leading-snug">Duran solo unas horas. Guarda tus comercios en favoritos y te avisamos cuando publiquen una.</p>
-            </div>
-          </div>
         ) : (
         <div className="flex overflow-x-auto no-scrollbar gap-4 px-4 pb-4 snap-x snap-mandatory scroll-smooth">
           {allFlashOffers.slice(0, 5).map(offer => (
@@ -3302,6 +3472,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
         </div>
         )}
       </section>
+      )}
 
       {/* Categorías */}
       <section className="px-4">
@@ -3310,63 +3481,6 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
           {categories.map(category => (
             <CategoryCard key={category.id} category={category} onNavigate={onNavigate} />
           ))}
-        </div>
-      </section>
-
-      {/* Banner Eventos - Próximamente */}
-      <section className="px-4 pb-6">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-5 shadow-lg">
-          {/* Decoración de fondo */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-
-          <div className="relative flex items-center gap-4">
-            {/* Icono */}
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
-              <Calendar className="text-white" size={32} />
-            </div>
-
-            {/* Contenido */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-white text-lg font-bold">Eventos del Barrio</h3>
-                <span className="px-2 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
-                  Próximamente
-                </span>
-              </div>
-              <p className="text-white/80 text-sm leading-snug">
-                Fiestas, mercadillos, conciertos y actividades en Cornellà
-              </p>
-            </div>
-          </div>
-
-          {/* Iconos decorativos */}
-          <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-white/20">
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <PartyPopper className="text-white" size={20} />
-              </div>
-              <span className="text-white/70 text-[10px] font-medium">Fiestas</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <ShoppingBag className="text-white" size={20} />
-              </div>
-              <span className="text-white/70 text-[10px] font-medium">Mercadillos</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Mic className="text-white" size={20} />
-              </div>
-              <span className="text-white/70 text-[10px] font-medium">Conciertos</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Users className="text-white" size={20} />
-              </div>
-              <span className="text-white/70 text-[10px] font-medium">Actividades</span>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -3381,11 +3495,9 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                 className="relative w-full bg-white rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden group text-left"
               >
                 {/* Image */}
-                <div className="relative h-44 bg-gradient-to-br from-blue-400 to-blue-600 overflow-hidden">
+                <div className="relative h-44 bg-gray-200 overflow-hidden">
                   {!(business.cover_photo || (business.images && business.images[0])) && (
-                    <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                      <Store className="text-white/40" size={64} strokeWidth={1.5} />
-                    </div>
+                    <BusinessCoverPlaceholder name={business.name} categoryId={business.category_id} />
                   )}
                   {(business.cover_photo || (business.images && business.images[0])) && (
                     <img
@@ -3449,7 +3561,7 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                       </button>
                     </h3>
                     {business.is_verified && (
-                      <BadgeCheck className="text-white fill-primary shrink-0" size={22} />
+                      <BadgeCheck className="text-white fill-primary shrink-0" size={22} aria-label="Verificado" />
                     )}
                   </div>
 
@@ -3474,11 +3586,16 @@ const HomePage = ({ onNavigate, userFavorites = [], toggleFavorite, isFavorite, 
                       <MapPin size={13} className="text-primary" />
                       <span className="text-xs text-gray-500">{formatNeighborhood(business.neighborhood) || business.address}</span>
                     </div>
-                    <span className="text-gray-300 text-sm">│</span>
-                    <div className="flex items-center gap-1">
-                      <Heart className="text-red-400 fill-red-400" size={13} />
-                      <span className="text-xs text-gray-500">{business.favoriteCount || 0}</span>
-                    </div>
+                    {/* "♥ 0" queda pobre: el contador solo se enseña cuando alguien lo ha guardado */}
+                    {business.favoriteCount > 0 && (
+                      <>
+                        <span className="text-gray-300 text-sm" aria-hidden="true">│</span>
+                        <div className="flex items-center gap-1">
+                          <Heart className="text-red-400 fill-red-400" size={13} aria-hidden="true" />
+                          <span className="text-xs text-gray-500">{business.favoriteCount}<span className="sr-only"> en favoritos</span></span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4433,7 +4550,7 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
               <h2 className="text-slate-900 text-lg font-bold">Ofertas Flash</h2>
               <Zap className="text-yellow-500" size={20} />
             </div>
-            <p className="text-xs text-gray-500">{allFlashOffers.length} ofertas activas</p>
+            <p className="text-xs text-gray-500">{pluralize(allFlashOffers.length, 'oferta activa', 'ofertas activas')}</p>
           </div>
         </div>
       </header>
@@ -4937,7 +5054,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
     {/* Header */}
     <header className="flex shrink-0 flex-col bg-gray-50/95 px-6 pb-4 pt-2 backdrop-blur-sm z-20">
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">Mis Favoritos</h1>
-      <p className="mt-1 text-sm font-medium text-slate-500">{favoriteBusinesses.length} lugares guardados</p>
+      <p className="mt-1 text-sm font-medium text-slate-500">{pluralize(favoriteBusinesses.length, 'lugar guardado', 'lugares guardados')}</p>
     </header>
 
     {/* Content */}
@@ -4985,21 +5102,7 @@ const FavoritesPage = ({ onNavigate, userFavorites = [], toggleFavorite }) => {
 
 // Página de Perfil
 const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusiness, savedCoupons = [], user, userOffers = [], userJobOffers = [], incomingBudgetRequests = [], userJobApplications = [], onDeleteBusiness, showToast }) => {
-  const [showDeleteBusinessModal, setShowDeleteBusinessModal] = useState(false);
-  const [deleteBusinessText, setDeleteBusinessText] = useState('');
-  const [deletingBusiness, setDeletingBusiness] = useState(false);
-
-  const handleDeleteBusinessConfirm = async () => {
-    if (deleteBusinessText !== 'ELIMINAR') {
-      showToast('Escribe ELIMINAR para confirmar', 'warning');
-      return;
-    }
-    setDeletingBusiness(true);
-    await onDeleteBusiness();
-    setDeletingBusiness(false);
-    setShowDeleteBusinessModal(false);
-    setDeleteBusinessText('');
-  };
+  // "Eliminar negocio" vive solo en el panel del negocio (no en el perfil, para no tenerlo a mano por error)
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2394a3b8'/%3E%3Cellipse cx='50' cy='80' rx='28' ry='20' fill='%2394a3b8'/%3E%3C/svg%3E");
   const fileInputRef = useState(null);
 
@@ -5138,7 +5241,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
               </div>
               <div>
                 <span className="font-medium text-slate-700 block">Mis Candidaturas</span>
-                <span className="text-xs text-slate-500">{userJobApplications.length} activas</span>
+                <span className="text-xs text-slate-500">{userJobApplications.length === 1 ? '1 activa' : `${userJobApplications.length} activas`}</span>
               </div>
             </div>
             <ChevronRight className="text-slate-500" size={20} />
@@ -5242,7 +5345,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 <div className="flex items-center gap-2 mb-1">
                   <h4 className="text-lg font-bold text-green-800 flex items-center gap-2">
                     {businessData?.name || 'Mi Negocio'}
-                    <BadgeCheck className="text-primary fill-primary" size={20} />
+                    <BadgeCheck className="text-white fill-primary shrink-0" size={20} aria-label="Verificado" />
                   </h4>
                   <span className="bg-green-200 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full">VERIFICADO</span>
                 </div>
@@ -5295,25 +5398,19 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
       {/* Panel de Administración - Solo visible para admins */}
       {user?.is_admin && (
         <section className="px-5 w-full max-w-md mx-auto mb-6">
-          <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl p-6 shadow-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
-                <ShieldAlert className="text-white" size={24} />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-lg">Panel de Administración</h3>
-                <p className="text-white/80 text-sm">Gestiona la plataforma</p>
-              </div>
+          <button
+            onClick={() => onNavigate('admin-dashboard')}
+            className="w-full flex items-center gap-3 rounded-2xl bg-slate-900 p-4 text-left shadow-sm hover:bg-slate-800 transition-colors"
+          >
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
+              <ShieldAlert className="text-white" size={20} aria-hidden="true" />
             </div>
-            <button
-              onClick={() => onNavigate('admin-dashboard')}
-              className="w-full h-12 bg-white text-red-600 font-bold rounded-xl hover:bg-gray-50 transition-all shadow-lg flex items-center justify-center gap-2"
-            >
-              <UserCog size={20} />
-              Acceder al Panel Admin
-              <ChevronRight size={20} />
-            </button>
-          </div>
+            <div className="flex-1 min-w-0">
+              <span className="block text-white font-semibold">Panel de administración</span>
+              <span className="block text-white/70 text-xs">Negocios, reseñas, avisos y estado del sistema</span>
+            </div>
+            <ChevronRight className="text-white/70" size={20} aria-hidden="true" />
+          </button>
         </section>
       )}
 
@@ -5358,7 +5455,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
                 </div>
                 <div>
                   <span className="font-medium text-slate-700 block">Gestionar Ofertas</span>
-                  <span className="text-xs text-slate-500">{userOffers.filter(o => o.status === 'active').length} ofertas activas</span>
+                  <span className="text-xs text-slate-500">{pluralize(userOffers.filter(o => o.status === 'active').length, 'oferta activa', 'ofertas activas')}</span>
                 </div>
               </div>
               <ChevronRight className="text-slate-500" size={20} />
@@ -5425,78 +5522,8 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
             </button>
           </div>
 
-          {/* Zona de peligro */}
-          <div className="mt-4 border border-red-200 rounded-2xl overflow-hidden">
-            <div className="bg-red-50 px-4 py-3 border-b border-red-200">
-              <span className="text-sm font-semibold text-red-700">Zona de peligro</span>
-            </div>
-            <div className="p-4 bg-white">
-              <button
-                onClick={() => setShowDeleteBusinessModal(true)}
-                className="w-full flex items-center gap-3 p-3 rounded-xl border border-red-200 hover:bg-red-50 transition-colors text-left"
-              >
-                <div className="bg-red-100 p-2 rounded-lg">
-                  <Trash2 size={18} className="text-red-600" />
-                </div>
-                <div>
-                  <span className="font-medium text-red-700 block text-sm">Eliminar negocio</span>
-                  <span className="text-xs text-red-700">Acción permanente e irreversible</span>
-                </div>
-              </button>
-            </div>
-          </div>
         </section>
 
-        {showDeleteBusinessModal && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="bg-red-100 p-2.5 rounded-full">
-                  <Trash2 size={22} className="text-red-600" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-lg">Eliminar negocio</h3>
-                  <p className="text-xs text-slate-500">Esta acción no se puede deshacer</p>
-                </div>
-              </div>
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                <p className="text-sm text-red-700">
-                  Se eliminarán permanentemente <strong>todas las ofertas, empleos y datos</strong> de <strong>"{businessData?.name}"</strong>.
-                </p>
-              </div>
-              <p className="text-sm text-slate-600 mb-3">
-                Para confirmar, escribe <span className="font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">ELIMINAR</span>:
-              </p>
-              <input
-                type="text"
-                value={deleteBusinessText}
-                onChange={(e) => setDeleteBusinessText(e.target.value)}
-                placeholder="Escribe ELIMINAR"
-                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-400 mb-4"
-                autoFocus
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { setShowDeleteBusinessModal(false); setDeleteBusinessText(''); }}
-                  className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDeleteBusinessConfirm}
-                  disabled={deleteBusinessText !== 'ELIMINAR' || deletingBusiness}
-                  className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-colors ${
-                    deleteBusinessText === 'ELIMINAR' && !deletingBusiness
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-slate-100 text-slate-500 cursor-not-allowed'
-                  }`}
-                >
-                  {deletingBusiness ? 'Eliminando...' : 'Eliminar definitivamente'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
         </>
       )}
 
@@ -6085,9 +6112,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
             style={{ backgroundImage: business.cover_photo || (business.images && business.images[0]) ? `url("${business.cover_photo || business.images[0]}")` : undefined }}
           >
             {!business.cover_photo && !(business.images && business.images[0]) && (
-              <div className="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
-                <Store className="text-white/40" size={80} />
-              </div>
+              <BusinessCoverPlaceholder name={business.name} categoryId={business.category_id} large />
             )}
           </div>
         </div>
@@ -6099,7 +6124,7 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-gray-900 text-2xl font-bold tracking-tight">{business.name}</h1>
-                {business.isVerified && <BadgeCheck className="text-primary fill-primary" size={24} />}
+                {business.isVerified && <BadgeCheck className="text-white fill-primary shrink-0" size={24} aria-label="Negocio verificado" />}
               </div>
               <p className="text-sm text-gray-500 font-medium">{business.address} • {business.category}</p>
 
@@ -6121,18 +6146,29 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   onClick={() => setShowReviews(true)}
                   className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
-                  <span className="text-gray-900 font-bold">{business.rating}</span>
-                  <Star className="text-yellow-500 fill-yellow-500" size={16} />
-                  <span className="text-gray-500 text-xs">({business.review_count || business.reviews || 0})</span>
+                  {(business.review_count || business.reviews) ? (
+                    <>
+                      <span className="text-gray-900 font-bold">{Number(business.rating || 0).toFixed(1)}</span>
+                      <Star className="text-yellow-500 fill-yellow-500" size={16} />
+                      <span className="text-gray-500 text-xs">({business.review_count || business.reviews})</span>
+                    </>
+                  ) : (
+                    <>
+                      <Star className="text-yellow-500" size={16} />
+                      <span className="text-gray-700 text-xs font-semibold">Sé el primero en opinar</span>
+                    </>
+                  )}
                 </button>
-                {/* Contador de favoritos/seguidores */}
+                {/* Contador de favoritos/seguidores (con 0 no se enseña) */}
+                {!loadingFavorites && favoriteCount > 0 && (
                 <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                   <Heart className="text-red-500 fill-red-500" size={16} />
-                  <span className="text-gray-900 font-bold">{loadingFavorites ? '...' : favoriteCount}</span>
+                  <span className="text-gray-900 font-bold">{favoriteCount}</span>
                   <span className="text-gray-500 text-xs">
                     {favoriteCount === 1 ? 'seguidor' : 'seguidores'}
                   </span>
                 </div>
+                )}
                 <button
                   onClick={() => {
                     if (!canReview.can_review) {
@@ -6592,6 +6628,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
   const [loading, setLoading] = useState(true);
   const [redemptionCode, setRedemptionCode] = useState(null);
   const [redemptionStatus, setRedemptionStatus] = useState(null);
+  const [redemptionExpiresAt, setRedemptionExpiresAt] = useState(null);
   const [redemptionLoading, setRedemptionLoading] = useState(false);
 
   // Cargar oferta desde Supabase
@@ -6643,13 +6680,14 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
       try {
         const { data } = await supabase
           .from('offer_redemptions')
-          .select('code, status')
+          .select('*')
           .eq('offer_id', couponId)
           .eq('user_id', user.id)
           .maybeSingle();
         if (data) {
           setRedemptionCode(data.code);
           setRedemptionStatus(data.status);
+          setRedemptionExpiresAt(data.expires_at || null);
         }
       } catch (_) {
         // Sin código todavía, es normal
@@ -6707,9 +6745,11 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
     discountedPrice: offer.discounted_price,
     conditions: [
       '1 código por persona',
-      `Válido hasta el ${formattedExpiry}`,
-      'Enseña el código en el negocio antes de pagar',
-      ...(offer.max_uses ? [`Hasta agotar los ${offer.max_uses} cupones`] : []),
+      offer.code_valid_hours
+        ? `Tienes ${offer.code_valid_hours} h para canjearlo desde que sacas el código; si no, caduca y el cupón pasa a otro vecino`
+        : `El código vale hasta que termina la oferta (${formattedExpiry})`,
+      'Enseña el código en el negocio antes de pagar: lo validan con la app',
+      ...(offer.max_uses ? [offer.max_uses === 1 ? 'Solo hay 1 cupón' : `Hasta agotar los ${offer.max_uses} cupones`] : []),
     ],
     location: {
       address: offer.businesses?.address || 'Cornellà de Llobregat',
@@ -6720,6 +6760,12 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
   const isEnded = offer.status !== 'active' || offer.is_visible === false
     || (offer.expires_at && new Date(offer.expires_at) <= new Date());
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${coupon.location.address}, Cornellà de Llobregat`)}`;
+  // Código sacado que no se canjeó a tiempo
+  const codeExpired = redemptionStatus === 'expired'
+    || (redemptionStatus === 'pending' && redemptionExpiresAt && new Date(redemptionExpiresAt) <= new Date());
+  const codeDeadline = redemptionExpiresAt
+    ? new Date(redemptionExpiresAt).toLocaleString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+    : null;
 
   const isCurrentCouponSaved = isCouponSaved ? isCouponSaved(coupon.id) : false;
 
@@ -6757,11 +6803,12 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
         return;
       }
       // Código nuevo: el contador de cupones disponibles baja al momento
-      if (!redemptionCode && offer?.max_uses) {
+      if (!redemptionCode && offer?.max_uses && data.status === 'pending') {
         setOffer(prev => prev ? { ...prev, claimed_count: (prev.claimed_count ?? prev.redemption_count ?? 0) + 1 } : prev);
       }
       setRedemptionCode(data.code);
       setRedemptionStatus(data.status);
+      setRedemptionExpiresAt(data.expires_at || null);
     } catch (err) {
       console.error('Error obteniendo código de cupón:', err);
       showToast?.('No se pudo obtener el código. Inténtalo de nuevo.', 'error');
@@ -6843,6 +6890,16 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
                 Ver ofertas activas
               </button>
             </div>
+          ) : redemptionStatus !== 'validated' && codeExpired ? (
+            /* Código caducado sin usar */
+            <div className="relative w-full bg-gray-100 rounded-2xl p-5 flex flex-col items-center gap-2 mb-6 text-center">
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                <Clock className="text-gray-600" size={24} />
+              </div>
+              <p className="font-bold text-gray-800">Tu código caducó sin usarse</p>
+              <p className="text-sm text-gray-600 font-mono">{redemptionCode}</p>
+              <p className="text-sm text-gray-600">No se canjeó a tiempo y el cupón ha pasado a otro vecino.</p>
+            </div>
           ) : offer.max_uses && (offer.claimed_count ?? offer.redemption_count ?? 0) >= offer.max_uses && !redemptionCode ? (
             /* Oferta agotada */
             <div className="relative w-full bg-gray-100 rounded-2xl p-5 flex flex-col items-center gap-2 mb-6">
@@ -6852,7 +6909,7 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
                 <XCircle className="text-red-500" size={24} />
               </div>
               <p className="font-bold text-gray-700">Oferta agotada</p>
-              <p className="text-sm text-gray-500">Ya se han entregado los {offer.max_uses} cupones disponibles</p>
+              <p className="text-sm text-gray-500">{offer.max_uses === 1 ? 'Ya se ha entregado el único cupón disponible' : `Ya se han entregado los ${offer.max_uses} cupones disponibles`}</p>
             </div>
           ) : redemptionStatus === 'validated' ? (
             /* Código ya canjeado */
@@ -6872,7 +6929,10 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
               <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full"></div>
               <p className="text-xs font-bold text-white/80 uppercase tracking-widest">Muestra este código en el negocio</p>
               <p className="text-5xl font-mono font-black text-white tracking-widest">{redemptionCode}</p>
-              <p className="text-xs text-white/60">Código único e intransferible · 1 uso</p>
+              {codeDeadline ? (
+                <p className="text-sm font-semibold text-white text-center">Úsalo antes del {codeDeadline}</p>
+              ) : null}
+              <p className="text-xs text-white/90 text-center">Código único · 1 uso{codeDeadline ? ' · si no lo canjeas a tiempo, pasa a otro vecino' : ''}</p>
             </div>
           ) : (
             /* Sin código todavía */
@@ -6882,10 +6942,12 @@ const CouponDetailPage = ({ couponId, onNavigate, savedCoupons = [], toggleSaveC
               <Ticket className="text-white/80" size={32} />
               <div className="text-center">
                 <p className="text-white font-bold text-lg">¿Quieres usar este descuento?</p>
-                <p className="text-white/70 text-sm mt-1">Genera tu código único y muéstralo en el negocio</p>
+                <p className="text-white/90 text-sm mt-1">
+                  Genera tu código único y muéstralo en el negocio{offer.code_valid_hours ? `. Tendrás ${offer.code_valid_hours} h para usarlo` : ''}
+                </p>
                 {offer.max_uses ? (
                   <p className="mt-2 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white">
-                    Quedan {Math.max(0, offer.max_uses - (offer.claimed_count ?? offer.redemption_count ?? 0))} de {offer.max_uses} cupones
+                    {(() => { const left = Math.max(0, offer.max_uses - (offer.claimed_count ?? offer.redemption_count ?? 0)); return `${left === 1 ? 'Queda 1' : `Quedan ${left}`} de ${pluralize(offer.max_uses, 'cupón', 'cupones')}`; })()}
                   </p>
                 ) : null}
               </div>
@@ -7722,6 +7784,7 @@ const CategoryDetailPage = ({ categoryId, onNavigate }) => {
     amber: { bg: 'bg-amber-100', text: 'text-amber-600', ring: 'ring-amber-200', hover: 'hover:bg-amber-50' },
     teal: { bg: 'bg-teal-100', text: 'text-teal-600', ring: 'ring-teal-200', hover: 'hover:bg-teal-50' },
     slate: { bg: 'bg-slate-100', text: 'text-slate-600', ring: 'ring-slate-200', hover: 'hover:bg-slate-50' },
+    pink: { bg: 'bg-pink-100', text: 'text-pink-600', ring: 'ring-pink-200', hover: 'hover:bg-pink-50' },
   };
 
   const colors = colorClasses[category.color] || colorClasses.blue;
@@ -7786,7 +7849,7 @@ const CategoryDetailPage = ({ categoryId, onNavigate }) => {
               </div>
               <div className="flex-1 text-left">
                 <h3 className="font-semibold text-slate-900">{sub.name}</h3>
-                <p className="text-sm text-gray-500">{subcategoryCounts[sub.name] ?? sub.count} comercios</p>
+                <p className="text-sm text-gray-500">{pluralize(subcategoryCounts[sub.name] ?? sub.count, 'comercio', 'comercios')}</p>
               </div>
               <ChevronRight size={20} className="text-gray-500" />
             </button>
@@ -7841,33 +7904,8 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
     fetchBusinesses();
   }, [categoryId, subcategoryId]);
 
-  // Función para verificar si un negocio está abierto según la hora actual
-  const isBusinessOpenNow = (business) => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const currentTime = currentHour * 60 + currentMinutes; // Tiempo en minutos desde medianoche
-
-    // Horarios típicos simulados (en minutos desde medianoche)
-    // Podemos usar el campo isOpen del negocio o simular basándonos en horarios típicos
-    if (business.isOpen !== undefined) {
-      return business.isOpen;
-    }
-
-    // Horarios típicos por tipo de negocio
-    const schedules = {
-      'Panadería': { open: 7 * 60, close: 20 * 60 }, // 7:00 - 20:00
-      'Hostelería': { open: 8 * 60, close: 23 * 60 }, // 8:00 - 23:00
-      'Café': { open: 7 * 60, close: 21 * 60 }, // 7:00 - 21:00
-      'Artesanal': { open: 9 * 60, close: 19 * 60 }, // 9:00 - 19:00
-      'Hogar': { open: 9 * 60, close: 20 * 60 }, // 9:00 - 20:00
-      'Tienda local': { open: 9 * 60, close: 20 * 60 }, // 9:00 - 20:00
-      'default': { open: 9 * 60, close: 20 * 60 }, // 9:00 - 20:00
-    };
-
-    const schedule = schedules[business.category] || schedules['default'];
-    return currentTime >= schedule.open && currentTime <= schedule.close;
-  };
+  // Abierto ahora según el horario real que ha puesto el negocio (sin horario = no se marca)
+  const isBusinessOpenNow = (business) => getBusinessStatus(business.opening_hours).isOpen;
 
   // Los negocios ya vienen filtrados de Supabase
   const baseBusinesses = businesses;
@@ -8007,10 +8045,14 @@ const SubcategoryDetailPage = ({ categoryId, subcategoryId, onNavigate, userFavo
               className="bg-white rounded-2xl shadow-soft overflow-hidden border border-gray-100 hover:shadow-md transition-all"
             >
               <div className="relative h-40">
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url("${business.cover_photo || (business.images && business.images[0]) || ''}")` }}
-                />
+                {business.cover_photo || (business.images && business.images[0]) ? (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url("${business.cover_photo || business.images[0]}")` }}
+                  />
+                ) : (
+                  <BusinessCoverPlaceholder name={business.name} categoryId={business.category_id} overText />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
                 {/* Badges */}
@@ -9745,7 +9787,7 @@ const MyBudgetRequestsScreen = ({ onNavigate, userBudgetRequests = [], onAcceptQ
                         >
                           {quote.businessName}
                         </button>
-                        {quote.verified && <BadgeCheck className="text-primary fill-primary" size={16} />}
+                        {quote.verified && <BadgeCheck className="text-white fill-primary shrink-0" size={16} aria-label="Verificado" />}
                         {isAccepted && <span className="px-2 py-0.5 bg-green-700 text-white text-[10px] font-bold rounded-full">ELEGIDO</span>}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -10126,7 +10168,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
 
   const contactOptions = [
     { icon: 'Mail', label: 'Email', value: 'cornellalocal@gmail.com', action: 'mailto:cornellalocal@gmail.com' },
-    { icon: 'Clock', label: 'Horario', value: 'Lun-Vie 9:00-18:00', action: null },
+    { icon: 'Clock', label: 'Respuesta', value: 'Normalmente en 1 o 2 días', action: null },
   ];
 
   const faqItems = [
@@ -10709,11 +10751,11 @@ const LoginScreen = ({ onNavigate, setUser }) => {
         <div className="flex flex-col items-center text-center gap-2 pt-2">
           <img
             src="/favicon.png"
-            alt="CornellaLocal"
+            alt="Cornellà Local"
             className="w-20 h-20 rounded-2xl shadow-sm mb-2"
           />
           <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight px-4 pb-1">
-            Bienvenido a CornellaLocal
+            Bienvenido a Cornellà Local
           </h1>
           <p className="text-gray-500 text-base font-normal leading-normal px-4">
             Tu comercio local, más cerca
@@ -10972,10 +11014,10 @@ const RegisterScreen = ({ onNavigate }) => {
         <div className="flex flex-col items-center px-4 pb-6 pt-2">
           <img
             src="/favicon.png"
-            alt="CornellaLocal"
+            alt="Cornellà Local"
             className="w-16 h-16 rounded-xl shadow-sm mb-4"
           />
-          <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight pb-2 text-center">Únete a CornellaLocal</h1>
+          <h1 className="text-slate-900 tracking-tight text-[28px] font-bold leading-tight pb-2 text-center">Únete a Cornellà Local</h1>
           <p className="text-gray-500 text-base font-normal leading-normal text-center">Apoya al comercio local de Cornellà</p>
         </div>
 
@@ -11008,6 +11050,38 @@ const RegisterScreen = ({ onNavigate }) => {
           </div>
         )}
 
+        {/* Registro con Google primero: un toque, sin contraseña */}
+        <div className="flex flex-col gap-3 px-4 pb-2">
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={loading || success}
+            className="w-full flex items-center justify-center gap-3 h-12 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span className="text-slate-900 font-semibold text-sm">Continuar con Google</span>
+          </button>
+          <p className="text-center text-xs text-gray-500 leading-relaxed">
+            Al continuar con Google confirmas que tienes 14 años o más y aceptas los{' '}
+            <button type="button" onClick={() => onNavigate('terms-register')} className="text-primary font-semibold hover:underline">
+              términos y condiciones
+            </button>. Tratamos tus datos según la{' '}
+            <button type="button" onClick={() => onNavigate('privacy-policy')} className="text-primary font-semibold hover:underline">
+              política de privacidad
+            </button>.
+          </p>
+          <div className="relative flex items-center py-1">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-500 text-sm font-medium">o con tu email</span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
+        </div>
+
         {/* Form */}
         <form className="flex flex-col gap-4 px-4 pb-4" onSubmit={handleRegister}>
           {/* Name */}
@@ -11019,7 +11093,7 @@ const RegisterScreen = ({ onNavigate }) => {
               </div>
               <input
                 className="form-input flex w-full rounded-lg text-slate-900 focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-gray-100 h-14 placeholder:text-gray-500 pl-12 pr-4 text-base font-normal transition-all"
-                placeholder="Ej. Maria Garcia"
+                placeholder="Ej. María García"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -11144,38 +11218,6 @@ const RegisterScreen = ({ onNavigate }) => {
             </button>
           </div>
         </form>
-
-        {/* Registro con Google: un toque, sin contraseña */}
-        <div className="flex flex-col gap-4 pt-6">
-          <div className="relative flex items-center">
-            <div className="flex-grow border-t border-gray-100"></div>
-            <span className="flex-shrink-0 mx-4 text-gray-500 text-sm font-medium">O regístrate con</span>
-            <div className="flex-grow border-t border-gray-100"></div>
-          </div>
-          <button
-            type="button"
-            onClick={handleGoogleSignup}
-            disabled={loading || success}
-            className="w-full flex items-center justify-center gap-3 h-12 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            <span className="text-slate-900 font-semibold text-sm">Continuar con Google</span>
-          </button>
-          <p className="text-center text-xs text-gray-500 leading-relaxed">
-            Al continuar con Google confirmas que tienes 14 años o más y aceptas los{' '}
-            <button type="button" onClick={() => onNavigate('terms-register')} className="text-primary font-semibold hover:underline">
-              términos y condiciones
-            </button>. Tratamos tus datos según la{' '}
-            <button type="button" onClick={() => onNavigate('privacy-policy')} className="text-primary font-semibold hover:underline">
-              política de privacidad
-            </button>.
-          </p>
-        </div>
 
         {/* Footer */}
         <div className="flex-1 flex flex-col justify-end pb-8 pt-4">
@@ -13108,6 +13150,7 @@ export default function App() {
             // Una oferta pasada de fecha está terminada aunque en la BD siga como 'active'
             status: diffMs <= 0 ? 'expired' : offer.status,
             expiresAt: offer.expires_at,
+            codeValidHours: offer.code_valid_hours ?? null,
             isVisible: offer.is_visible,
             redemptions: offer.redemption_count || 0,
             claimed: offer.claimed_count ?? offer.redemption_count ?? 0,
@@ -13868,9 +13911,7 @@ export default function App() {
         expiresAt.setDate(expiresAt.getDate() + 5); // Normal = 5 días
       }
 
-      const { data, error } = await supabase
-        .from('offers')
-        .insert({
+      const offerRow = {
           business_id: businessData.id,
           title: offerData.title,
           description: offerData.description,
@@ -13889,9 +13930,15 @@ export default function App() {
           status: 'active',
           is_visible: true,
           max_uses: offerData.isLimited ? offerData.limitedUnits : null,
-        })
-        .select()
-        .single();
+          // Tiempo para canjear el código (24/48/72 h; null = hasta que termine la oferta)
+          code_valid_hours: offerData.isFlash ? null : (offerData.codeValidHours === undefined ? 24 : offerData.codeValidHours),
+      };
+      let { data, error } = await supabase.from('offers').insert(offerRow).select().single();
+      // Si la base de datos aún no tiene la columna (falta supabase/cupones-caducidad.sql), se publica sin ella
+      if (error && error.code === 'PGRST204' && String(error.message || '').includes('code_valid_hours')) {
+        const { code_valid_hours: _omit, ...rowWithout } = offerRow;
+        ({ data, error } = await supabase.from('offers').insert(rowWithout).select().single());
+      }
 
       if (error) throw error;
 
@@ -14206,7 +14253,7 @@ export default function App() {
     }
     switch (currentPage) {
       case 'home':
-        return <HomePage showToast={showToast} onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} userOffers={userOffers} notifications={dynamicNotifications} params={pageParams} />;
+        return <HomePage showToast={showToast} onNavigate={navigate} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} userOffers={userOffers} notifications={dynamicNotifications} params={pageParams} isGuest={!user} onAuth={(mode) => handleGuestAuth(mode, 'home', {})} />;
       case 'budget-request':
         return <BudgetRequestScreen onNavigate={navigate} onSubmitRequest={submitBudgetRequest} showToast={showToast} onAddNotification={addNotification} user={user} />;
       case 'direct-budget':
@@ -14360,7 +14407,7 @@ export default function App() {
       case 'contact-support':
         return <ContactSupportScreen onNavigate={navigate} showToast={showToast} />;
       default:
-        return <HomePage showToast={showToast} onNavigate={navigate} notifications={dynamicNotifications} params={pageParams} />;
+        return <HomePage showToast={showToast} onNavigate={navigate} notifications={dynamicNotifications} params={pageParams} isGuest={!user} onAuth={(mode) => handleGuestAuth(mode, 'home', {})} />;
     }
   };
 
@@ -14423,7 +14470,7 @@ export default function App() {
         <div className="text-center">
           <img
             src="/favicon.png"
-            alt="CornellaLocal"
+            alt="Cornellà Local"
             className="w-20 h-20 rounded-2xl shadow-sm mb-4 mx-auto animate-pulse"
           />
           <p className="text-gray-500">Cargando...</p>
@@ -14466,10 +14513,10 @@ export default function App() {
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4">
             <div className="flex items-start gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
-                <img src="/favicon.png" alt="CornellaLocal" className="w-full h-full object-contain" />
+                <img src="/favicon.png" alt="Cornellà Local" className="w-full h-full object-contain" />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-slate-900 text-sm">Instalar CornellaLocal</h4>
+                <h4 className="font-bold text-slate-900 text-sm">Instalar Cornellà Local</h4>
                 <p className="text-xs text-gray-500 mt-0.5">Añade la app a tu pantalla de inicio para acceso rápido</p>
               </div>
               <button aria-label="Cerrar"
@@ -14519,7 +14566,8 @@ export default function App() {
           }`}
         >
           {!pageHasOwnH1 && <h1 className="sr-only">{pageHeading}</h1>}
-          {!user && GUEST_PAGES.has(currentPage) && !['login', 'register', 'forgot-password', 'reset-password'].includes(currentPage) && (
+          {/* En inicio ya hay un bloque de bienvenida con los mismos botones */}
+          {!user && GUEST_PAGES.has(currentPage) && !['home', 'login', 'register', 'forgot-password', 'reset-password'].includes(currentPage) && (
             <GuestBanner onAuth={(mode) => handleGuestAuth(mode, currentPage, pageParams)} />
           )}
           <Suspense fallback={<PageLoadingFallback />}>

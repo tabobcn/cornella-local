@@ -756,7 +756,9 @@ export const termsAndConditions = {
       bullets: [
         "Cada negocio puede publicar 1 oferta cada 7 días, contando desde la última que publicó aunque la haya borrado. Así las ofertas son pocas y de verdad. Una oferta normal dura 5 días y una oferta flash, 8 horas; una vez publicada no se pueden cambiar sus fechas ni sus cupones, solo pausarla. La foto es obligatoria.",
         "Los cupones son limitados: el negocio decide cuántos hay, cada persona puede sacar 1 código por oferta y, cuando se acaban, no se entregan más.",
-        "El negocio debe respetar en su local los códigos que ha entregado mientras la oferta esté vigente, y es el responsable de las condiciones y los precios que anuncia.",
+        "Cada código tiene un tiempo para canjearlo que elige el negocio al crear la oferta (24, 48 o 72 horas desde que se saca, o hasta que termine la oferta; en las ofertas flash, hasta que terminen). Si no se canjea a tiempo, caduca y el cupón vuelve a estar disponible para otra persona; quien lo dejó caducar no puede sacar otro de esa oferta.",
+        "El negocio debe respetar en su local los códigos que ha entregado mientras estén en vigor, validarlos con la app (Validar código) para que quede constancia de cada canje, y es el responsable de las condiciones y los precios que anuncia.",
+        "Las ofertas tienen que ser reales. Si un negocio publica ofertas engañosas o no respeta los códigos, podemos retirar la oferta y limitar o suspender su publicación de ofertas.",
         "Las ofertas de empleo deben cumplir la ley laboral y no pueden discriminar. El negocio recibe las candidaturas, decide y es responsable de los datos de los candidatos durante su selección. Los CV se borran solos al terminar el proceso, y el negocio solo puede usar los datos de los candidatos para esa selección, sin guardar copias al terminar.",
       ],
     },

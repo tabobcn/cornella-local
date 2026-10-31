@@ -111,7 +111,20 @@ a{color:var(--primary)}
 .locked{background:var(--bg);border-radius:16px;padding:14px;display:grid;gap:10px}
 .locked div{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#334155}
 .locked span.i{width:32px;height:32px;border-radius:10px;background:#fff;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
-.locked span.l{margin-left:auto;color:#94a3b8;font-size:13px;font-weight:500}
+.locked span.l{margin-left:auto;color:#64748b;display:inline-flex}
+.locked span.i{color:var(--primary-dark)}
+.info{display:grid;gap:14px}
+.info-row{display:flex;gap:12px;align-items:flex-start}
+.info-row .i{width:36px;height:36px;border-radius:10px;background:var(--bg);color:var(--primary-dark);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.info-row p{margin:0;font-size:15px}
+.info-row a.small{font-size:14px;font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.btn-sm{height:38px;padding:0 14px;font-size:14px;border-radius:10px}
+.btn-wa{background:#15803d;color:#fff}
+.hours{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+.hours td{padding:3px 0}
+.hours td:last-child{text-align:right;color:#334155}
+.rating svg{color:#f59e0b;fill:#f59e0b}
 .cta{display:flex;flex-wrap:wrap;gap:10px}
 .note{font-size:14px;color:var(--muted);margin:0}
 h2{font-size:18px;margin:28px 0 12px}
@@ -125,8 +138,48 @@ h2{font-size:18px;margin:28px 0 12px}
 @media (min-width:768px){.hero{height:280px}.hero h1{font-size:34px}.body{padding:28px}}
 `;
 
+// Iconos de línea (los mismos que la app), en SVG para que se vean igual en todos los móviles
+const svg = (paths) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 const ICON = {
-  pin: '📍', phone: '📞', clock: '🕒', tag: '🏷️', star: '⭐', store: '🏪',
+  pin: svg('<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>'),
+  phone: svg('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'),
+  clock: svg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
+  tag: svg('<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>'),
+  star: svg('<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>'),
+  lock: svg('<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'),
+  chat: svg('<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'),
+  heart: svg('<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>'),
+};
+
+// Horario de opening_hours ({ monday: { enabled, morning: {start,end}, afternoon: {...} }, ... })
+const DAYS = [['monday', 'Lunes', 'Mo'], ['tuesday', 'Martes', 'Tu'], ['wednesday', 'Miércoles', 'We'], ['thursday', 'Jueves', 'Th'],
+  ['friday', 'Viernes', 'Fr'], ['saturday', 'Sábado', 'Sa'], ['sunday', 'Domingo', 'Su']];
+const scheduleRows = (hours) => {
+  if (!hours || typeof hours !== 'object') return [];
+  return DAYS.map(([key, label]) => {
+    const d = hours[key];
+    const slots = d && d.enabled ? [d.morning, d.afternoon].filter(x => x && x.start && x.end) : [];
+    return { label, slots, text: slots.length ? slots.map(x => `${x.start} – ${x.end}`).join(', ') : 'Cerrado' };
+  });
+};
+const openingSpec = (hours) => {
+  if (!hours || typeof hours !== 'object') return [];
+  const out = [];
+  for (const [key, , code] of DAYS) {
+    const d = hours[key];
+    if (!d || !d.enabled) continue;
+    for (const x of [d.morning, d.afternoon]) {
+      if (x && x.start && x.end) out.push({ '@type': 'OpeningHoursSpecification', dayOfWeek: `https://schema.org/${key.charAt(0).toUpperCase()}${key.slice(1)}`, opens: x.start, closes: x.end });
+    }
+  }
+  return out;
+};
+// WhatsApp solo para móviles españoles (6xx / 7xx), igual que en la app; un fijo no tiene WhatsApp
+const waNumber = (phone) => {
+  let d = String(phone || '').replace(/\D/g, '');
+  if (d.startsWith('0034')) d = d.slice(2);
+  if (d.length === 11 && d.startsWith('34')) d = d.slice(2);
+  return d.length === 9 && /^[67]/.test(d) ? `34${d}` : '';
 };
 
 function layout({ title, description, canonical, image, head = '', body }) {
@@ -145,7 +198,7 @@ function layout({ title, description, canonical, image, head = '', body }) {
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
-<meta property="og:image" content="${esc(image || `${SITE}/icons/icon-512x512.png`)}">
+<meta property="og:image" content="${esc(image || `${SITE}/og-image.jpg`)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#567ac7">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -197,10 +250,13 @@ function businessPage(biz, ctx) {
       ...(descText ? { description: descText } : {}),
       address: {
         '@type': 'PostalAddress',
+        ...(biz.address ? { streetAddress: biz.address } : {}),
         addressLocality: CITY,
         addressRegion: 'Barcelona',
         addressCountry: 'ES',
       },
+      ...(biz.phone ? { telephone: biz.phone } : {}),
+      ...(openingSpec(biz.opening_hours).length ? { openingHoursSpecification: openingSpec(biz.opening_hours) } : {}),
       ...(hasReviews ? {
         aggregateRating: {
           '@type': 'AggregateRating',
@@ -222,13 +278,20 @@ function businessPage(biz, ctx) {
     },
   ];
 
+  // Datos básicos a la vista; la cuenta solo hace falta para cupones, reseñas y favoritos
   const lockedRows = [
-    [ICON.pin, 'Dirección y cómo llegar'],
-    [ICON.phone, 'Teléfono y WhatsApp'],
-    [ICON.clock, 'Horario y cierres especiales'],
     [ICON.tag, offersCount > 0 ? `${offersCount} ${offersCount === 1 ? 'oferta activa' : 'ofertas activas'} y cupones` : 'Ofertas y cupones'],
-    [ICON.star, 'Reseñas de vecinos'],
+    [ICON.star, 'Escribir y leer reseñas de vecinos'],
+    [ICON.heart, 'Guardar en favoritos y recibir sus ofertas'],
   ];
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${biz.address || biz.name}, ${CITY}`)}`;
+  const wa = waNumber(biz.phone);
+  const rows = scheduleRows(biz.opening_hours);
+  const infoBlock = `<div class="info">
+        ${biz.address ? `<div class="info-row"><span class="i">${ICON.pin}</span><div><p>${esc(biz.address)}</p><a class="small" href="${esc(mapsUrl)}" target="_blank" rel="noopener">Cómo llegar</a></div></div>` : ''}
+        ${biz.phone ? `<div class="info-row"><span class="i">${ICON.phone}</span><div><p>${esc(biz.phone)}</p><div class="actions"><a class="btn btn-ghost btn-sm" href="tel:${esc(String(biz.phone).replace(/\s/g, ''))}">${ICON.phone} Llamar</a>${wa ? `<a class="btn btn-wa btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ICON.chat} WhatsApp</a>` : ''}</div></div></div>` : ''}
+        ${rows.length ? `<div class="info-row"><span class="i">${ICON.clock}</span><div style="flex:1"><p><b>Horario</b></p><table class="hours">${rows.map(r => `<tr><td>${esc(r.label)}</td><td>${esc(r.text)}</td></tr>`).join('')}</table></div></div>` : ''}
+      </div>`;
 
   const body = `
 <main class="wrap">
@@ -244,12 +307,13 @@ function businessPage(biz, ctx) {
     <div class="body">
       ${hasReviews ? `<div class="rating">${ICON.star} <b>${rating.toFixed(1)}</b> (${Number(biz.review_count)} ${Number(biz.review_count) === 1 ? 'reseña' : 'reseñas'})</div>` : ''}
       ${descText ? `<p class="desc">${esc(descText)}</p>` : `<p class="desc">${esc(biz.name)} es un negocio de ${esc(kind.toLowerCase())} en ${esc(place)}.</p>`}
+      ${infoBlock}
       <div class="locked">
-        ${lockedRows.map(([i, label]) => `<div><span class="i">${i}</span>${esc(label)}<span class="l" aria-label="Requiere cuenta">🔒</span></div>`).join('\n        ')}
+        ${lockedRows.map(([i, label]) => `<div><span class="i">${i}</span>${esc(label)}<span class="l" aria-label="Requiere cuenta">${ICON.lock}</span></div>`).join('\n        ')}
       </div>
-      <p class="note">Crea tu cuenta gratis en Cornellà Local para ver todos los datos de este comercio, guardar sus ofertas y recibir avisos.</p>
+      <p class="note">Crea tu cuenta gratis en Cornellà Local para conseguir sus cupones, guardarlo en favoritos y dejar tu reseña.</p>
       <div class="cta">
-        <a class="btn btn-primary" href="${appLink}">Ver todos los datos</a>
+        <a class="btn btn-primary" href="${appLink}">Abrir en la app</a>
         <a class="btn btn-ghost" href="/?nav=register">Crear cuenta gratis</a>
       </div>
     </div>
@@ -313,7 +377,7 @@ async function main() {
   if (url && key) {
     try {
       [businesses, offers] = await Promise.all([
-        fetchTable(url, key, 'businesses?select=id,name,slug,description,subcategory,neighborhood,cover_photo,images,rating,review_count,category_id,updated_at&verification_status=eq.approved&is_published=eq.true&order=name.asc&limit=5000'),
+        fetchTable(url, key, 'businesses?select=id,name,slug,description,subcategory,neighborhood,cover_photo,images,rating,review_count,category_id,updated_at,address,phone,opening_hours&verification_status=eq.approved&is_published=eq.true&order=name.asc&limit=5000'),
         fetchTable(url, key, `offers?select=business_id&status=eq.active&is_visible=eq.true&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=5000`).catch(() => []),
       ]);
     } catch (err) {

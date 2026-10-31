@@ -329,6 +329,29 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   `isLocal`. (2) Los enlaces `?nav=...` (los de los push) acababan en Inicio al abrir la app en frío con sesión:
   el efecto de deep links actualiza ya `currentPageRef`.
 
+### Cupones que caducan, portada horizontal y ficha pública (2026-10-31)
+- **SQL `supabase/cupones-caducidad.sql`** (requiere `limite-ofertas.sql` y `auditoria-arreglos.sql`):
+  `offers.code_valid_hours` (24/48/72 o NULL = hasta que termine la oferta; flash siempre NULL; no se cambia tras
+  publicar) y `offer_redemptions.expires_at`. Un código no validado a tiempo pasa a `expired` y su cupón vuelve a
+  quedar libre; esa persona no puede sacar otro de la misma oferta. `claimed_count` = códigos en vigor + validados.
+  `expire_redemption_codes()` cada 15 min (cron `caducar-codigos`) y también al sacar/validar. **Ojo: en un CTE que
+  modifica datos el recuento no ve los cambios del mismo statement → recontar en una sentencia aparte.**
+  Además el disparador `businesses_mark_site_dirty` mira también dirección, teléfono y horario.
+- **Modelo elegido (Carlos)**: reserva que caduca. Descartado "cerrar al validar N": dejaría sin descuento a gente con
+  código. Hay que validar siempre en la app (control y ofertas reales; se avisa en Términos).
+- **Portada**: obligatoria en horizontal (`COVER_MIN_RATIO = 1.3`, mín. 800 px de ancho en `owner.jsx`); si no, no se
+  sube. Se recomienda la fachada o la entrada. Las portadas antiguas con bandas no se arreglan solas: re-subir.
+- **Ficha sin cuenta**: el invitado ve dirección (Cómo llegar), teléfono (Llamar / WhatsApp solo móviles 6xx-7xx),
+  horario y si está abierto. Con cuenta: ofertas, reseñas y favoritos. Las páginas `/negocio/...` igual (+ JSON-LD
+  con dirección, teléfono y horario).
+- **Diseño**: sin sección flash vacía ni "Eventos próximamente"; bienvenida para invitados en Inicio; negocios sin
+  foto = degradado del color de su categoría + inicial (`BusinessCoverPlaceholder`); colores por categoría
+  (`CATEGORY_TINTS`); "Eliminar negocio" solo en el panel del negocio; "Validar código" destacado en el panel;
+  imagen para redes `public/og-image.jpg` (1200x630). "Abierto ahora" sale siempre del horario real.
+- **Emails (Resend)**: plan gratis 3.000/mes y 100/día; el envío por defecto de Supabase solo 2/hora. SMTP en
+  Supabase → Auth → SMTP: `smtp.resend.com`, puerto 465, usuario `resend`, contraseña = API key, remitente
+  `noreply@cornellalocal.es` (dominio verificado en Resend con DNS en Vercel).
+
 ---
 
 ## Reglas de Negocio Importantes
@@ -343,6 +366,8 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 | **Candidaturas** | Al contratar uno → resto se auto-rechaza automáticamente |
 | **Presupuestos** | Al aceptar uno → resto se notifica como "no seleccionado" |
 | **OAuth** | Perfil creado desde `session.user.user_metadata` (no espera query profiles) |
+| **Cupones** | El negocio elige al crear la oferta cuánto vale cada código: 24/48/72 h o hasta el final (flash: hasta el final). Caducado = el cupón pasa a otro; esa persona no saca otro (`cupones-caducidad.sql`) |
+| **Portada** | Foto horizontal obligatoria (fachada o entrada); vertical o casi cuadrada se rechaza al subir |
 | **Ofertas** | Duración normal = 5 días; flash = 8 horas; límite 1 oferta cada 7 días **garantizado en la BD** (`supabase/limite-ofertas.sql`: cuenta desde la última publicada aunque se borre, tabla `offer_publications`; fechas, flash y cupones no se pueden cambiar tras publicar). Premium en el futuro: subir `v_weekly_limit` en `offer_publish_block_reason()` |
 | **Teléfono presupuesto** | Oculto para ambas partes hasta que el usuario acepte una cotización |
 | **Fotos en oferta** | Obligatorio subir imagen para poder publicar |

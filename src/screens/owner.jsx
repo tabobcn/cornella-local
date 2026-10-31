@@ -927,9 +927,14 @@ export const BusinessOffersScreen = ({ onNavigate, userOffers = [], toggleVisibi
                 <span className="text-gray-500"> · {offer.redemptions} validados en tienda</span>
               </span>
               {offer.maxUses && (offer.claimed ?? offer.redemptions) >= offer.maxUses && (
-                <span className="ml-1 text-xs font-bold text-red-600">· AGOTADA</span>
+                <span className="ml-1 text-xs font-bold text-red-700">· AGOTADA</span>
               )}
             </div>
+            <p className="text-xs text-gray-600 -mt-2 mb-3">
+              {offer.codeValidHours
+                ? `Cada código vale ${offer.codeValidHours} h desde que se saca; si no se canjea, el cupón vuelve a quedar libre.`
+                : 'Los códigos valen hasta que termina la oferta.'}
+            </p>
 
             {/* Actions */}
             <div className="flex items-center justify-between">
@@ -1120,7 +1125,7 @@ export const BusinessJobsScreen = ({ onNavigate, userJobOffers = [], deleteJobOf
                         className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors"
                       >
                         <Users size={12} />
-                        {job.applications} candidatos
+                        {job.applications === 1 ? '1 candidato' : `${job.applications} candidatos`}
                       </button>
                     )}
                   </div>
@@ -2858,21 +2863,52 @@ export const prepareImage = async (file, { cover = false, max = 1600, quality = 
   }
 };
 
-// Revisa si una foto sirve como portada (horizontal y con resolución suficiente)
+// Dibujo de ejemplo: así tiene que ser la portada (horizontal, la fachada) y así no (vertical)
+const CoverPhotoExample = () => (
+  <div className="grid grid-cols-2 gap-3 items-end" aria-hidden="true">
+    <div className="text-center">
+      <div className="aspect-[16/9] w-full rounded-lg bg-gradient-to-b from-sky-200 to-sky-100 border-2 border-green-600 flex items-end justify-center overflow-hidden">
+        <svg viewBox="0 0 64 40" className="w-4/5 h-4/5">
+          <rect x="6" y="12" width="52" height="28" fill="#94a3b8" />
+          <path d="M4 12 L32 2 L60 12 Z" fill="#475569" />
+          <rect x="10" y="8" width="44" height="6" fill="#4b71c3" />
+          <rect x="26" y="22" width="12" height="18" fill="#1e293b" />
+          <rect x="11" y="20" width="11" height="9" fill="#e2e8f0" />
+          <rect x="42" y="20" width="11" height="9" fill="#e2e8f0" />
+        </svg>
+      </div>
+      <p className="text-xs font-semibold text-green-800 mt-1">Así sí: horizontal</p>
+    </div>
+    <div className="text-center">
+      <div className="mx-auto h-24 w-14 rounded-lg bg-gradient-to-b from-sky-200 to-sky-100 border-2 border-red-600 flex items-end justify-center overflow-hidden">
+        <svg viewBox="0 0 24 40" className="w-full h-3/5">
+          <rect x="3" y="10" width="18" height="30" fill="#94a3b8" />
+          <rect x="8" y="24" width="8" height="16" fill="#1e293b" />
+        </svg>
+      </div>
+      <p className="text-xs font-semibold text-red-700 mt-1">Así no: vertical</p>
+    </div>
+  </div>
+);
+
+// La portada tiene que ser horizontal (como mínimo 4:3) y con resolución suficiente; si no, no se acepta.
+// Así todas las fichas se ven a todo el ancho. Devuelve los motivos por los que no sirve (vacío = sirve).
+export const COVER_MIN_RATIO = 1.3;
+export const COVER_MIN_WIDTH = 800;
 const checkCoverPhoto = async (file) => {
-  const warnings = [];
+  const problems = [];
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
     const { width, height } = bitmap;
     if (bitmap.close) bitmap.close();
     const ratio = width / height;
-    if (ratio < 1) warnings.push('La foto es vertical: en la portada solo se verá la franja central.');
-    else if (ratio < 1.3) warnings.push('La foto es casi cuadrada: se recortará arriba y abajo.');
-    if (width < 1000) warnings.push('Tiene poca resolución y puede verse borrosa en pantallas grandes.');
+    if (ratio < 1) problems.push('La foto es vertical (más alta que ancha).');
+    else if (ratio < COVER_MIN_RATIO) problems.push('La foto es casi cuadrada.');
+    if (width < COVER_MIN_WIDTH) problems.push(`La foto es muy pequeña (${width} px de ancho; como mínimo ${COVER_MIN_WIDTH}).`);
   } catch (e) {
     console.error('No se pudo revisar la portada:', e);
   }
-  return warnings;
+  return problems;
 };
 
 export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness, user, showToast, initialStep }) => {
@@ -3146,28 +3182,19 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
     }
   };
 
-  // Portada: si no es horizontal o tiene poca resolución, se enseña cómo quedará y se pregunta
-  const [coverReview, setCoverReview] = useState(null); // { file, previewUrl, warnings }
-  const closeCoverReview = () => {
-    if (coverReview?.previewUrl) URL.revokeObjectURL(coverReview.previewUrl);
-    setCoverReview(null);
-  };
+  // Portada: si no es horizontal o es muy pequeña, no se acepta y se explica cómo hacerla
+  const [coverReview, setCoverReview] = useState(null); // { problems }
+  const closeCoverReview = () => setCoverReview(null);
   const handleCoverSelected = async (file) => {
     if (!file) return;
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowed.includes(file.type)) { showToast('Solo se permiten imágenes JPG, PNG o WEBP', 'error'); return; }
-    const warnings = await checkCoverPhoto(file);
-    if (warnings.length === 0) {
-      await uploadPhotoToStorage(file, 'cover');
+    const problems = await checkCoverPhoto(file);
+    if (problems.length > 0) {
+      setCoverReview({ problems });
       return;
     }
-    const preview = await prepareImage(file, { cover: true });
-    setCoverReview({ file, previewUrl: URL.createObjectURL(preview), warnings });
-  };
-  const confirmCoverReview = async () => {
-    const file = coverReview?.file;
-    closeCoverReview();
-    if (file) await uploadPhotoToStorage(file, 'cover');
+    await uploadPhotoToStorage(file, 'cover');
   };
 
   const removePhoto = (index) => {
@@ -3641,6 +3668,9 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleCoverSelected(f); }} />
                 </label>
               </div>
+              <p className="text-xs text-gray-600 mt-2">
+                Portada: foto <strong>horizontal</strong> (con el móvil tumbado), normalmente la fachada o la entrada del negocio.
+              </p>
             </div>
 
             {/* Información Básica */}
@@ -4061,7 +4091,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                           {uploadingPhoto === 'cover' ? <div className="w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin" /> : <Plus className="text-primary" size={24} />}
                         </div>
                         <span className="text-sm font-medium text-gray-600">{uploadingPhoto === 'cover' ? 'Subiendo...' : 'Añadir Foto'}</span>
-                        <span className="text-xs text-gray-500">Portada · mejor en horizontal</span>
+                        <span className="text-xs text-gray-600 text-center px-2">Portada: foto horizontal de la fachada o la entrada</span>
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleCoverSelected(f); }} />
                       </label>
                     )}
@@ -4461,37 +4491,34 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
         </div>
       </div>
 
-      {/* Revisión de la portada: cómo quedará y por qué no es ideal */}
+      {/* La foto no sirve como portada: se explica y se pide otra */}
       {coverReview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cover-review-title">
           <div className="absolute inset-0 bg-black/50" onClick={closeCoverReview} />
           <div className="relative bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
             <div className="p-4 border-b border-gray-100">
-              <h3 id="cover-review-title" className="text-lg font-bold text-slate-900">Así quedará tu portada</h3>
-              <p className="text-xs text-gray-500 mt-1">La portada se muestra en horizontal (rectangular).</p>
+              <h3 id="cover-review-title" className="text-lg font-bold text-slate-900">Esta foto no sirve como portada</h3>
+              <p className="text-xs text-gray-600 mt-1">La portada tiene que ser horizontal para que ocupe todo el ancho en la app.</p>
             </div>
             <div className="p-4 space-y-3">
-              <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100">
-                <img src={coverReview.previewUrl} alt="Vista previa de la portada recortada" className="w-full h-full object-cover" />
-              </div>
               <ul className="space-y-1.5">
-                {coverReview.warnings.map(w => (
-                  <li key={w} className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                {coverReview.problems.map(w => (
+                  <li key={w} className="flex items-start gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                     <AlertCircle size={16} className="shrink-0 mt-0.5" />
                     <span>{w}</span>
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-gray-500">Consejo: haz la foto con el móvil en horizontal, por ejemplo de la fachada o del interior del local.</p>
+              <CoverPhotoExample />
             </div>
             <div className="p-4 pt-0 flex gap-2">
-              <label className="flex-1 h-11 rounded-xl border-2 border-gray-300 text-gray-700 font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-gray-50">
-                Elegir otra
+              <button onClick={closeCoverReview} className="flex-1 h-11 rounded-xl border-2 border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50">
+                Cancelar
+              </button>
+              <label className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-sm flex items-center justify-center cursor-pointer">
+                Elegir otra foto
                 <input type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; closeCoverReview(); handleCoverSelected(f); }} />
               </label>
-              <button onClick={confirmCoverReview} className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-sm">
-                Usar esta
-              </button>
             </div>
           </div>
         </div>
@@ -4632,6 +4659,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
     isFlash: false,
     isLimited: false,
     limitedUnits: 50,
+    codeValidHours: 24, // tiempo para canjear el código: 24, 48, 72 o null (hasta que acabe la oferta)
     image: null,
   });
   const [isPublishing, setIsPublishing] = useState(false);
@@ -4745,6 +4773,7 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
         isFlash: formData.isFlash,
         isLimited: formData.isLimited,
         limitedUnits: formData.isLimited ? formData.limitedUnits : null,
+        codeValidHours: formData.isFlash ? null : formData.codeValidHours,
         usedUnits: 0,
         image: formData.image,
         businessName: businessData?.name || 'Mi Negocio',
@@ -5077,6 +5106,43 @@ export const CreateOfferScreen = ({ onNavigate, businessData, onCreateOffer, use
           )}
         </div>
 
+        {/* Tiempo para canjear el código */}
+        <fieldset className="bg-white rounded-2xl p-4 border border-gray-200">
+          <legend className="sr-only">Tiempo para canjear el código</legend>
+          <h4 className="text-sm font-bold text-slate-900">Tiempo para canjear el código</h4>
+          {formData.isFlash ? (
+            <p className="text-xs text-gray-600 mt-1">En las ofertas flash el código vale hasta que termina la oferta (8 horas).</p>
+          ) : (
+            <>
+              <p className="text-xs text-gray-600 mt-1 mb-3">
+                Desde que el cliente saca su código. Si no lo canjea a tiempo, caduca y el cupón vuelve a estar disponible para otro cliente.
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {[{ v: 24, l: '24 h' }, { v: 48, l: '48 h' }, { v: 72, l: '72 h' }, { v: null, l: 'Hasta el final' }].map(opt => (
+                  <label
+                    key={String(opt.v)}
+                    className={`cursor-pointer rounded-xl border-2 px-1 py-2.5 text-center text-xs font-semibold transition-colors ${
+                      formData.codeValidHours === opt.v ? 'border-primary bg-primary/5 text-primary-dark' : 'border-gray-200 text-slate-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="code-valid-hours"
+                      checked={formData.codeValidHours === opt.v}
+                      onChange={() => handleChange('codeValidHours', opt.v)}
+                      className="sr-only"
+                    />
+                    {opt.l}
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+          <p className="text-[11px] text-gray-600 mt-3">
+            Valida siempre los códigos en la app (Validar código): así cada canje queda apuntado en tu oferta.
+          </p>
+        </fieldset>
+
         {/* Vista Previa */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -5226,6 +5292,7 @@ export const ValidateCodeScreen = ({ onNavigate, user, showToast }) => {
           <Ticket className="text-primary shrink-0 mt-0.5" size={20} />
           <p className="text-sm text-primary-dark font-medium leading-relaxed">
             El cliente te muestra un código en su móvil (ej. <span className="font-mono font-bold">CL-A7X3</span>). Introdúcelo aquí para validar el descuento y que quede registrado.
+            Valida siempre aquí: cada canje cuenta en tu oferta y en tus estadísticas, y los códigos caducados ya no se aceptan.
           </p>
         </div>
 
@@ -5259,8 +5326,8 @@ export const ValidateCodeScreen = ({ onNavigate, user, showToast }) => {
               </div>
               <p className="font-bold text-green-800 text-lg">¡Código válido!</p>
               <p className="text-green-700 font-semibold">{result.offer_title}</p>
-              <p className="text-green-600 text-sm">Descuento: <span className="font-bold">{result.discount}</span></p>
-              <p className="text-green-500 text-sm">Cliente: {result.user_name}</p>
+              <p className="text-green-700 text-sm">Descuento: <span className="font-bold">{result.discount}</span></p>
+              <p className="text-green-700 text-sm">Cliente: {result.user_name}</p>
             </div>
           ) : (
             <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center space-y-2">
@@ -5268,7 +5335,7 @@ export const ValidateCodeScreen = ({ onNavigate, user, showToast }) => {
                 <XCircle className="text-red-500" size={28} />
               </div>
               <p className="font-bold text-red-700">Código no válido</p>
-              <p className="text-red-500 text-sm">{result.error}</p>
+              <p className="text-red-700 text-sm">{result.error}</p>
             </div>
           )
         )}
@@ -5350,7 +5417,7 @@ export const BusinessOwnerDashboard = ({
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="text-xl font-bold">{businessData?.name || 'Mi Negocio'}</h3>
                 {businessData?.is_verified && (
-                  <BadgeCheck className="text-white fill-white" size={20} />
+                  <BadgeCheck className="text-primary fill-white shrink-0" size={20} aria-label="Verificado" />
                 )}
               </div>
               <p className="text-sm text-white/80">{businessData?.subcategory || 'Comercio local'}</p>
@@ -5397,6 +5464,20 @@ export const BusinessOwnerDashboard = ({
         <div>
           <h4 className="text-sm font-bold text-slate-700 mb-3 px-1">Acciones Rápidas</h4>
           <div className="grid grid-cols-2 gap-3">
+            {/* Lo que más se usa en la tienda: validar el código del cliente */}
+            <button
+              onClick={() => onNavigate('validate-code')}
+              className="col-span-2 bg-green-700 text-white rounded-xl p-4 flex items-center gap-3 hover:bg-green-800 transition-colors shadow-sm text-left"
+            >
+              <div className="w-12 h-12 bg-white/15 rounded-full flex items-center justify-center shrink-0">
+                <Ticket className="text-white" size={24} aria-hidden="true" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="block text-base font-bold">Validar código</span>
+                <span className="block text-xs text-white">Cuando un cliente te enseñe su cupón</span>
+              </div>
+              <ChevronRight className="text-white/80" size={20} aria-hidden="true" />
+            </button>
             <button
               onClick={() => onNavigate('create-job-offer')}
               className="bg-white rounded-xl p-4 flex flex-col items-center gap-3 hover:shadow-md transition-shadow border border-gray-100"
@@ -5517,21 +5598,6 @@ export const BusinessOwnerDashboard = ({
               <ChevronRight className="text-slate-500" size={20} />
             </button>
 
-            <button
-              onClick={() => onNavigate('validate-code')}
-              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-amber-100 p-2 rounded-lg text-amber-600 group-hover:text-amber-700 transition-colors">
-                  <Ticket size={20} />
-                </div>
-                <div>
-                  <span className="font-medium text-slate-700 block">Validar código</span>
-                  <span className="text-xs text-slate-500">Canjear descuento de cliente</span>
-                </div>
-              </div>
-              <ChevronRight className="text-slate-500" size={20} />
-            </button>
           </div>
         </div>
 
@@ -5752,7 +5818,7 @@ export const BusinessStatsScreen = ({
         {/* KPIs principales — filtrados por período */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { icon: <Users size={20} />, color: 'bg-primary/10 text-primary-dark', value: periodApplications, label: 'Candidaturas', sub: pendingApplications > 0 ? `${pendingApplications} pendientes` : null, subColor: 'text-amber-700' },
+            { icon: <Users size={20} />, color: 'bg-primary/10 text-primary-dark', value: periodApplications, label: 'Candidaturas', sub: pendingApplications > 0 ? (pendingApplications === 1 ? '1 pendiente' : `${pendingApplications} pendientes`) : null, subColor: 'text-amber-700' },
             { icon: <FileText size={20} />, color: 'bg-purple-100 text-purple-600', value: periodBudgets, label: 'Presupuestos', sub: newBudgets > 0 ? `${newBudgets} nuevos` : null, subColor: 'text-green-700' },
             { icon: <Eye size={20} />, color: 'bg-green-100 text-green-600', value: businessViews, label: 'Vistas negocio', sub: `${totalViews} total`, subColor: 'text-gray-500' },
             { icon: <MousePointerClick size={20} />, color: 'bg-cyan-100 text-cyan-600', value: businessClicks, label: 'Clics', sub: `tel · web · mapa`, subColor: 'text-gray-500' },

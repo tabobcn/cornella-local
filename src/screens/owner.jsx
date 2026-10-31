@@ -3562,7 +3562,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   <span>
                     <span className="block text-sm font-semibold text-slate-900">Quiero que @cornella_informa anuncie mi negocio, para que llegue a más personas</span>
                     <span className="block text-xs text-gray-500 mt-0.5 leading-relaxed">
-                      Gratis y voluntario. Podremos publicar en Instagram el nombre, la categoría, el barrio y la foto de portada de tu negocio. Puedes quitar el permiso cuando quieras: no publicaremos nada nuevo y, si nos lo pides, borraremos lo publicado.
+                      Gratis y voluntario. Podremos publicar en Instagram el nombre, la categoría, el barrio y la foto de portada de tu negocio. Puedes quitar el permiso cuando quieras: no publicaremos nada nuevo y borraremos lo publicado en 30 días como máximo.
                     </span>
                   </span>
                 </label>

@@ -143,11 +143,13 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
         'Candidaturas a empleos — nombre, email, teléfono, carta y CV: para enviarlas al negocio de la oferta. Desde que las recibe, ese negocio es responsable de tus datos para su proceso de selección. Base: medidas previas a un contrato que pides tú.',
         'Si tienes un negocio — los datos de la ficha (nombre, dirección, teléfono, horario, fotos...): para publicarla. La web la pedimos para la verificación, pero no se muestra. Base: contrato.',
         'Documentos de verificación (alta de autónomo o modelo 036/037, factura o recibo a nombre del negocio, licencia...): para comprobar que el negocio es tuyo y evitar suplantaciones. No hace falta el DNI; si lo envías, tapa la foto y el número de soporte. Base: interés legítimo en evitar fraudes (art. 6.1.f).',
-        'Difusión en Instagram (@cornella_informa) — solo si marcas la casilla: para anunciar tu negocio con su nombre, categoría, barrio y foto de portada. Base: tu consentimiento (art. 6.1.a), que puedes retirar en Editar negocio; si nos lo pides, borraremos lo publicado.',
+        'Difusión en Instagram (@cornella_informa) — solo si marcas la casilla: para anunciar tu negocio con su nombre, categoría, barrio y foto de portada. Base: tu consentimiento (art. 6.1.a), que puedes retirar en Editar negocio; si lo retiras, borraremos lo publicado en 30 días como máximo.',
         'Notificaciones push — solo si las activas: guardamos la suscripción técnica de tu navegador para enviarte avisos. Base: consentimiento; las desactivas en Ajustes cuando quieras.',
         'Ubicación — solo si pulsas «Más cerca de ti»: se usa en tu móvil para ordenar los negocios por distancia; no se guarda ni nos llega.',
         'Denuncias y mensajes de soporte: para atenderte y moderar la plataforma. Base: interés legítimo y las obligaciones del Reglamento de Servicios Digitales.',
         'Estadísticas — visitas y clics en las fichas, para que cada negocio vea sus números: a los 90 días se quita a qué usuario corresponde cada dato. La analítica de Vercel solo se activa si aceptas en el aviso de cookies. Base: interés legítimo y, para la analítica, consentimiento.',
+        'Datos técnicos (dirección IP, navegador, fecha y hora) en los registros de Supabase y Vercel: para la seguridad y evitar abusos. Base: interés legítimo.',
+        'Los campos marcados con * son necesarios para esa función: sin ellos no podrás usarla. El resto son opcionales.',
         'No vendemos tus datos, no hacemos publicidad personalizada ni tomamos decisiones automáticas con efectos sobre ti. El único filtro automático revisa las reseñas (insultos, spam, teléfonos o emails) y solo impide publicarlas: puedes reescribirla o escribirnos.',
       ]
     },
@@ -163,6 +165,7 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
         'Candidaturas, solicitudes de presupuesto (con sus respuestas) y cupones: 12 meses.',
         'Avisos de la app: los leídos, a los 90 días; todos, a los 6 meses.',
         'Denuncias cerradas y mensajes de soporte: 12 meses.',
+        'Dispositivos con las notificaciones desactivadas: 30 días.',
         'Altas de negocio que se quedan en borrador sin tocar: 6 meses.',
         'Estadísticas de visitas: anónimas a los 90 días; se borran a los 24 meses.',
         'Reseñas: mientras exista el negocio o hasta que las borres.',
@@ -193,8 +196,8 @@ export const PrivacyPolicyScreen = ({ onNavigate }) => {
       title: 'Tus derechos y cómo ejercerlos',
       content: 'Puedes ejercerlos gratis y en cualquier momento. Lo más habitual lo haces tú mismo desde la app:',
       bullets: [
-        'Acceso y portabilidad: Ajustes → «Descargar mis datos» te da un archivo con todo lo que guardamos de ti.',
-        'Supresión: Ajustes → «Borrar mi cuenta» borra tu cuenta y tus datos (los archivos, en 7 días como máximo). Si tu cuenta está suspendida, pídelo por email y lo valoraremos.',
+        'Acceso y portabilidad: Ajustes → «Descargar mis datos» te da un archivo con tus datos de la app. Si quieres también copia de tus archivos (fotos, CV) o de los registros técnicos, escríbenos.',
+        'Supresión: Ajustes → «Borrar mi cuenta» borra tu cuenta y tus datos (los archivos, en 7 días como máximo). Si tu cuenta está suspendida, pídelo por email: te contestaremos en un mes como máximo y la borraremos, salvo algún dato que debamos conservar para atender una reclamación.',
         'Rectificación: cambia tu nombre y tu foto en Editar perfil, y la ficha de tu negocio en Editar negocio.',
         'Retirar el consentimiento: Instagram (Editar negocio), notificaciones (Ajustes) y cookies (Ajustes → Preferencias de cookies). Retirarlo no afecta a lo que se hizo antes.',
         'Oposición y limitación: por ejemplo, a las estadísticas o a la revisión de documentos.',
@@ -349,7 +352,7 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
       title: 'Objeto y condiciones de uso',
       content: 'Cornellà Local es una plataforma que conecta a los vecinos de Cornellà de Llobregat con el comercio local: fichas de negocios, ofertas con cupón, solicitudes de presupuesto y ofertas de empleo.',
       bullets: [
-        'El uso de la plataforma implica aceptar este Aviso legal, los Términos y condiciones y la Política de privacidad.',
+        'El uso de la plataforma implica aceptar este Aviso legal y los Términos y condiciones. Cómo tratamos los datos se explica en la Política de privacidad.',
         'El acceso y la publicación de negocios verificados son gratuitos.',
         'Las normas de uso, las condiciones para negocios y la moderación se explican en los Términos y condiciones.',
       ]
@@ -392,7 +395,6 @@ export const LegalNoticeScreen = ({ onNavigate }) => {
       content: 'Este sitio se rige por la legislación española.',
       bullets: [
         'Si eres consumidor, serán competentes los juzgados de tu domicilio (art. 90.2 del texto refundido de la Ley General para la Defensa de los Consumidores y Usuarios).',
-        'Si no eres consumidor, los juzgados de Barcelona.',
       ]
     },
   ];
@@ -500,10 +502,10 @@ export const CookiesPolicyScreen = ({ onNavigate, showToast }) => {
       title: 'Qué usamos exactamente',
       content: 'Usamos lo mínimo. Lo imprescindible no necesita tu permiso; lo demás solo se activa si lo aceptas:',
       bullets: [
-        'Imprescindible — sesión: Supabase guarda en el almacenamiento local de tu navegador el identificador de tu sesión para que no tengas que entrar cada vez.',
-        'Imprescindible — preferencias: tu elección sobre cookies, las búsquedas recientes, si has visto la bienvenida, si has desactivado las notificaciones y el aviso de instalar la app. Todo se queda en tu navegador.',
+        'Imprescindible — sesión: Supabase guarda en el almacenamiento local de tu navegador el identificador de tu sesión para que no tengas que entrar cada vez. Dura hasta que cierres sesión.',
+        'Imprescindible — preferencias: tu elección sobre cookies, las búsquedas recientes, si has visto la bienvenida, si has desactivado las notificaciones y el aviso de instalar la app. Todo se queda en tu navegador hasta que lo borres.',
         'Solo si aceptas — analítica de Vercel: cuenta visitas de forma anónima y sin cookies. Aun así, solo se activa con «Aceptar todas».',
-        'Solo si aceptas — Google Maps: el mapa de cada negocio instala cookies de Google. Se carga si pulsas «Aceptar todas» o si tocas «Mostrar mapa» en esa ficha.',
+        'Solo si aceptas — Google Maps: el mapa de cada negocio instala cookies de Google (algunas duran hasta 6 meses, según Google). Se carga si pulsas «Aceptar todas» o si tocas «Mostrar mapa» en esa ficha.',
         'Si usas el inicio de sesión con Google, Google usa sus propias cookies en su página durante el acceso.',
         'Notificaciones push: no usan cookies. Si las activas, el servicio de avisos de tu navegador (Google, Mozilla o Apple) recibe el aviso cifrado para entregarlo.',
         'La letra de la web está alojada en nuestro dominio: no usamos Google Fonts ni publicidad.',

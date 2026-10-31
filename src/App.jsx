@@ -6425,6 +6425,11 @@ const BusinessDetailPage = ({ businessId, onNavigate, returnTo, returnParams, us
                   </div>
                 </div>
               ))}
+              {/* Cómo se controlan las reseñas (normativa de consumo: decir si se verifican y cómo) */}
+              <p className="text-xs text-gray-500 leading-relaxed pt-1">
+                Reseñas de vecinos con email verificado y al menos 30 días en la app (1 por negocio). No comprobamos que
+                hayan comprado o contratado en el negocio. ¿Ves una reseña falsa? Escríbenos a cornellalocal@gmail.com.
+              </p>
             </div>
 
           </div>
@@ -10019,7 +10024,7 @@ const CookieBanner = ({ onNavigate }) => {
                 onClick={() => onNavigate('cookies-policy')}
                 className="text-primary font-medium underline"
               >
-                Configurar / más info
+                Más información
               </button>
             </p>
           </div>
@@ -12051,7 +12056,7 @@ export default function App() {
               setUser(null);
               setCurrentPage('login');
               showToast(
-                `Tu cuenta está suspendida${data.ban_reason ? `. Motivo: ${data.ban_reason}` : ''}. Si no estás de acuerdo, escríbenos a cornellalocal@gmail.com y lo revisaremos.`,
+                `Tu cuenta está suspendida${data.ban_reason ? `. Motivo: ${data.ban_reason}` : ''}. Si no estás de acuerdo, escríbenos a cornellalocal@gmail.com y lo revisaremos (también puedes acudir a los tribunales).`,
                 'error'
               );
               return;

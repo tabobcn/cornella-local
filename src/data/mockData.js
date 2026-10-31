@@ -694,7 +694,7 @@ export const termsAndConditions = {
       id: 1,
       title: "Qué es Cornellà Local",
       icon: "FileText",
-      content: "Cornellà Local (cornellalocal.es) es una plataforma gratuita y sin ánimo de lucro creada por Carlos Taboada Valencia (NIF 46462083J) para que los vecinos de Cornellà de Llobregat descubran el comercio del barrio: fichas de negocios, ofertas con cupón, presupuestos y ofertas de empleo. Al usarla aceptas estos términos, junto con el Aviso legal y la Política de privacidad.",
+      content: "Cornellà Local (cornellalocal.es) es una plataforma gratuita y sin ánimo de lucro creada por Carlos Taboada Valencia (NIF 46462083J) para que los vecinos de Cornellà de Llobregat descubran el comercio del barrio: fichas de negocios, ofertas con cupón, presupuestos y ofertas de empleo. Al usarla aceptas estos términos y el Aviso legal. Cómo tratamos tus datos se explica en la Política de privacidad.",
       bullets: [
         "Es gratis para vecinos y negocios, y no cobramos comisiones por nada de lo que contratéis entre vosotros.",
         "Cornellà Local solo pone en contacto a vecinos y negocios: no vende productos ni presta los servicios de los negocios.",
@@ -739,8 +739,10 @@ export const termsAndConditions = {
         "Revisamos la solicitud (normalmente en 1 o 2 días). Si la aprobamos, el negocio se publica al momento y te avisamos con los siguientes pasos. Si la rechazamos, te decimos el motivo y puedes corregirla y volver a enviarla.",
         "Te comprometes a que la información sea verdadera y esté al día (horario, dirección, cierres, precios) y a tener derecho a usar las fotos, logos y marcas que subes, con permiso de las personas que aparezcan en ellas.",
         "La web del negocio se pide para la verificación, pero no se muestra en la ficha.",
-        "Difusión en Instagram (@cornella_informa): solo si marcas la casilla. Es gratis y puedes quitar el permiso cuando quieras.",
+        "Difusión en Instagram (@cornella_informa): solo si marcas la casilla. Es gratis y puedes quitar el permiso cuando quieras; entonces borraremos lo publicado en 30 días como máximo.",
         "Podemos rechazar o retirar un negocio, o suspender una cuenta, si incumple estos términos: información falsa, ofertas engañosas, cupones que no se respetan, contenido ilegal o que no sea el dueño. Siempre te diremos el motivo y podrás reclamar escribiendo a cornellalocal@gmail.com.",
+        "Salvo incumplimientos graves o repetidos, o si una ley nos obliga, te avisaremos con 30 días de antelación antes de retirar definitivamente tu negocio.",
+        "Como negocio puedes ver las estadísticas de tu ficha, las candidaturas a tus empleos, las solicitudes de presupuesto de tu oficio (el teléfono, solo si te aceptan) y los cupones canjeados.",
         "Las condiciones para negocios solo cambiarán con al menos 15 días de aviso, salvo que una ley obligue a hacerlo antes.",
       ],
     },
@@ -753,7 +755,7 @@ export const termsAndConditions = {
         "Cada negocio puede publicar 1 oferta cada 7 días, contando desde la última que publicó aunque la haya borrado. Así las ofertas son pocas y de verdad. Una oferta normal dura 5 días y una oferta flash, 8 horas; una vez publicada no se pueden cambiar sus fechas ni sus cupones, solo pausarla. La foto es obligatoria.",
         "Los cupones son limitados: el negocio decide cuántos hay, cada persona puede sacar 1 código por oferta y, cuando se acaban, no se entregan más.",
         "El negocio debe respetar en su local los códigos que ha entregado mientras la oferta esté vigente, y es el responsable de las condiciones y los precios que anuncia.",
-        "Las ofertas de empleo deben cumplir la ley laboral y no pueden discriminar. El negocio recibe las candidaturas, decide y es responsable de los datos de los candidatos durante su selección. Los CV se borran solos al terminar el proceso.",
+        "Las ofertas de empleo deben cumplir la ley laboral y no pueden discriminar. El negocio recibe las candidaturas, decide y es responsable de los datos de los candidatos durante su selección. Los CV se borran solos al terminar el proceso, y el negocio solo puede usar los datos de los candidatos para esa selección, sin guardar copias al terminar.",
       ],
     },
     {
@@ -788,7 +790,7 @@ export const termsAndConditions = {
       bullets: [
         "Para reseñar necesitas el email verificado y al menos 30 días de antigüedad en la app.",
         "Máximo 1 reseña por negocio y 2 por semana. Puedes editarla una vez o borrarla.",
-        "El dueño no puede reseñar su propio negocio, pero sí responder públicamente.",
+        "El dueño no puede reseñar su propio negocio.",
         "Un filtro automático impide publicar insultos, spam, teléfonos o emails.",
         "No comprobamos que hayas comprado o contratado en el negocio: estas reglas sirven para reducir las reseñas falsas. No borramos reseñas negativas legítimas porque lo pida el negocio, pero sí las falsas o las que incumplen estas normas.",
       ],
@@ -801,8 +803,9 @@ export const termsAndConditions = {
       bullets: [
         "Una persona revisa cada aviso y te contestamos dentro de la app con lo que hemos decidido.",
         "Si retiramos un contenido, un negocio o suspendemos una cuenta, explicamos el motivo a la persona afectada.",
-        "Si no estás de acuerdo con una decisión, escríbenos a cornellalocal@gmail.com y la volveremos a revisar.",
-        "Si detectamos algo que pueda suponer un delito grave contra la vida o la seguridad de las personas, lo comunicaremos a las autoridades.",
+        "Para denunciar una reseña concreta, escríbenos a cornellalocal@gmail.com indicando el negocio y la reseña; no hace falta tener cuenta.",
+        "Si no estás de acuerdo con una decisión, escríbenos a cornellalocal@gmail.com y la volveremos a revisar. También puedes acudir a los tribunales.",
+        "Si detectamos algo que pueda suponer un delito que amenace la vida o la seguridad de las personas, lo comunicaremos a las autoridades.",
         "Punto de contacto para usuarios y autoridades (Reglamento de Servicios Digitales): cornellalocal@gmail.com, en castellano, catalán o inglés.",
       ],
     },
@@ -854,7 +857,6 @@ export const termsAndConditions = {
       bullets: [
         "Antes de ir a los tribunales, escríbenos a cornellalocal@gmail.com e intentaremos resolverlo.",
         "Si eres consumidor, serán competentes los juzgados de tu domicilio (art. 90.2 del texto refundido de la Ley General para la Defensa de los Consumidores y Usuarios).",
-        "Si no eres consumidor, los juzgados de Barcelona.",
       ],
     },
     {

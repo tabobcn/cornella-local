@@ -744,6 +744,7 @@ export const termsAndConditions = {
         "Podemos rechazar o retirar un negocio, o suspender una cuenta, si incumple estos términos: información falsa, ofertas engañosas, cupones que no se respetan, contenido ilegal o que no sea el dueño. Siempre te diremos el motivo y podrás reclamar escribiendo a cornellalocal@gmail.com.",
         "Salvo incumplimientos graves o repetidos, o si una ley nos obliga, te avisaremos con 30 días de antelación antes de retirar definitivamente tu negocio.",
         "Como negocio puedes ver las estadísticas de tu ficha, las candidaturas a tus empleos, las solicitudes de presupuesto de tu oficio (el teléfono, solo si te aceptan) y los cupones canjeados.",
+        "Te enviaremos avisos en la app (y notificaciones push si las tienes activadas) con información del servicio: novedades, cambios en estas condiciones o incidencias. No son publicidad.",
         "Las condiciones para negocios solo cambiarán con al menos 15 días de aviso, salvo que una ley obligue a hacerlo antes.",
       ],
     },

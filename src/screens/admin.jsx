@@ -1,5 +1,5 @@
 // Generado al dividir App.jsx: pantallas "admin" (se cargan bajo demanda con React.lazy)
-import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Calendar, Camera, Check, CheckCircle2, ChevronRight, Clock, Copy, ExternalLink, Eye, FileText, Flag, Globe, Heart, Lightbulb, Mail, MessageCircle, MessageSquare, MousePointerClick, Phone, RefreshCw, Search, ShieldAlert, Sparkles, Star, Store, Trash2, TrendingUp, UserCheck, UserX, Users, X, XCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Calendar, Camera, Check, CheckCircle2, ChevronRight, Clock, Copy, ExternalLink, Eye, FileText, Flag, Globe, Heart, Info, Lightbulb, Mail, Megaphone, MessageCircle, MessageSquare, MousePointerClick, Phone, RefreshCw, Search, ShieldAlert, Sparkles, Star, Store, Trash2, TrendingUp, UserCheck, UserX, Users, X, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { copyToClipboard } from '../utils/helpers';
 import { useEffect, useState } from 'react';
@@ -498,6 +498,14 @@ export const AdminDashboard = ({ onNavigate, user }) => {
       color: 'purple',
       badge: stats.pendingSupport,
       route: 'admin-support'
+    },
+    {
+      id: 'broadcast',
+      title: 'Avisar a los negocios',
+      description: 'Un mensaje a todos los negocios verificados',
+      icon: Megaphone,
+      color: 'blue',
+      route: 'admin-broadcast'
     },
     {
       id: 'reviews',
@@ -2016,9 +2024,9 @@ const TabButtons = ({ tabs, value, onChange }) => (
   </div>
 );
 
-const MissingSqlNotice = () => (
+const MissingSqlNotice = ({ file = 'panel-admin-servicios.sql' }) => (
   <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-    Falta ejecutar <strong>supabase/panel-admin-servicios.sql</strong> en el SQL Editor de Supabase.
+    Falta ejecutar <strong>supabase/{file}</strong> en el SQL Editor de Supabase.
   </div>
 );
 
@@ -2905,6 +2913,240 @@ export const AdminReviewsScreen = ({ onNavigate, showToast }) => {
                 className="flex-1 h-12 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-60"
               >
                 {removing ? 'Retirando…' : 'Retirar reseña'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Avisar a todos los negocios verificados (aviso en la app + push)
+// SQL: supabase/avisos-negocios.sql
+// ---------------------------------------------------------------------------
+const BROADCAST_TITLE_MAX = 80;
+const BROADCAST_MESSAGE_MAX = 600;
+
+export const AdminBroadcastScreen = ({ onNavigate, showToast }) => {
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [withPush, setWithPush] = useState(true);
+  const [ownerCount, setOwnerCount] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [missingSql, setMissingSql] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const loadHistory = async () => {
+    const { data, error } = await supabase
+      .from('admin_broadcasts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) {
+      if (isMissingDbObject(error)) setMissingSql(true);
+      else console.error('Error cargando avisos enviados:', error);
+      return;
+    }
+    setHistory(data || []);
+  };
+
+  useEffect(() => {
+    const loadOwners = async () => {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('verification_status', 'approved')
+        .limit(2000);
+      if (error) {
+        console.error('Error contando negocios verificados:', error);
+        return;
+      }
+      setOwnerCount(new Set((data || []).map(b => b.owner_id).filter(Boolean)).size);
+    };
+    loadOwners();
+    loadHistory();
+  }, []);
+
+  const cleanTitle = title.trim();
+  const cleanMessage = message.trim();
+  const isValid = cleanTitle.length >= 3 && cleanMessage.length >= 3;
+
+  const handleSend = async () => {
+    if (!isValid || sending) return;
+    setSending(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_send_business_broadcast', {
+        p_title: cleanTitle,
+        p_message: cleanMessage,
+        p_with_push: withPush,
+      });
+      if (error) {
+        if (isMissingDbObject(error)) {
+          setMissingSql(true);
+          showToast('Falta ejecutar supabase/avisos-negocios.sql', 'error');
+          return;
+        }
+        throw error;
+      }
+      if (!data?.success) {
+        const messages = {
+          too_soon: 'Acabas de enviar un aviso. Espera 2 minutos para enviar otro.',
+          bad_title: 'El título debe tener entre 3 y 80 caracteres.',
+          bad_message: 'El mensaje debe tener entre 3 y 600 caracteres.',
+          forbidden: 'Solo un administrador puede enviar avisos.',
+        };
+        showToast(messages[data?.error] || 'No se pudo enviar el aviso', 'error');
+        return;
+      }
+      showToast(
+        `Aviso enviado a ${data.recipients} ${data.recipients === 1 ? 'negocio' : 'negocios'}`
+          + (withPush ? ` (push a ${data.push_sent} ${data.push_sent === 1 ? 'dispositivo' : 'dispositivos'})` : ''),
+        'success'
+      );
+      setTitle('');
+      setMessage('');
+      loadHistory();
+    } catch (error) {
+      console.error('Error enviando aviso a negocios:', error);
+      showToast('No se pudo enviar el aviso', 'error');
+    } finally {
+      setSending(false);
+      setConfirming(false);
+    }
+  };
+
+  const countText = ownerCount === null ? 'los negocios verificados' : `${ownerCount} ${ownerCount === 1 ? 'negocio' : 'negocios'}`;
+
+  return (
+    <>
+      <div className="mx-auto min-h-screen w-full max-w-md bg-gray-50">
+        <AdminHeader title="Avisar a los negocios" subtitle="Aviso en la app y notificación push" onBack={() => onNavigate('admin-dashboard')} />
+
+        <div className="p-4 pb-24 space-y-4">
+          {missingSql && <MissingSqlNotice file="avisos-negocios.sql" />}
+
+          <p className="text-xs text-slate-700 bg-blue-50 border border-blue-100 rounded-lg p-3 leading-relaxed">
+            Llega a los dueños de todos los negocios verificados (uno por dueño, aunque tenga varios negocios).
+            Úsalo para información del servicio: novedades, cambios en las condiciones o incidencias. Para ofrecer
+            tus servicios de web o vídeo usa <button type="button" onClick={() => onNavigate('admin-services')} className="font-semibold text-primary-dark underline">Servicios</button>: solo a quien dio permiso.
+          </p>
+
+          <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="broadcast-title" className="text-sm font-semibold text-slate-700">Título</label>
+                <span className="text-[11px] text-gray-500">{title.length}/{BROADCAST_TITLE_MAX}</span>
+              </div>
+              <input
+                id="broadcast-title"
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                maxLength={BROADCAST_TITLE_MAX}
+                placeholder="Ej.: Novedad en Cornellà Local"
+                className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="broadcast-message" className="text-sm font-semibold text-slate-700">Mensaje</label>
+                <span className="text-[11px] text-gray-500">{message.length}/{BROADCAST_MESSAGE_MAX}</span>
+              </div>
+              <textarea
+                id="broadcast-message"
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                maxLength={BROADCAST_MESSAGE_MAX}
+                rows={5}
+                placeholder="Ej.: Desde hoy podéis responder a los presupuestos con fotos. Lo tenéis en Panel → Presupuestos."
+                className="w-full rounded-xl border border-gray-200 p-3 text-sm text-slate-900 placeholder:text-gray-500 focus:border-primary focus:outline-none"
+              />
+            </div>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={withPush}
+                onChange={e => setWithPush(e.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-slate-700">
+                Enviar también notificación push
+                <span className="block text-xs text-gray-500">Solo llega a quien tiene las notificaciones activadas. Si no, lo verán en la campana al entrar.</span>
+              </span>
+            </label>
+          </div>
+
+          {isValid && (
+            <div>
+              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Así lo verán</h2>
+              <div className="bg-white rounded-xl p-4 shadow-sm flex items-start gap-3">
+                <div className="shrink-0 w-10 h-10 rounded-full bg-blue-700 text-white flex items-center justify-center">
+                  <Info size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-slate-900 break-words">{cleanTitle}</div>
+                  <p className="text-sm text-gray-600 mt-1 whitespace-pre-line break-words">{cleanMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={() => setConfirming(true)}
+            disabled={!isValid || sending || missingSql}
+            className="w-full h-12 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+          >
+            <Megaphone size={18} /> Enviar a {countText}
+          </button>
+
+          {history.length > 0 && (
+            <section aria-labelledby="broadcast-history-title">
+              <h2 id="broadcast-history-title" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Avisos enviados</h2>
+              <div className="space-y-2">
+                {history.map(h => (
+                  <article key={h.id} className="bg-white rounded-xl p-3 shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-bold text-slate-900 break-words">{h.title}</h3>
+                      <span className="text-[11px] text-gray-500 shrink-0">{formatDateTime(h.created_at)}</span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1 line-clamp-3 whitespace-pre-line">{h.message}</p>
+                    <p className="text-[11px] text-slate-700 mt-1">
+                      Llegó a {h.recipients} {h.recipients === 1 ? 'negocio' : 'negocios'}
+                      {h.with_push ? ` · push a ${h.push_sent} ${h.push_sent === 1 ? 'dispositivo' : 'dispositivos'}` : ' · sin push'}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+
+      {confirming && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="broadcast-confirm-title">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className="text-center">
+              <h3 id="broadcast-confirm-title" className="text-lg font-bold text-slate-900 mb-1">¿Enviar el aviso ahora?</h3>
+              <p className="text-sm text-gray-600">
+                Llegará a {countText}{withPush ? ' y a sus móviles con las notificaciones activadas' : ''}. No se puede deshacer.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirming(false)}
+                className="flex-1 h-12 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={sending}
+                className="flex-1 h-12 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition-colors disabled:opacity-60"
+              >
+                {sending ? 'Enviando…' : 'Enviar'}
               </button>
             </div>
           </div>

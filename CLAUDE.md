@@ -304,6 +304,11 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   `run_site_rebuild()` apuntan cada ejecución en `system_job_log`; `collect_system_job_results()` (cron
   `recoger-resultados`, cada hora) recoge la respuesta de pg_net y avisa a los admins (`system_job_failed`) si falla.
 - **Antes de cobrar** por web/vídeo: revisar textos legales (dicen "sin ánimo de lucro") y situación fiscal.
+- **Panel → Avisar a los negocios** (`admin-broadcast`, SQL `supabase/avisos-negocios.sql`): RPC
+  `admin_send_business_broadcast(título ≤80, mensaje ≤600, push)` → aviso `admin_broadcast` a cada dueño de negocio
+  aprobado (uno por dueño, sin suspendidos) + push opcional a `?nav=notifications`; historial en `admin_broadcasts`
+  (solo admins); bloquea un segundo envío en 2 minutos. Solo información del servicio, nunca publicidad propia.
+- Los avisos de la campana se muestran enteros (antes se cortaban a 2 líneas y no se leían los motivos).
 - **Fallos corregidos**: (1) pulsar un aviso no lo borraba de la BD porque se comprobaba que el id fuera UUID y
   `notifications.id` es un número → al reabrir la app volvía el "1". Ahora los avisos solo de pantalla llevan
   `isLocal`. (2) Los enlaces `?nav=...` (los de los push) acababan en Inicio al abrir la app en frío con sesión:

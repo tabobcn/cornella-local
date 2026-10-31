@@ -101,6 +101,7 @@ const ReportsScreen = lazyNamed(loadAdminScreens, 'ReportsScreen');
 const AdminServicesScreen = lazyNamed(loadAdminScreens, 'AdminServicesScreen');
 const AdminInstagramScreen = lazyNamed(loadAdminScreens, 'AdminInstagramScreen');
 const AdminReviewsScreen = lazyNamed(loadAdminScreens, 'AdminReviewsScreen');
+const AdminBroadcastScreen = lazyNamed(loadAdminScreens, 'AdminBroadcastScreen');
 const loadLegalScreens = () => import('./screens/legal.jsx');
 const TermsScreen = lazyNamed(loadLegalScreens, 'TermsScreen');
 const PrivacyPolicyScreen = lazyNamed(loadLegalScreens, 'PrivacyPolicyScreen');
@@ -2119,14 +2120,14 @@ const PAGE_TITLES = {
   'validate-code': 'Validar cupón', 'admin-dashboard': 'Administración', 'admin-all-businesses': 'Todos los negocios',
   'admin-approve-businesses': 'Aprobar negocios', 'admin-users': 'Usuarios', 'admin-support': 'Soporte',
   'business-analytics': 'Analítica', 'admin-reports': 'Denuncias', 'admin-services': 'Servicios web y vídeo',
-  'admin-instagram': 'Instagram', 'admin-reviews': 'Reseñas',
+  'admin-instagram': 'Instagram', 'admin-reviews': 'Reseñas', 'admin-broadcast': 'Avisar a los negocios',
 };
 // Pantallas cuyo componente ya pinta su propio <h1>
 const PAGES_WITH_OWN_H1 = new Set([
   'favorites', 'profile', 'business', 'coupon', 'job-detail', 'category', 'subcategory', 'login', 'register',
   'forgot-password', 'reset-password', 'edit-profile', 'settings', 'direct-budget', 'registration-success',
   'admin-dashboard', 'admin-all-businesses', 'admin-approve-businesses', 'business-analytics', 'admin-reports',
-  'admin-services', 'admin-instagram', 'admin-reviews',
+  'admin-services', 'admin-instagram', 'admin-reviews', 'admin-broadcast',
   'business-candidates', 'business-data', 'business-verification', 'validate-code', 'business-stats',
 ]);
 const AUTH_REDIRECT_KEY = 'post-login-redirect';
@@ -10408,7 +10409,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
                           {notification.time}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                      <p className="text-sm text-gray-600 mt-1 whitespace-pre-line break-words">
                         {notification.message}
                       </p>
                     </div>
@@ -10447,7 +10448,7 @@ const NotificationsScreen = ({ onNavigate, dynamicNotifications = [], user, onUp
                           {notification.time}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                      <p className="text-sm text-gray-500 mt-1 whitespace-pre-line break-words">
                         {notification.message}
                       </p>
                     </div>
@@ -12557,6 +12558,8 @@ export default function App() {
         return { route: 'admin-dashboard', params: {} };
       case 'review_removed':
         return { route: 'user-reviews', params: {} };
+      case 'admin_broadcast':
+        return { route: 'notifications', params: {} };
 
       default:
         return {
@@ -12611,6 +12614,7 @@ export default function App() {
               'service_request': 'bg-amber-700',
               'system_job_failed': 'bg-red-600',
               'review_removed': 'bg-red-600',
+              'admin_broadcast': 'bg-blue-700',
             };
             return iconBgMap[type] || 'bg-gray-500';
           };
@@ -12679,6 +12683,7 @@ export default function App() {
               'service_request': 'bg-amber-700',
               'system_job_failed': 'bg-red-600',
               'review_removed': 'bg-red-600',
+              'admin_broadcast': 'bg-blue-700',
             };
             return iconBgMap[type] || 'bg-gray-500';
           };
@@ -14171,6 +14176,8 @@ export default function App() {
         return <AdminInstagramScreen onNavigate={navigate} showToast={showToast} />;
       case 'admin-reviews':
         return <AdminReviewsScreen onNavigate={navigate} showToast={showToast} />;
+      case 'admin-broadcast':
+        return <AdminBroadcastScreen onNavigate={navigate} showToast={showToast} />;
       case 'business':
         return <BusinessDetailPage businessId={pageParams.id} onNavigate={navigate} returnTo={pageParams.returnTo} returnParams={pageParams.returnParams} userFavorites={userFavorites} toggleFavorite={toggleFavorite} isFavorite={isFavorite} user={user} trackAnalyticsEvent={trackAnalyticsEvent} showToast={showToast} />;
       case 'coupon':

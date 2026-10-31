@@ -373,6 +373,15 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 - `herramientas/videos/vecino/`: 4 vídeos cortos (descubrir comercios, ofertas y cupones, presupuestos, empleo)
   con 5 negocios inventados y la hora simulada (`clock.install`) para que salgan abiertos.
 
+### Web cerrada «Próximamente» (2026-10-31)
+- `app_settings.site_open` (jsonb; si no existe = abierta). Se cambia en Panel de admin → «Web abierta al público»
+  (botón Cerrar/Abrir, upsert por RLS de admin). Cerrada: el admin y cualquier dueño de negocio usan la app; el
+  resto ve `ComingSoonPage` (vídeo `public/video/intro.mp4`, enlace a @cornellalocal, textos legales; no recoge
+  datos). Siempre accesibles: login/registro/recuperar, textos legales y contacto; con cuenta, el alta de negocio,
+  ajustes y editar perfil. Las páginas /negocio/… prerenderizadas siguen públicas.
+- Instagram oficial: **@cornellalocal**; @cornella_informa hace de altavoz (publicaciones en colaboración).
+- `public/sw.js` (v8) no intercepta vídeos ni peticiones Range (una 206 no se puede cachear).
+
 ---
 
 ## Reglas de Negocio Importantes

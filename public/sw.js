@@ -1,7 +1,7 @@
 // Service Worker para Cornellà Local PWA
-const CACHE_NAME = 'cornella-local-v7';
-const STATIC_CACHE = 'cornella-static-v7';
-const DYNAMIC_CACHE = 'cornella-dynamic-v7';
+const CACHE_NAME = 'cornella-local-v8';
+const STATIC_CACHE = 'cornella-static-v8';
+const DYNAMIC_CACHE = 'cornella-dynamic-v8';
 
 // Recursos estáticos para cachear al instalar
 const STATIC_ASSETS = [
@@ -64,6 +64,9 @@ self.addEventListener('fetch', (event) => {
 
   // NO cachear peticiones POST, PUT, DELETE, PATCH
   if (request.method !== 'GET') return;
+
+  // Vídeos y peticiones por trozos (Range): que los sirva el navegador; una respuesta 206 no se puede cachear
+  if (request.destination === 'video' || request.headers.has('range') || url.pathname.startsWith('/video/')) return;
 
   // Para recursos estáticos (JS, CSS, fuentes): Cache first
   if (isStaticAsset(request)) {

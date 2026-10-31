@@ -1680,6 +1680,86 @@ const DESKTOP_NAV = [
   { id: 'profile', label: 'Mi perfil', icon: 'User' },
 ];
 
+// Web cerrada al público (app_settings.site_open = false): solo ven la app el admin y los dueños de
+// negocio. El resto ve esta página, sin recoger ningún dato.
+const ComingSoonPage = ({ user, onNavigate, onSignOut }) => {
+  useEffect(() => { document.title = 'Cornellà Local · Próximamente'; }, []);
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#f4f7fd] to-[#e5edf9] font-display">
+      <main id="contenido" className="mx-auto w-full max-w-md lg:max-w-4xl px-5 py-8 lg:py-14 flex flex-col lg:grid lg:grid-cols-[1fr_22rem] lg:gap-x-12">
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left lg:col-start-1 lg:row-start-1">
+          <img src="/logo.png" alt="Cornellà Local" width="206" height="36" className="h-10 w-auto" />
+          <span className="mt-8 inline-block rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold uppercase tracking-wider text-amber-900">Muy pronto</span>
+          <h1 className="mt-4 text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-slate-900">Próximamente en Cornellà</h1>
+          <p className="mt-4 text-lg leading-relaxed text-slate-700">
+            La app de los comercios de Cornellà: comercios y profesionales del barrio, sus horarios, sus ofertas y
+            presupuestos sin compromiso. Gratis para vecinos y negocios.
+          </p>
+        </div>
+
+        <div className="mt-8 lg:mt-0 flex flex-col items-center lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-center">
+          <video
+            className="w-full max-w-[22rem] rounded-3xl shadow-xl bg-slate-900 aspect-[9/16]"
+            src="/video/intro.mp4"
+            poster="/video/intro-poster.jpg"
+            controls
+            playsInline
+            preload="metadata"
+            aria-label="Vídeo: por qué nace Cornellà Local"
+          />
+        </div>
+
+        <div className="mt-8 lg:mt-6 flex flex-col items-center text-center lg:items-start lg:text-left lg:col-start-1 lg:row-start-2">
+          <ul className="grid grid-cols-2 gap-2 text-left text-sm font-semibold text-slate-800 w-full">
+            {[['Store', 'Comercios del barrio'], ['Tag', 'Ofertas y cupones'], ['ClipboardList', 'Presupuestos gratis'], ['Briefcase', 'Empleo cerca de casa']].map(([icon, text]) => (
+              <li key={text} className="flex items-center gap-2 rounded-xl bg-white/80 px-3 py-2.5 shadow-sm">
+                <Icon name={icon} size={18} className="text-primary shrink-0" />
+                {text}
+              </li>
+            ))}
+          </ul>
+          <a
+            href="https://www.instagram.com/cornellalocal/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
+          >
+            Síguenos en Instagram: @cornellalocal
+          </a>
+          <p className="mt-2 text-xs text-slate-600">Allí anunciaremos el día que abrimos.</p>
+        </div>
+
+        <div className="mt-10 lg:col-span-2 lg:row-start-3 border-t border-slate-200 pt-6 text-center text-sm text-slate-600">
+          {user ? (
+            <div className="flex flex-col items-center gap-3">
+              <p>Ya tienes tu cuenta. Te avisaremos cuando abramos.</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <button onClick={() => onNavigate('business-data')} className="rounded-xl bg-primary px-4 py-2.5 font-semibold text-white hover:bg-primary-dark">
+                  ¿Tienes un negocio? Dar de alta mi negocio
+                </button>
+                <button onClick={onSignOut} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-semibold text-slate-800 hover:bg-slate-50">
+                  Cerrar sesión
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p>
+              ¿Tienes un negocio en Cornellà Local?{' '}
+              <button onClick={() => onNavigate('login')} className="font-semibold text-primary-dark underline">Entrar</button>
+            </p>
+          )}
+          <nav aria-label="Información legal" className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+            <button onClick={() => onNavigate('legal-notice')} className="hover:underline">Aviso legal</button>
+            <button onClick={() => onNavigate('privacy-policy')} className="hover:underline">Privacidad</button>
+            <button onClick={() => onNavigate('cookies-policy')} className="hover:underline">Cookies</button>
+            <button onClick={() => onNavigate('contact-support')} className="hover:underline">Contacto</button>
+          </nav>
+        </div>
+      </main>
+    </div>
+  );
+};
+
 const DesktopSidebar = ({ user, currentPage, onNavigate, onAuth }) => (
   <aside aria-label="Menú lateral" className="hidden lg:flex justify-self-end w-60 sticky top-0 h-screen flex-col py-8 gap-6">
     <button onClick={() => onNavigate('home')} className="px-3 text-left" aria-label="Ir al inicio">
@@ -12128,6 +12208,10 @@ export default function App() {
     document.title = t ? `${t} | Cornellà Local` : DEFAULT_DOC_TITLE;
   }, [currentPage]);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  // ¿Web abierta al público? (app_settings.site_open; si no existe el ajuste, abierta). null = cargando
+  const [siteOpen, setSiteOpen] = useState(null);
+  // Usuario cuyo negocio ya se ha comprobado (para no enseñar «Próximamente» un instante a un dueño)
+  const [businessCheckedFor, setBusinessCheckedFor] = useState(null);
 
   // Estado para Push Notifications
   const [pushSupported, setPushSupported] = useState(false);
@@ -12547,8 +12631,19 @@ export default function App() {
       }
     };
 
-    loadUserBusiness();
+    loadUserBusiness().finally(() => setBusinessCheckedFor(user?.id || null));
   }, [user?.id]);
+
+  // Leer si la web está abierta (con tope de 4 s para no dejar a nadie esperando)
+  useEffect(() => {
+    let done = false;
+    const timer = setTimeout(() => { if (!done) setSiteOpen(true); }, 4000);
+    supabase.from('app_settings').select('value').eq('key', 'site_open').maybeSingle()
+      .then(({ data, error }) => { done = true; setSiteOpen(error ? true : data ? data.value !== false : true); })
+      .catch(() => { done = true; setSiteOpen(true); })
+      .finally(() => clearTimeout(timer));
+    return () => clearTimeout(timer);
+  }, []);
 
   // Cargar favoritos del usuario desde Supabase
   useEffect(() => {
@@ -14473,7 +14568,7 @@ export default function App() {
   };
 
   // Mostrar loading mientras se verifica la autenticación
-  if (loadingAuth) {
+  if (loadingAuth || siteOpen === null) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -14486,6 +14581,28 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  // Web cerrada: el admin y los dueños de negocio entran; el resto ve «Próximamente».
+  // Siempre accesibles: entrar, registrarse, textos legales y contacto; con cuenta, el alta de un negocio.
+  if (siteOpen === false && !user?.is_admin) {
+    const alwaysOpen = new Set(['login', 'register', 'forgot-password', 'reset-password', 'privacy-policy', 'terms', 'terms-register', 'cookies-policy', 'legal-notice', 'contact-support']);
+    const withAccount = new Set(['business-data', 'edit-business', 'business-verification', 'registration-success', 'settings', 'edit-profile']);
+    const ownerPending = user && businessCheckedFor !== user.id;
+    const blocked = !businessData && !alwaysOpen.has(currentPage) && !(user && withAccount.has(currentPage));
+    // Aún comprobando si este usuario tiene negocio: ni la app ni «Próximamente» hasta saberlo
+    if (blocked && ownerPending) {
+      return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" role="status" aria-label="Cargando" /></div>;
+    }
+    if (blocked) {
+      return (
+        <ErrorBoundary>
+          <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />
+          <ComingSoonPage user={user} onNavigate={navigate} onSignOut={async () => { await supabase.auth.signOut(); navigate('home'); }} />
+          <CookieBanner onNavigate={navigate} />
+        </ErrorBoundary>
+      );
+    }
   }
 
   // Si no ha visto el onboarding, mostrarlo (solo para usuarios autenticados)

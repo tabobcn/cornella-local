@@ -360,6 +360,67 @@ export const AdminSupportScreen = ({ onNavigate }) => {
 };
 
 // AdminDashboard - Panel principal de administración
+// Interruptor de la web: abierta al público o «Próximamente» (app_settings.site_open).
+// Cerrada, solo entran el admin y los dueños de negocio; el resto ve la página de próximamente.
+const SiteOpenCard = () => {
+  const [open, setOpen] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'site_open').maybeSingle()
+      .then(({ data, error: e }) => {
+        if (e) { setError(isMissingDbObject(e) ? 'Falta ejecutar supabase/panel-admin-servicios.sql' : 'No se pudo leer el estado de la web'); return; }
+        setOpen(data ? data.value !== false : true);
+      });
+  }, []);
+  const change = async (next) => {
+    setSaving(true); setError('');
+    try {
+      const { data, error: e } = await supabase.from('app_settings').upsert({ key: 'site_open', value: next }, { onConflict: 'key' }).select();
+      if (e) throw e;
+      if (!data?.length) throw new Error('sin permiso');
+      setOpen(next); setConfirming(false);
+    } catch (e) {
+      console.error('Error cambiando site_open:', e);
+      setError('No se pudo cambiar. Inténtalo de nuevo.');
+    } finally { setSaving(false); }
+  };
+  return (
+    <div className="px-4 mt-4 mb-4">
+      <div className={`rounded-xl p-4 shadow-sm border ${open === false ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${open === false ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'}`}>
+            <Globe size={22} aria-hidden="true" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-900">{open === null ? 'Web…' : open ? 'Web abierta al público' : 'Web cerrada: «Próximamente»'}</p>
+            <p className="text-xs text-slate-600 leading-snug">
+              {open === false ? 'Solo entráis tú y los dueños de negocio. El resto ve la página de próximamente con el vídeo.' : 'Cualquiera puede ver los comercios y registrarse.'}
+            </p>
+          </div>
+          {open !== null && !confirming && (
+            <button onClick={() => setConfirming(true)} disabled={saving}
+              className={`shrink-0 h-10 px-3 rounded-lg text-sm font-semibold ${open ? 'bg-amber-700 text-white hover:bg-amber-800' : 'bg-green-700 text-white hover:bg-green-800'}`}>
+              {open ? 'Cerrar' : 'Abrir'}
+            </button>
+          )}
+        </div>
+        {confirming && (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-white border border-gray-200 p-3">
+            <p className="text-sm text-slate-800">{open ? '¿Cerrar la web al público ahora?' : '¿Abrir la web a todo el mundo ahora?'}</p>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => setConfirming(false)} className="h-9 px-3 rounded-lg border border-gray-300 text-sm font-semibold text-slate-700">Cancelar</button>
+              <button onClick={() => change(!open)} disabled={saving} className="h-9 px-3 rounded-lg bg-slate-900 text-white text-sm font-semibold disabled:opacity-60">{saving ? 'Guardando…' : 'Sí'}</button>
+            </div>
+          </div>
+        )}
+        {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
+      </div>
+    </div>
+  );
+};
+
 export const AdminDashboard = ({ onNavigate, user }) => {
   const [stats, setStats] = useState({
     pendingBusinesses: 0,
@@ -562,8 +623,11 @@ export const AdminDashboard = ({ onNavigate, user }) => {
         </div>
       </header>
 
+      {/* Web abierta o en «Próximamente» */}
+      <SiteOpenCard />
+
       {/* Stats Cards */}
-      <div className="px-4 -mt-4 mb-6">
+      <div className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => onNavigate('admin-all-businesses')}

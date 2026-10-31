@@ -27,3 +27,13 @@ herramientas/videos/*.mp4
 herramientas/videos/*.wav
 herramientas/videos/*.txt
 herramientas/videos/timeline.json
+herramientas/videos/vecino/shots/
+herramientas/videos/vecino/parts/
+herramientas/videos/vecino/frames/
+herramientas/videos/vecino/img/*.jpg
+herramientas/videos/vecino/img/*.png
+herramientas/videos/vecino/*.mp4
+herramientas/videos/vecino/*.wav
+herramientas/videos/vecino/*.txt
+herramientas/videos/vecino/timeline-*.json
+herramientas/videos/vecino/build.log

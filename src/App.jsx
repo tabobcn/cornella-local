@@ -2055,11 +2055,14 @@ const FlashOfferCard = ({ offer, onClick, onExpire }) => {
         <h3 className="font-semibold text-sm truncate">{offer.title}</h3>
         <div className="flex items-center justify-between mt-2">
           <div className="flex flex-col">
-            <span className="text-[10px] text-gray-500 line-through">{formatCurrency(offer.originalPrice || 0)}</span>
+            {/* Precio solo si la oferta lo tiene (un 2x1 no tiene precio: se enseña el descuento) */}
+            {offer.discountType !== 'free' && offer.discountedPrice > 0 && offer.originalPrice > 0 && (
+              <span className="text-[10px] text-gray-500 line-through">{formatCurrency(offer.originalPrice)}</span>
+            )}
             <span className="text-base font-bold text-primary">
-              {offer.discountType === 'free' || offer.discountedPrice === 0
+              {offer.discountType === 'free'
                 ? 'GRATIS'
-                : formatCurrency(offer.discountedPrice || 0)}
+                : offer.discountedPrice > 0 ? formatCurrency(offer.discountedPrice) : offer.discount}
             </span>
           </div>
           <button aria-label="Añadir"
@@ -4624,13 +4627,13 @@ const FlashOffersScreen = ({ onNavigate, userOffers = [] }) => {
                       <span>Quedan {offer.timeLeft}</span>
                     </div>
                     <div className="text-right">
-                      {offer.originalPrice > 0 && (
+                      {offer.discountType !== 'free' && offer.discountedPrice > 0 && offer.originalPrice > 0 && (
                         <span className="text-xs text-gray-500 line-through mr-1">{formatCurrency(offer.originalPrice)}</span>
                       )}
                       <span className="text-sm font-bold text-primary">
-                        {offer.discountType === 'free' || offer.discountedPrice === 0
+                        {offer.discountType === 'free'
                           ? 'GRATIS'
-                          : formatCurrency(offer.discountedPrice || 0)}
+                          : offer.discountedPrice > 0 ? formatCurrency(offer.discountedPrice) : offer.discount}
                       </span>
                     </div>
                   </div>
@@ -7092,6 +7095,9 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
           icon,
           iconBg,
           salary,
+          salaryMin: data.salary_min || null,
+          salaryMax: data.salary_max || null,
+          salaryNote: data.salary_note || '',
           type: data.type,
           contract: data.contract,
           modality: data.modality,
@@ -7355,12 +7361,15 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <CreditCard className="text-white" size={18} />
               </div>
-              <span className="text-xs font-bold text-primary-dark uppercase tracking-wider">Salario Bruto Anual</span>
+              <span className="text-xs font-bold text-primary-dark uppercase tracking-wider">{job.salaryMin && job.salaryMax ? 'Salario bruto anual' : 'Salario'}</span>
             </div>
+            {/* Antes salía siempre «0 € - 0 €»: el rango solo si existe; si no, la nota del negocio o «A convenir» */}
             <p className="text-2xl font-bold text-slate-900">
-              {formatCurrency(job.salaryMin || 0, false)} - {formatCurrency(job.salaryMax || 0, false)}
+              {job.salaryMin && job.salaryMax
+                ? `${formatCurrency(job.salaryMin, false)} - ${formatCurrency(job.salaryMax, false)}`
+                : (job.salaryNote || 'A convenir')}
             </p>
-            <p className="text-sm text-gray-500 mt-1">{job.salaryNote}</p>
+            {job.salaryMin && job.salaryMax && job.salaryNote && <p className="text-sm text-gray-500 mt-1">{job.salaryNote}</p>}
           </div>
 
           {/* Descripción */}
@@ -7712,14 +7721,14 @@ const JobDetailPage = ({ jobId, onNavigate, showToast, onAddNotification, active
                     setShowApplyModal(false);
                     setCoverLetter('');
                   }}
-                  className="flex-1 h-12 rounded-xl border border-gray-200 text-slate-700 font-semibold hover:bg-gray-50 transition-colors"
+                  className="shrink-0 h-12 px-5 rounded-xl border border-gray-200 text-slate-700 font-semibold hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSubmitApplication}
                   disabled={!cvUploaded}
-                  className={`flex-1 h-12 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${
+                  className={`flex-1 min-w-0 h-12 rounded-xl font-semibold whitespace-nowrap transition-colors flex items-center justify-center gap-2 ${
                     cvUploaded
                       ? 'bg-primary text-white hover:bg-blue-700'
                       : 'bg-gray-200 text-gray-500 cursor-not-allowed'

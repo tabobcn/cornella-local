@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fff}svg{display:block}</style></head><body>
+<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe3f5"/><stop offset="1" stop-color="#eef5fb"/></linearGradient>
+ <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fdf3df"/><stop offset="1" stop-color="#f3dcb4"/></linearGradient>
+ <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e7cf"/><stop offset="1" stop-color="#efd9b7"/></linearGradient>
+ <pattern id="stripes" width="80" height="10" patternUnits="userSpaceOnUse"><rect width="40" height="10" fill="#c0532f"/><rect x="40" width="40" height="10" fill="#fbf4ea"/></pattern>
+ <g id="loaf"><ellipse cx="0" cy="0" rx="46" ry="24" fill="#c98a3d"/><ellipse cx="0" cy="-6" rx="40" ry="16" fill="#dba25a"/><path d="M-22 -10 l10 12 M-4 -14 l10 12 M14 -12 l10 12" stroke="#b5752e" stroke-width="5" stroke-linecap="round"/></g>
+ <g id="crois"><path d="M-40 6 Q0 -38 40 6 Q20 -6 0 -4 Q-20 -6 -40 6Z" fill="#d89a49"/><path d="M-22 -8 Q-16 -2 -12 -12 M0 -16 Q4 -6 8 -16 M18 -10 Q22 -2 26 -10" stroke="#b5752e" stroke-width="4" fill="none" stroke-linecap="round"/></g>
+ <g id="baguette"><rect x="-70" y="-12" width="140" height="24" rx="12" fill="#cf9246"/><path d="M-45 -6 l14 10 M-10 -6 l14 10 M25 -6 l14 10" stroke="#b5752e" stroke-width="4" stroke-linecap="round"/></g>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<!-- edificio -->
+<rect x="70" y="40" width="1460" height="760" fill="url(#wall)"/>
+<rect x="70" y="40" width="1460" height="40" fill="#e3c79c"/>
+<!-- ventanas piso de arriba -->
+<g fill="#9cb7cf" stroke="#fbf4ea" stroke-width="10">
+ <rect x="180" y="110" width="200" height="120" rx="6"/><rect x="700" y="110" width="200" height="120" rx="6"/><rect x="1220" y="110" width="200" height="120" rx="6"/>
+</g>
+<g fill="#7a9a5a"><rect x="170" y="230" width="220" height="16" rx="6"/><rect x="690" y="230" width="220" height="16" rx="6"/><rect x="1210" y="230" width="220" height="16" rx="6"/></g>
+<!-- rótulo -->
+<rect x="300" y="266" width="1000" height="132" rx="18" fill="#3b2a1a"/>
+<g transform="translate(400 336)" fill="#f0c36d"><path d="M0 40 V-40" stroke="#f0c36d" stroke-width="6"/><ellipse cx="-12" cy="-22" rx="9" ry="16" transform="rotate(-25 -12 -22)"/><ellipse cx="12" cy="-22" rx="9" ry="16" transform="rotate(25 12 -22)"/><ellipse cx="-12" cy="6" rx="9" ry="16" transform="rotate(-25 -12 6)"/><ellipse cx="12" cy="6" rx="9" ry="16" transform="rotate(25 12 6)"/><ellipse cx="0" cy="-44" rx="8" ry="14"/></g>
+<text x="840" y="345" text-anchor="middle" font-family="Georgia, 'DejaVu Serif', serif" font-size="66" font-weight="700" fill="#f7e6c4" letter-spacing="6">SOL DE TRIGO</text>
+<text x="840" y="383" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#f0c36d" font-style="italic" letter-spacing="2">forn de pa · pastisseria</text>
+<!-- toldo -->
+<path d="M150 420 H1450 L1500 520 H100 Z" fill="url(#stripes)" transform="matrix(1 0 0 1 0 0)"/>
+<rect x="150" y="410" width="1300" height="14" fill="#9e3f22"/>
+<path d="M100 520 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 q32 30 65 0 Z" fill="#c0532f"/>
+<!-- escaparate -->
+<rect x="150" y="560" width="760" height="240" rx="8" fill="#5a3b24"/>
+<rect x="168" y="576" width="724" height="206" rx="4" fill="url(#glass)"/>
+<rect x="190" y="660" width="680" height="10" fill="#8a5a34"/><rect x="190" y="750" width="680" height="10" fill="#8a5a34"/>
+<use href="#loaf" x="260" y="638"/><use href="#loaf" x="380" y="638"/><use href="#crois" x="500" y="642"/><use href="#crois" x="600" y="642"/><use href="#loaf" x="730" y="638"/><use href="#crois" x="830" y="642"/>
+<use href="#baguette" x="300" y="732"/><use href="#baguette" x="480" y="732"/><use href="#loaf" x="640" y="728"/><use href="#loaf" x="780" y="728"/>
+<path d="M200 590 l120 0 l-160 170z" fill="#ffffff" opacity=".25"/>
+<!-- puerta -->
+<rect x="980" y="540" width="260" height="260" rx="8" fill="#5a3b24"/>
+<rect x="1000" y="560" width="220" height="240" rx="4" fill="#cfe0ea"/>
+<rect x="1000" y="560" width="220" height="240" rx="4" fill="url(#glass)" opacity=".55"/>
+<rect x="1185" y="660" width="12" height="70" rx="6" fill="#d9b25b"/>
+<text x="1110" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#5a3b24">OBERT</text>
+<!-- macetas -->
+<g><rect x="1290" y="730" width="90" height="70" rx="10" fill="#b86a3f"/><circle cx="1335" cy="705" r="48" fill="#6f9a52"/><circle cx="1305" cy="690" r="30" fill="#82ad61"/><circle cx="1365" cy="688" r="28" fill="#82ad61"/></g>
+<g><rect x="1410" y="745" width="70" height="55" rx="10" fill="#b86a3f"/><circle cx="1445" cy="725" r="36" fill="#6f9a52"/></g>
+<!-- acera -->
+<rect y="800" width="1600" height="100" fill="#d8d2c8"/><rect y="800" width="1600" height="10" fill="#c4bdb2"/>
+<g stroke="#c9c2b7" stroke-width="4"><path d="M200 810 v90 M600 810 v90 M1000 810 v90 M1400 810 v90"/></g>
+</svg></body></html>

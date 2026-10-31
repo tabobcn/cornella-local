@@ -361,6 +361,18 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   plazos de revisión «1 o 2 días» en todos los textos; el aviso «verificado y visible» solo si está publicado;
   fuera el botón sin acción «Usar mi ubicación» de los datos básicos.
 
+### Documentos del alta y vídeos para vecinos (2026-10-31)
+- **Paso «Demuestra que el negocio es tuyo»** reescrito para que no haya dudas: con 1 documento basta;
+  recomendado el **certificado de situación censal** (AEAT, gratis con Cl@ve); también 036/037, licencia de
+  actividad o factura del local de los últimos 3 meses. Qué tiene que verse (nombre, dirección en Cornellà,
+  documento entero y legible, PDF/JPG/PNG ≤ 5 MB), qué hacer si es una S.L. (documento de administrador/poderes)
+  y qué NO subir (DNI, IBAN). El admin ve una lista de «Qué comprobar» al abrir los documentos.
+- Fallos arreglados al grabar: ofertas flash sin precio (2x1) salían como «0,00 € GRATIS»; el detalle de un
+  empleo ponía siempre «0 € - 0 €» (ahora rango, nota del negocio o «A convenir»); los botones de
+  «Inscribirse» se salían de la pantalla en móviles estrechos.
+- `herramientas/videos/vecino/`: 4 vídeos cortos (descubrir comercios, ofertas y cupones, presupuestos, empleo)
+  con 5 negocios inventados y la hora simulada (`clock.install`) para que salgan abiertos.
+
 ---
 
 ## Reglas de Negocio Importantes

@@ -1324,6 +1324,16 @@ export const BusinessApprovalScreen = ({ onNavigate, user, showToast }) => {
 
             {/* Documents List */}
             <div className="p-6 overflow-y-auto max-h-[calc(85vh-80px)]">
+              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 leading-relaxed">
+                <p className="font-bold mb-1">Qué comprobar</p>
+                <ul className="space-y-0.5">
+                  <li>• El nombre (o la empresa) del documento es el de quien lleva este negocio.</li>
+                  <li>• La dirección es la del local y está en Cornellà{selectedBusiness.address ? ` (alta: ${selectedBusiness.address})` : ''}.</li>
+                  <li>• Es reciente (facturas de los últimos 3 meses) y no parece retocado.</li>
+                  <li>• Si es una S.L.: algo que muestre que es administrador o tiene poderes (en el BORME se puede consultar).</li>
+                  <li>• Si dudas: llama al teléfono público del negocio (Google o el cartel) y pregunta si han pedido el alta.</li>
+                </ul>
+              </div>
               {selectedBusiness.verification_documents && selectedBusiness.verification_documents.length > 0 ? (
                 <div className="space-y-4">
                   {selectedBusiness.verification_documents.map((docUrl, index) => (

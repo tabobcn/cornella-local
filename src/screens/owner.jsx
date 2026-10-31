@@ -2507,7 +2507,7 @@ export const BusinessVerificationScreen = ({ onNavigate, onRegisterBusiness, use
           <div>
             <h4 className="text-amber-800 text-sm font-bold">Documentación obligatoria</h4>
             <p className="text-amber-700 text-xs mt-1">
-              Ambos documentos son necesarios para verificar tu negocio. Normalmente revisamos las solicitudes en 1 o 2 días. Solo los ve el administrador y se borran solos 2 días después de aprobar el negocio.
+              Con un documento basta (el certificado de situación censal de Hacienda es el más sencillo). Normalmente revisamos las solicitudes en 1 o 2 días. Solo los ve el administrador y se borran solos 2 días después de aprobar el negocio.
             </p>
           </div>
         </div>
@@ -4187,15 +4187,66 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
               </div>
             ) : (
             <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">{isDraft ? 'Último paso: comprueba que es tu negocio' : 'Verificación Oficial'}</h3>
-              <p className="text-sm text-gray-500 mb-3">
-                Sube al menos un documento que demuestre que el negocio es tuyo: alta de autónomo o modelo 036/037, una factura o recibo a nombre del negocio, o la licencia de actividad.
+              <h3 className="text-lg font-bold text-slate-900 mb-1">{isDraft ? 'Último paso: demuestra que el negocio es tuyo' : 'Verificación del negocio'}</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Con <strong>un documento</strong> basta (puedes subir hasta 3). Así nadie puede dar de alta tu negocio haciéndose pasar por ti.
               </p>
-              <p className="text-xs text-gray-500 mb-3 bg-gray-50 border border-gray-200 rounded-xl p-3 leading-relaxed">
-                🔒 Los documentos son privados: solo los ve el administrador para verificarte y <strong>se borran solos 2 días después de aprobar tu negocio</strong>. No hace falta el DNI; si aun así lo subes, tapa la foto y el número de soporte (solo necesitamos comprobar el nombre).
-              </p>
+
+              {/* 1. Qué documento */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 mb-4">
+                <h4 className="text-sm font-bold text-slate-900 mb-3">1. Elige uno de estos documentos</h4>
+                <ol className="space-y-3 text-sm text-slate-700">
+                  <li className="rounded-xl bg-green-50 border border-green-200 p-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <strong className="text-slate-900">Certificado de situación censal</strong>
+                      <span className="text-[10px] font-bold uppercase tracking-wide bg-green-700 text-white px-2 py-0.5 rounded-full">Recomendado</span>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                      De Hacienda. Es gratis y se descarga al momento en la sede de la Agencia Tributaria
+                      (sede.agenciatributaria.gob.es → Certificados → Censales) con Cl@ve o certificado digital. Sirve para autónomos y empresas.
+                    </p>
+                  </li>
+                  <li><strong className="text-slate-900">Alta de autónomo</strong> (modelo 036 o 037) con la actividad del negocio.</li>
+                  <li><strong className="text-slate-900">Licencia de actividad</strong> o comunicación previa del Ayuntamiento de Cornellà.</li>
+                  <li><strong className="text-slate-900">Factura del local</strong> (luz, agua o internet) de los últimos 3 meses, a nombre del negocio o del titular.</li>
+                </ol>
+              </div>
+
+              {/* 2. Qué tiene que verse */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 mb-4">
+                <h4 className="text-sm font-bold text-slate-900 mb-2">2. Comprueba que se vea bien</h4>
+                <ul className="space-y-1.5 text-xs text-slate-700">
+                  <li className="flex gap-2"><Check size={14} className="text-green-700 shrink-0 mt-0.5" /> Tu nombre o el de la empresa, el mismo que la persona o empresa que lleva este negocio</li>
+                  <li className="flex gap-2"><Check size={14} className="text-green-700 shrink-0 mt-0.5" /> La dirección del local, en Cornellà</li>
+                  <li className="flex gap-2"><Check size={14} className="text-green-700 shrink-0 mt-0.5" /> El documento entero, sin recortar y que se lea (una foto con el móvil vale si es nítida)</li>
+                  <li className="flex gap-2"><Check size={14} className="text-green-700 shrink-0 mt-0.5" /> En PDF, JPG o PNG, de 5 MB como máximo</li>
+                </ul>
+              </div>
+
+              {/* Sociedades */}
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 mb-4">
+                <h4 className="text-sm font-bold text-blue-900 mb-1">¿Es una sociedad (S.L., S.A., cooperativa…)?</h4>
+                <p className="text-xs text-blue-800 leading-relaxed">
+                  Sube también un documento donde salgas como administrador o con poderes de la empresa, por ejemplo la página de la
+                  escritura donde aparece tu nombre. Si eres empleado, pide al titular que haga el alta o que te autorice por escrito.
+                </p>
+              </div>
+
+              {/* Qué no subir y privacidad */}
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 mb-4">
+                <h4 className="text-sm font-bold text-slate-900 mb-1">No hace falta (mejor no lo subas)</h4>
+                <ul className="space-y-1 text-xs text-slate-600 leading-relaxed">
+                  <li>• El DNI. Si aun así lo subes, tapa la foto y el número de soporte.</li>
+                  <li>• El número de cuenta de las facturas: puedes taparlo.</li>
+                  <li>• Documentos de otras personas o de otro negocio.</li>
+                </ul>
+                <p className="text-xs text-slate-600 mt-2 pt-2 border-t border-gray-200 leading-relaxed">
+                  🔒 Son privados: solo los ve el administrador y <strong>se borran solos 2 días después de aprobar tu negocio</strong>.
+                  Normalmente lo revisamos en 1 o 2 días. Si falta algo, te avisamos en la app con el motivo.
+                </p>
+              </div>
               {isDraft && (
-                <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                <p className="text-xs text-gray-500 mb-5 leading-relaxed">
                   Al enviar la solicitud aceptas los{' '}
                   <button type="button" onClick={() => onNavigate('terms')} className="text-primary font-semibold underline">
                     términos y condiciones
@@ -4204,57 +4255,17 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                 </p>
               )}
 
-              {/* Status Card */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 mb-6 border border-blue-100">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <BadgeCheck className="text-white" size={24} />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-blue-900 mb-1">
-                      ¿Por qué verificar tu negocio?
-                    </h4>
-                    <ul className="text-xs text-blue-700 space-y-1">
-                      <li>✓ Insignia de negocio verificado en tu ficha</li>
-                      <li>✓ Más confianza de los clientes</li>
-                      <li>✓ Podrás publicar ofertas y empleos y recibir presupuestos</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress */}
-              <div className="bg-white rounded-xl p-4 border border-gray-100 mb-6">
-                <div className="flex items-center justify-between mb-2">
+              {/* Progreso */}
+              <div className="bg-white rounded-xl p-4 border border-gray-100 mb-4">
+                <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-slate-700">
-                    {verificationDocuments.length}/3 documentos subidos
+                    {verificationDocuments.length === 0 ? 'Aún no has subido ningún documento' : verificationDocuments.length === 1 ? '1 documento subido' : `${verificationDocuments.length} documentos subidos`}
                   </span>
-                  <span className="text-sm font-bold text-primary">
-                    {Math.round((verificationDocuments.length / 3) * 100)}%
-                  </span>
+                  {verificationDocuments.length > 0 && <CheckCircle2 size={18} className="text-green-700" />}
                 </div>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 rounded-full transition-all"
-                    style={{ width: `${(verificationDocuments.length / 3) * 100}%` }}
-                  />
-                </div>
-                {verificationDocuments.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-2">
-                    Sube al menos 1 documento para iniciar la verificación
-                  </p>
-                )}
-                {verificationDocuments.length > 0 && verificationDocuments.length < 3 && (
-                  <p className="text-xs text-green-600 mt-2">
-                    ¡Excelente! Puedes subir {3 - verificationDocuments.length} documento(s) más
-                  </p>
-                )}
-                {verificationDocuments.length >= 3 && (
-                  <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                    <CheckCircle2 size={14} />
-                    ¡Perfecto! Documentación completa
-                  </p>
-                )}
+                <p className={`text-xs mt-1 ${verificationDocuments.length === 0 ? 'text-amber-700' : 'text-green-700'}`}>
+                  {verificationDocuments.length === 0 ? 'Sube 1 documento para poder enviar la solicitud' : verificationDocuments.length < 3 ? 'Ya puedes enviar la solicitud' : 'Ya puedes enviar la solicitud (máximo 3 documentos)'}
+                </p>
               </div>
 
               {/* Upload Button */}
@@ -4306,23 +4317,6 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                 </div>
               )}
 
-              {/* Info Card */}
-              <div className="mt-6 bg-amber-50 rounded-xl p-4 border border-amber-100">
-                <h4 className="text-sm font-bold text-amber-900 mb-2 flex items-center gap-2">
-                  <Info size={16} />
-                  Documentos aceptados
-                </h4>
-                <ul className="text-xs text-amber-800 space-y-1">
-                  <li>• <strong>Alta de autónomo</strong> o modelo 036/037</li>
-                  <li>• <strong>Factura o recibo</strong> a nombre del negocio</li>
-                  <li>• <strong>Licencia de actividad</strong> o de apertura</li>
-                  <li>• Cualquier <strong>documento oficial</strong> que demuestre la actividad</li>
-                </ul>
-                <p className="text-xs text-amber-800 mt-3 pt-3 border-t border-amber-200">
-                  <strong>Nota:</strong> normalmente revisamos las solicitudes en 1 o 2 días.
-                  Los documentos son confidenciales.
-                </p>
-              </div>
               {/* Espacio extra para scroll */}
               <div className="h-20"></div>
             </div>

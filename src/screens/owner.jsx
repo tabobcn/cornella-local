@@ -2325,14 +2325,9 @@ export const BusinessDataScreen = ({ onNavigate, onSaveBusinessData, onRegisterB
                 value={formData.address}
                 onChange={(e) => handleChange('address', e.target.value)}
                 placeholder="Carrer de Cornellà, 12"
-                className="w-full h-14 px-4 pr-12 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full h-14 px-4 pl-11 rounded-xl border border-gray-200 bg-white text-slate-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
-              <button aria-label="Usar mi ubicación"
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
-              >
-                <MapPin size={20} />
-              </button>
+              <MapPin size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" aria-hidden="true" />
             </div>
           </div>
 
@@ -3561,7 +3556,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             <ArrowLeft size={24} />
           </button>
           <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight flex-1 text-center">
-            Editar Perfil
+            {isDraft ? 'Alta de tu negocio' : 'Editar negocio'}
           </h2>
           <div className="w-10"></div> {/* Spacer para centrar título */}
         </div>
@@ -4041,7 +4036,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             <div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">Tu Perfil Visual</h3>
               <p className="text-sm text-gray-500 mb-4">
-                Las fotos de alta calidad atraen a más clientes en Cornellà Local. Sube al menos 10 fotos.
+                La portada es obligatoria. Añade hasta 5 fotos más del interior, tus productos o tu equipo: las fichas con fotos atraen más clientes.
               </p>
 
               {/* Progress */}
@@ -4061,8 +4056,8 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   />
                 </div>
                 {formData.photos.length < 5 && (
-                  <p className="text-xs text-amber-600 mt-2">
-                    ¡Casi listo! Sube {5 - formData.photos.length} fotos más.
+                  <p className="text-xs text-gray-600 mt-2">
+                    {5 - formData.photos.length === 1 ? 'Puedes añadir 1 foto más (opcional).' : `Puedes añadir ${5 - formData.photos.length} fotos más (opcional).`}
                   </p>
                 )}
               </div>
@@ -4318,14 +4313,14 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
                   Documentos aceptados
                 </h4>
                 <ul className="text-xs text-amber-800 space-y-1">
-                  <li>• <strong>CIF/NIF</strong> del titular del negocio</li>
-                  <li>• <strong>Licencia de actividad</strong> o apertura</li>
-                  <li>• <strong>Alta en IAE</strong> (Impuesto de Actividades Económicas)</li>
+                  <li>• <strong>Alta de autónomo</strong> o modelo 036/037</li>
+                  <li>• <strong>Factura o recibo</strong> a nombre del negocio</li>
+                  <li>• <strong>Licencia de actividad</strong> o de apertura</li>
                   <li>• Cualquier <strong>documento oficial</strong> que demuestre la actividad</li>
                 </ul>
-                <p className="text-xs text-amber-700 mt-3 pt-3 border-t border-amber-200">
-                  <strong>Nota:</strong> Los documentos serán revisados por nuestro equipo en 24-48h.
-                  Toda la información se maneja de forma confidencial.
+                <p className="text-xs text-amber-800 mt-3 pt-3 border-t border-amber-200">
+                  <strong>Nota:</strong> normalmente revisamos las solicitudes en 1 o 2 días.
+                  Los documentos son confidenciales.
                 </p>
               </div>
               {/* Espacio extra para scroll */}
@@ -4355,7 +4350,7 @@ export const EditBusinessScreen = ({ onNavigate, businessData, onUpdateBusiness,
             Tu negocio está en revisión. Puedes seguir editando los datos.
           </div>
         )}
-        {businessData?.is_verified && (
+        {businessData?.is_verified && businessData?.is_published && (
           <div className="mb-3 px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm font-medium flex items-center gap-2">
             <BadgeCheck size={16} />
             ¡Tu negocio está verificado y visible en Cornellà Local!

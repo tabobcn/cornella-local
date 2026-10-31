@@ -352,6 +352,15 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   Supabase → Auth → SMTP: `smtp.resend.com`, puerto 465, usuario `resend`, contraseña = API key, remitente
   `noreply@cornellalocal.es` (dominio verificado en Resend con DNS en Vercel).
 
+### Vídeos explicativos (2026-10-31)
+- `herramientas/videos/` (ver su README): filma las pantallas reales con datos simulados de un negocio inventado y
+  monta vídeos verticales con textos animados, lupas, toques y música original sintetizada (sin derechos de terceros).
+  Primero: alta de un negocio (60 s). Lo generado (capturas, escenas, audio, mp4) no va al repositorio.
+- Arreglos vistos al grabarlo: el alta se titula «Alta de tu negocio» (antes «Editar Perfil»); paso de fotos sin
+  «sube al menos 10 fotos» (solo la portada es obligatoria); documentos aceptados iguales que el texto de arriba;
+  plazos de revisión «1 o 2 días» en todos los textos; el aviso «verificado y visible» solo si está publicado;
+  fuera el botón sin acción «Usar mi ubicación» de los datos básicos.
+
 ---
 
 ## Reglas de Negocio Importantes

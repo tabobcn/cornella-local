@@ -1,0 +1,259 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }
+  body { font-family: 'Inter', 'Inter Display', sans-serif; background: #eef3fb; position: relative; }
+  .bg { position: absolute; inset: 0; background: linear-gradient(180deg, #f4f7fd 0%, #e5edf9 100%); overflow: hidden; }
+  .blob { position: absolute; border-radius: 50%; }
+  .b1 { width: 820px; height: 820px; right: -320px; top: -280px; background: radial-gradient(circle, rgba(75,113,195,.24), rgba(75,113,195,0) 70%); }
+  .b2 { width: 760px; height: 760px; left: -340px; bottom: -220px; background: radial-gradient(circle, rgba(46,160,90,.18), rgba(46,160,90,0) 70%); }
+  .b3 { width: 520px; height: 520px; left: -200px; top: 380px; background: radial-gradient(circle, rgba(245,158,11,.10), rgba(245,158,11,0) 70%); }
+  .grid { position: absolute; inset: 0; background-image: radial-gradient(rgba(64,91,148,.10) 2px, transparent 2px); background-size: 44px 44px; }
+  .slot { position: absolute; inset: 0; pointer-events: none; }
+  .cap { position: absolute; left: 50px; right: 50px; top: 0; text-align: center; }
+  .pill { position: absolute; left: 50%; top: 214px; height: 58px; padding: 0 28px; border-radius: 29px; background: #4b71c3; color: #fff;
+          font-size: 27px; font-weight: 800; letter-spacing: 2.5px; line-height: 58px; white-space: nowrap; box-shadow: 0 8px 24px rgba(64,91,148,.28); }
+  .pill.green { background: #15803d; box-shadow: 0 8px 24px rgba(21,128,61,.28); }
+  .title { position: absolute; left: 0; right: 0; top: 290px; font-size: 72px; line-height: 1.08; font-weight: 800; color: #0f172a; letter-spacing: -1.6px; }
+  .title .w { display: inline-block; white-space: pre; }
+  .title .hl { color: #4b71c3; }
+  .sub { position: absolute; left: 30px; right: 30px; top: 386px; font-size: 36px; line-height: 1.3; color: #475569; font-weight: 500; }
+  .phone { position: absolute; left: 261px; top: 530px; width: 558px; height: 1170px; border-radius: 74px; background: #0f172a;
+           box-shadow: 0 44px 90px rgba(15,23,42,.30), 0 0 0 3px #334155 inset; transform-origin: 50% 60%; }
+  .screen { position: absolute; left: 16px; top: 16px; width: 526px; height: 1138px; border-radius: 58px; overflow: hidden; background: #fff; }
+  .layer { position: absolute; inset: 0; overflow: hidden; }
+  .shade { position: absolute; inset: 0; background: #0f172a; }
+  .full { position: absolute; left: 0; top: 0; }
+  .ovl { position: absolute; left: 0; background-repeat: no-repeat; }
+  .tap { position: absolute; width: 0; height: 0; }
+  .tap .dot { position: absolute; border-radius: 50%; background: rgba(75,113,195,.42); border: 5px solid #fff; box-shadow: 0 6px 18px rgba(15,23,42,.35); }
+  .tap .ring { position: absolute; border-radius: 50%; border: 6px solid rgba(75,113,195,.9); }
+  .hlb { position: absolute; border-radius: 22px; border: 7px solid #f59e0b; box-shadow: 0 0 30px rgba(245,158,11,.75); }
+  .tag { position: absolute; padding: 0 22px; height: 56px; line-height: 56px; border-radius: 28px; font-size: 28px; font-weight: 800; color: #fff; white-space: nowrap;
+         box-shadow: 0 10px 24px rgba(15,23,42,.25); }
+  .bubble { position: absolute; border-radius: 40px; overflow: hidden; background: #fff; border: 7px solid #fff;
+            box-shadow: 0 30px 70px rgba(15,23,42,.35), 0 0 0 3px rgba(75,113,195,.35); }
+  .bubble .inner { position: absolute; overflow: hidden; }
+  .chip { position: absolute; padding: 0 26px; height: 64px; line-height: 64px; border-radius: 32px; background: #fff; color: #0f172a; font-size: 30px; font-weight: 700;
+          white-space: nowrap; box-shadow: 0 12px 30px rgba(15,23,42,.18); }
+  .chip i { font-style: normal; display: inline-block; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; margin-right: 12px; color: #fff; font-size: 20px; vertical-align: 2px; }
+  .prog { position: absolute; top: 1730px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+  .prog span { display: block; width: 66px; height: 12px; border-radius: 6px; background: #cbd5e1; }
+  .burst { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  .okc { position: absolute; border-radius: 50%; background: #15803d; box-shadow: 0 20px 50px rgba(21,128,61,.45); }
+  .okc svg { position: absolute; inset: 0; }
+  .okr { position: absolute; border-radius: 50%; border: 10px solid rgba(21,128,61,.6); }
+  .oktxt { position: absolute; padding: 0 34px; height: 76px; line-height: 76px; border-radius: 38px; background: #0f172a; color: #fff; font-size: 36px; font-weight: 800; white-space: nowrap; }
+  .conf { position: absolute; border-radius: 3px; }
+  /* cierre */
+  .end .logo { position: absolute; left: 180px; top: 520px; width: 720px; }
+  .end .t { position: absolute; left: 50px; right: 50px; top: 730px; text-align: center; font-size: 80px; line-height: 1.07; font-weight: 800; color: #0f172a; letter-spacing: -1.6px; }
+  .end .t .w { display: inline-block; white-space: pre; }
+  .end .s { position: absolute; left: 80px; right: 80px; top: 935px; text-align: center; font-size: 38px; line-height: 1.35; color: #475569; font-weight: 500; }
+  .end .url { position: absolute; left: 50%; top: 1110px; padding: 0 50px; height: 110px; line-height: 110px; border-radius: 55px; background: #4b71c3; color: #fff; font-size: 58px; font-weight: 800; white-space: nowrap; box-shadow: 0 16px 38px rgba(64,91,148,.38); }
+  .end .how { position: absolute; left: 50px; right: 50px; top: 1270px; text-align: center; font-size: 36px; color: #334155; font-weight: 600; }
+  .end .how b { color: #15803d; }
+</style></head>
+<body>
+<div class="bg"><div class="grid"></div><div id="b1" class="blob b1"></div><div id="b2" class="blob b2"></div><div id="b3" class="blob b3"></div></div>
+<div id="slotPrev" class="slot"></div>
+<div id="phone" class="phone"><div class="screen"><div id="scrPrev" class="layer"></div><div id="shade" class="shade"></div><div id="scrCur" class="layer"></div></div></div>
+<div id="fx" class="slot"></div>
+<div id="slotCur" class="slot"></div>
+<div id="prog" class="prog"></div>
+<script>
+const META = window.__META;
+const SCENES = window.__SCENES;
+const S = 526 / 390;                 // escala app → pantalla del móvil
+const SX = 277, SY = 546;            // origen de la pantalla en el fotograma
+const ease = (x) => x <= 0 ? 0 : x >= 1 ? 1 : (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const outCubic = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+const outBack = (x) => { const c1 = 1.5, c3 = c1 + 1; x = Math.min(1, Math.max(0, x)); return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const c01 = (x) => Math.max(0, Math.min(1, x));
+const win = (t, t0, t1, fin = 0.3, fout = 0.3) => c01((t - t0) / fin) * (t1 == null ? 1 : c01((t1 - t) / fout));
+
+function scrollAt(sc, t) {
+  if (!sc.scroll) return 0;
+  const [from, to, t0, t1] = sc.scroll;
+  return from + (to - from) * ease((t - t0) / (t1 - t0));
+}
+// punto de la app (x, y de página) → coordenadas de vista de la app
+function viewPt(sc, t, p) { const y = scrollAt(sc, t); return { x: p.x, y: p.fixed ? p.y : p.y - y }; }
+function targetOf(sc, ref) { if (!ref) return null; if (typeof ref === 'string') return META[sc.shot].tg[ref] || null; return ref; }
+
+// Capas de la pantalla a una escala s (para el móvil y para la lupa)
+function screenHTML(sc, t, s) {
+  if (!sc.shot) return '';
+  const m = META[sc.shot], y = scrollAt(sc, t);
+  let h = `<img class="full" src="shots/${sc.shot}-full.jpg" style="width:${390 * s}px;transform:translateY(${-y * s}px)">`;
+  const bg = `background-image:url(shots/${sc.shot}.jpg);background-size:${390 * s}px ${844 * s}px;width:${390 * s}px;`;
+  if (m.headerH > 0) h += `<div class="ovl" style="${bg}top:0;height:${m.headerH * s}px;background-position:top"></div>`;
+  if (m.bottomH > 0) h += `<div class="ovl" style="${bg}top:${(844 - m.bottomH) * s}px;height:${m.bottomH * s}px;background-position:bottom"></div>`;
+  for (const hl of sc.highlights || []) {
+    const a = win(t, hl.t0, hl.t1, 0.3, 0.3); if (a <= 0) continue;
+    const v = viewPt(sc, t, hl); const pop = 0.92 + 0.08 * outBack(c01((t - hl.t0) / 0.35));
+    h += `<div class="hlb" style="left:${(v.x - 6) * s}px;top:${(v.y - 6) * s}px;width:${(hl.w + 12) * s}px;height:${(hl.h + 12) * s}px;opacity:${a};transform:scale(${pop});border-width:${7 * s / S}px"></div>`;
+  }
+  for (const tp of sc.taps || []) {
+    const k = (t - tp.t) / 0.9; if (k < -0.3 || k > 1) continue;
+    const tg = targetOf(sc, tp.target); if (!tg) continue;
+    const v = viewPt(sc, t, tg); const r = 28 * s / S * 1.0;
+    const appear = c01((k + 0.3) / 0.3), fade = k > 0.7 ? c01((1 - k) / 0.3) : 1;
+    const press = k > 0 && k < 0.16 ? 1 - 0.2 * Math.sin(k / 0.16 * Math.PI) : 1;
+    h += `<div class="tap" style="left:${v.x * s}px;top:${v.y * s}px"><div class="dot" style="left:${-r}px;top:${-r}px;width:${2 * r}px;height:${2 * r}px;opacity:${appear * fade};transform:scale(${press * (0.6 + 0.4 * appear)})"></div>`;
+    if (k > 0.04) { const rk = c01((k - 0.04) / 0.6); h += `<div class="ring" style="left:${-r}px;top:${-r}px;width:${2 * r}px;height:${2 * r}px;transform:scale(${1 + rk * 1.8});opacity:${1 - rk}"></div>`; }
+    h += `</div>`;
+  }
+  return h;
+}
+
+function titleHTML(text, t, animate) {
+  // palabras que entran una a una; *palabra* = color de marca
+  const words = text.split(' ');
+  return words.map((w, i) => {
+    const k = animate ? c01((t - 0.12 - i * 0.07) / 0.38) : 1;
+    const isHl = /^\*.*\*[!?.,]*$/.test(w); const clean = w.replace(/\*/g, '');
+    return `<span class="w${isHl ? ' hl' : ''}" style="opacity:${k};transform:translateY(${(1 - outBack(k)) * 34}px) scale(${0.9 + 0.1 * outBack(k)})">${clean}${i < words.length - 1 ? ' ' : ''}</span>`;
+  }).join('');
+}
+
+function captionHTML(sc, t, animate) {
+  if (sc.end) {
+    const k = (d, dur = 0.45) => animate ? c01((t - d) / dur) : 1;
+    const pulse = 1 + 0.035 * Math.sin(Math.max(0, t - 1.4) * 4.2) * c01((t - 1.4) / 0.4);
+    return `<div class="end">
+      <img class="logo" src="../../public/logo.png" style="opacity:${k(0)};transform:translateY(${(1 - outBack(k(0))) * 40}px) scale(${0.85 + 0.15 * outBack(k(0))})">
+      <div class="t">${sc.title.split(' ').map((w, i) => { const q = k(0.25 + i * 0.06, 0.38); return `<span class="w" style="opacity:${q};transform:translateY(${(1 - outBack(q)) * 34}px)">${w} </span>`; }).join('')}</div>
+      <div class="s" style="opacity:${k(0.75)};transform:translateY(${(1 - k(0.75)) * 22}px)">${sc.sub}</div>
+      <div class="url" style="opacity:${k(1.0)};transform:translateX(-50%) scale(${(0.7 + 0.3 * outBack(k(1.0))) * pulse})">cornellalocal.es</div>
+      <div class="how" style="opacity:${k(1.3)}">${sc.how}</div></div>`;
+  }
+  const a1 = animate ? c01(t / 0.35) : 1;
+  const a3 = animate ? c01((t - 0.35) / 0.4) : 1;
+  return `<div class="cap">
+    <div class="pill ${sc.pillColor || ''}" style="opacity:${a1};transform:translateX(-50%) scale(${0.7 + 0.3 * outBack(a1)})">${sc.pill}</div>
+    <div class="title">${titleHTML(sc.title, t, animate)}</div>
+    <div class="sub" style="opacity:${a3};transform:translateY(${(1 - ease(a3)) * 22}px)">${sc.sub}</div></div>`;
+}
+
+// Efectos por encima del móvil: lupa, etiquetas, fichas flotantes, éxito y confeti
+function rand(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function fxHTML(sc, t, T) {
+  let h = '';
+  // lupa sobre un elemento
+  for (const bz of sc.bubbles || []) {
+    const a = win(t, bz.t0, bz.t1, 0.35, 0.28); if (a <= 0) continue;
+    const tg = targetOf(sc, bz.target); if (!tg) continue;
+    const v = viewPt(sc, t, tg);
+    const z = bz.zoom || 2.0, s = S * z, bw = bz.w || 900, bh = bz.h || 250;
+    const fx = SX + v.x * S, fy = SY + v.y * S;
+    let cy = fy - bh / 2 - 90; if (cy - bh / 2 < 520) cy = fy + bh / 2 + 90;
+    const left = 540 - bw / 2, top = cy - bh / 2;
+    const pop = 0.7 + 0.3 * outBack(c01((t - bz.t0) / 0.38));
+    // línea y aro que unen la lupa con el elemento
+    const ly1 = cy > fy ? top : top + bh;
+    h += `<svg class="burst" style="opacity:${a}"><line x1="${fx}" y1="${fy}" x2="${Math.min(Math.max(fx, left + 60), left + bw - 60)}" y2="${ly1}" stroke="#4b71c3" stroke-width="5" stroke-dasharray="10 9"/>
+      <circle cx="${fx}" cy="${fy}" r="${16 + 6 * Math.sin(T * 6)}" fill="none" stroke="#4b71c3" stroke-width="5"/></svg>`;
+    const ix = (bw - 14) / 2 - v.x * s, iy = (bh - 14) / 2 - v.y * s;
+    h += `<div class="bubble" style="left:${left}px;top:${top}px;width:${bw}px;height:${bh}px;opacity:${a};transform:scale(${pop})">
+      <div class="inner" style="left:${ix}px;top:${iy}px;width:${390 * s}px;height:${844 * s}px">${screenHTML(sc, t, s)}</div></div>`;
+  }
+  // etiquetas
+  for (const tg of sc.tags || []) {
+    const a = win(t, tg.t0, tg.t1, 0.3, 0.3); if (a <= 0) continue;
+    const v = viewPt(sc, t, tg); const pop = 0.6 + 0.4 * outBack(c01((t - tg.t0) / 0.35));
+    h += `<div class="tag" style="left:${SX + v.x * S}px;top:${SY + v.y * S}px;background:${tg.color || '#15803d'};opacity:${a};transform:translate(-50%,-50%) scale(${pop}) rotate(${tg.rot || -4}deg)">${tg.text}</div>`;
+  }
+  // fichas flotantes alrededor del móvil (portada)
+  (sc.chips || []).forEach((c, i) => {
+    const a = win(t, c.t0, sc.dur + 1, 0.4); if (a <= 0) return;
+    const bob = Math.sin(T * 2.2 + i * 1.7) * 10;
+    h += `<div class="chip" style="left:${c.x}px;top:${c.y + bob}px;opacity:${a};transform:scale(${0.6 + 0.4 * outBack(c01((t - c.t0) / 0.4))}) rotate(${c.rot || 0}deg)"><i style="background:${c.color}">${c.icon}</i>${c.text}</div>`;
+  });
+  // éxito: check verde con onda y texto
+  if (sc.success) {
+    const k = t - sc.success.t;
+    if (k >= 0 && k < 1.6) {
+      const a = c01(k / 0.2) * c01((1.6 - k) / 0.35); const pop = outBack(c01(k / 0.4));
+      const cx = 540, cy = 1115, R = 120;
+      const ring = c01(k / 0.8);
+      h += `<div class="okr" style="left:${cx - R}px;top:${cy - R}px;width:${2 * R}px;height:${2 * R}px;opacity:${(1 - ring) * a};transform:scale(${1 + ring * 1.3})"></div>`;
+      const dash = 160, drawn = dash * c01((k - 0.15) / 0.3);
+      h += `<div class="okc" style="left:${cx - R}px;top:${cy - R}px;width:${2 * R}px;height:${2 * R}px;opacity:${a};transform:scale(${pop})">
+        <svg viewBox="0 0 240 240"><path d="M68 124 L106 160 L174 86" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${dash}" stroke-dashoffset="${dash - drawn}"/></svg></div>`;
+      const ta = c01((k - 0.3) / 0.25) * c01((1.6 - k) / 0.35);
+      h += `<div class="oktxt" style="left:540px;top:${cy + R + 34}px;opacity:${ta};transform:translateX(-50%) translateY(${(1 - outCubic(c01((k - 0.3) / 0.3))) * 20}px)">${sc.success.text}</div>`;
+    }
+  }
+  // confeti
+  if (sc.confetti) {
+    const k = t - sc.confetti.t;
+    if (k >= 0 && k < 2.6) {
+      const r = rand(7); const cols = ['#4b71c3', '#15803d', '#f59e0b', '#e11d48', '#0ea5e9', '#a855f7'];
+      for (let i = 0; i < 90; i++) {
+        const x0 = 540 + (r() - 0.5) * 360, vx = (r() - 0.5) * 1400, vy = -650 - r() * 500, g = 1500;
+        const x = x0 + vx * k * 0.85, y = 1080 + vy * k + 0.5 * g * k * k;
+        const rot = (r() * 360 + k * (300 + r() * 600)) % 360; const w = 14 + r() * 12, hh = 8 + r() * 10;
+        const a = c01((2.6 - k) / 0.5);
+        h += `<div class="conf" style="left:${x}px;top:${y}px;width:${w}px;height:${hh}px;background:${cols[i % cols.length]};opacity:${a};transform:rotate(${rot}deg) scaleY(${Math.cos(k * 8 + i)})"></div>`;
+      }
+    }
+  }
+  return h;
+}
+
+const XF = 0.5;  // transición: la pantalla nueva entra empujando a la anterior (como al navegar en la app)
+window.draw = (i, t, T) => {
+  const sc = SCENES[i], prev = i > 0 ? SCENES[i - 1] : null;
+  const p = prev && t < XF ? ease(t / XF) : 1;
+  // fondo vivo
+  document.getElementById('b1').style.transform = `translate(${Math.sin(T * .35) * 50}px, ${Math.cos(T * .3) * 40}px)`;
+  document.getElementById('b2').style.transform = `translate(${Math.cos(T * .28) * 60}px, ${Math.sin(T * .33) * 40}px)`;
+  document.getElementById('b3').style.transform = `translate(${Math.sin(T * .22) * 70}px, ${Math.cos(T * .4) * 50}px)`;
+  // textos
+  const slotCur = document.getElementById('slotCur'), slotPrev = document.getElementById('slotPrev');
+  slotCur.innerHTML = captionHTML(sc, prev ? Math.max(0, t - (sc.end ? XF * 0.9 : XF * 0.3)) : t, true);
+  if (prev && p < 1) { slotPrev.innerHTML = captionHTML(prev, 99, false); slotPrev.style.opacity = 1 - p; slotPrev.style.transform = `translateY(${-40 * p}px)`; }
+  else slotPrev.innerHTML = '';
+  // pantallas: la nueva entra desde la derecha
+  const scrCur = document.getElementById('scrCur'), scrPrev = document.getElementById('scrPrev'), shade = document.getElementById('shade');
+  // en el cierre el móvil se va con la última pantalla puesta
+  scrCur.innerHTML = sc.end && prev ? screenHTML(prev, prev.dur, S) : screenHTML(sc, t, S);
+  if (prev && p < 1 && prev.shot && sc.shot) {
+    scrPrev.innerHTML = screenHTML(prev, prev.dur, S);
+    scrCur.style.transform = `translateX(${(1 - p) * 526}px)`; scrCur.style.boxShadow = '-20px 0 40px rgba(15,23,42,.25)';
+    scrPrev.style.transform = `translateX(${-p * 160}px)`; shade.style.opacity = 0.25 * p;
+  } else { scrPrev.innerHTML = ''; scrCur.style.transform = 'none'; scrCur.style.boxShadow = 'none'; shade.style.opacity = 0; }
+  // efectos (los de la escena anterior se van con ella)
+  const fx = document.getElementById('fx');
+  fx.innerHTML = fxHTML(sc, t, T) + (prev && p < 1 ? `<div style="opacity:${1 - p}">${fxHTML(prev, prev.dur, T)}</div>` : '');
+  // móvil: entra desde abajo en la portada, sale en el cierre
+  const ph = document.getElementById('phone');
+  let ty = 0, rot = 0, op = 1, sca = 1;
+  if (sc.intro) { const k = outCubic(c01(t / 0.9)); ty = (1 - k) * 700; rot = (1 - k) * -10; sca = 0.92 + 0.08 * k; }
+  if (sc.end) { const k = prev ? p : 1; ty = k * 120; op = 1 - k; }
+  ph.style.opacity = op; ph.style.transform = `translateY(${ty}px) rotate(${rot}deg) scale(${sca})`;
+  // progreso de los 9 pasos
+  const prog = document.getElementById('prog');
+  const st = sc.step || 0, done = sc.allDone;
+  prog.style.opacity = sc.end ? (prev ? 1 - p : 0) : (sc.intro ? c01((t - 0.8) / 0.4) : 1);
+  prog.innerHTML = Array.from({ length: 9 }, (_, k) => {
+    let col = '#cbd5e1', w = 66;
+    if (done || k + 1 < st) col = '#15803d';
+    if (!done && k + 1 === st) { col = '#4b71c3'; w = 66; }
+    const fill = !done && k + 1 === st ? c01((t - 0.2) / 0.5) : 1;
+    return k + 1 === st && !done
+      ? `<span style="background:#cbd5e1;position:relative;overflow:hidden"><b style="position:absolute;left:0;top:0;bottom:0;width:${fill * 100}%;background:${col};border-radius:6px"></b></span>`
+      : `<span style="background:${col}"></span>`;
+  }).join('');
+  return Promise.all([...document.images].map(im => im.complete && im.naturalWidth ? 0 : im.decode().catch(() => 0)));
+};
+window.preload = async (srcs) => {
+  const box = document.createElement('div'); box.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden';
+  document.body.appendChild(box);
+  await Promise.all(srcs.map(src => new Promise(res => { const im = new Image(); im.onload = im.onerror = res; im.src = src; box.appendChild(im); })));
+  await Promise.all([...box.querySelectorAll('img')].map(im => im.decode().catch(() => 0)));
+};
+</script>
+</body></html>

@@ -5323,7 +5323,7 @@ const ProfilePage = ({ onNavigate, businessStatus, businessData, validateBusines
               <div className="flex-1">
                 <h4 className="text-lg font-bold text-amber-800 mb-1">En revisión</h4>
                 <p className="text-sm text-amber-700 mb-3">
-                  Tu solicitud está siendo revisada. Recibirás una notificación en las próximas 24 horas.
+                  Estamos revisando tu solicitud. Normalmente tardamos 1 o 2 días y te avisamos en la app.
                 </p>
                 <div className="flex items-center gap-2 text-xs text-amber-600">
                   <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
@@ -10209,7 +10209,7 @@ const ContactSupportScreen = ({ onNavigate, showToast }) => {
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-3">¡Mensaje enviado!</h2>
           <p className="text-gray-500 mb-6">
-            Hemos recibido tu consulta. Te responderemos en un plazo de 24-48 horas.
+            Hemos recibido tu consulta. Normalmente respondemos en 1 o 2 días.
           </p>
           <button
             onClick={() => onNavigate('settings')}
@@ -10600,7 +10600,7 @@ const RegistrationSuccessScreen = ({ onNavigate }) => {
 
         {/* Description */}
         <p className="text-gray-600 text-center text-base leading-relaxed mb-8 max-w-xs">
-          Estamos revisando tus datos. En menos de 24h podrás empezar a gestionar tu perfil.
+          Estamos revisando tus datos. Normalmente en 1 o 2 días podrás empezar a gestionar tu ficha.
           Mientras tanto, puedes ver cómo funcionará tu panel.
         </p>
 

@@ -17,3 +17,13 @@ supabase/.temp/
 # Debug / ad-hoc scripts (root)
 /check-*.js
 
+
+# Vídeos explicativos: solo se guardan las herramientas, no lo generado
+herramientas/videos/shots/
+herramientas/videos/parts/
+herramientas/videos/frames/
+herramientas/videos/img/*.jpg
+herramientas/videos/*.mp4
+herramientas/videos/*.wav
+herramientas/videos/*.txt
+herramientas/videos/timeline.json

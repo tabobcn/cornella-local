@@ -1,0 +1,8 @@
+{
+  "name": "cornella-reto-para-el-video",
+  "private": true,
+  "description": "Vídeo reto «Para el vídeo» de Cornellà Local (solo herramienta local)",
+  "dependencies": {
+    "lucide-static": "0.460.0"
+  }
+}

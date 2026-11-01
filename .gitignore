@@ -65,3 +65,11 @@ herramientas/videos/maqueta-3d/*.wav
 herramientas/videos/maqueta-3d/*.txt
 herramientas/videos/maqueta-3d/*.log
 herramientas/videos/maqueta-3d/*.jpg
+herramientas/videos/reto-para-el-video/node_modules/
+herramientas/videos/reto-para-el-video/package-lock.json
+herramientas/videos/reto-para-el-video/img/
+herramientas/videos/reto-para-el-video/fonts/
+herramientas/videos/reto-para-el-video/stills/
+herramientas/videos/reto-para-el-video/sched.json
+herramientas/videos/reto-para-el-video/*.mp4
+herramientas/videos/reto-para-el-video/*.wav

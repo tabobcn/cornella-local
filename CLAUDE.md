@@ -394,6 +394,9 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 - Fallos vistos al grabarlo: en «Ofertas de Empleo» del negocio el salario salía siempre «0 € - 0 €» (ahora el
   rango, la nota del negocio o «A convenir») y faltaba el tipo de contrato; «Publicada Hace 4 días» → «hace».
   En los presupuestos recibidos, el sello de verificado se iba junto al precio cuando el nombre ocupaba 2 líneas.
+- `herramientas/videos/reto-para-el-video/`: reto viral de 19 s («Para el vídeo y mira qué te toca»), tarjetas que
+  cambian 15 veces por segundo, 1 premio escondido y final en «Muy pronto». La maqueta tiene 4 músicas más en
+  `maqueta-3d/music_fondo.py` (alegre, lo-fi, funky, tropical).
 
 ---
 

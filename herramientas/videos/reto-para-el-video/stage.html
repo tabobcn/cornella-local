@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;src:url(fonts/inter-latin-wght-normal.woff2) format('woff2');font-weight:100 900;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215}
+@font-face{font-family:Inter;src:url(fonts/inter-latin-ext-wght-normal.woff2) format('woff2');font-weight:100 900;unicode-range:U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased;background:#2f57c9}
+#bg{position:absolute;inset:0;background:radial-gradient(1200px 900px at 50% 38%,#4f74db 0%,#2f57c9 45%,#22409b 100%)}
+#dots{position:absolute;inset:-200px;background-image:radial-gradient(rgba(255,255,255,.10) 3px,transparent 3.5px);background-size:64px 64px}
+.top{position:absolute;left:0;right:0;top:232px;text-align:center}
+.stop{display:inline-flex;align-items:center;gap:22px;background:#e11d48;color:#fff;font-size:92px;font-weight:900;letter-spacing:-.02em;padding:22px 52px 24px 40px;border-radius:40px;
+  box-shadow:0 0 0 8px rgba(255,255,255,.95),0 24px 60px rgba(0,0,0,.35);transform-origin:50% 50%}
+.stop svg{width:92px;height:92px;stroke-width:2.4}
+.sub{margin-top:34px;color:#fff;font-size:46px;font-weight:700;letter-spacing:-.01em;text-shadow:0 3px 18px rgba(0,0,0,.25)}
+#card{position:absolute;left:100px;top:520px;width:880px;height:960px;background:#fff;border-radius:64px;box-shadow:0 40px 100px rgba(10,20,60,.45);
+  display:flex;flex-direction:column;align-items:center;text-align:center;box-sizing:border-box;padding:56px 60px 48px}
+.pill{font-size:34px;font-weight:850;letter-spacing:.2em;text-transform:uppercase;padding:14px 30px;border-radius:999px}
+.ico{width:330px;height:330px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:46px 0 40px}
+.ico svg{width:170px;height:170px;stroke-width:1.9}
+.title{font-size:76px;line-height:1.06;font-weight:850;letter-spacing:-.035em;color:#0f1b3d;flex:1;display:flex;align-items:center}
+.desc{font-size:38px;font-weight:650;color:#5b6478;margin-top:18px}
+.brandline{margin-top:26px;font-size:30px;font-weight:750;color:#2f57c9;opacity:.85}
+#card.gold{background:linear-gradient(160deg,#fff7d1 0%,#ffd75e 45%,#f5b301 100%)}
+#card.gold .title{color:#5b3a00}
+#card.gold .desc{color:#6b4a00}
+#card.brand .logo{width:300px;margin:40px 0 18px}
+#card.brand .word{width:640px}
+.bot{position:absolute;left:0;right:0;top:1532px;text-align:center;color:#fff}
+.cta{display:inline-flex;align-items:center;gap:18px;font-size:48px;font-weight:850;letter-spacing:-.015em}
+.cta svg{width:56px;height:56px;stroke-width:2.4}
+.hint{margin-top:16px;display:inline-flex;align-items:center;gap:12px;font-size:34px;font-weight:700;color:#ffe38a}
+.hint svg{width:38px;height:38px;stroke-width:2.4}
+</style></head><body>
+<div id="bg"></div><div id="dots"></div>
+<div class="top"><div class="stop" id="stop"><span id="hand"></span><span id="stoptxt">PARA EL VÍDEO</span></div><div class="sub" id="sub">y mira qué te toca hoy en Cornellà</div></div>
+<div id="card"></div>
+<div class="bot"><div class="cta" id="cta"></div><br><div class="hint" id="hint"></div></div>
+<script>
+const FPS = 30, TOTAL = 570;
+const ICONS = {};
+const NAMES = ['croissant', 'coffee', 'wrench', 'paint-roller', 'briefcase', 'umbrella', 'footprints', 'scissors', 'apple', 'heart', 'bell-ring', 'shopping-basket',
+  'sofa', 'star', 'rotate-ccw', 'instagram', 'store', 'chart-column', 'users', 'zap', 'tag', 'party-popper', 'trophy', 'hand', 'message-circle'];
+const C = { y: ['#fde68a', '#92400e', '#b45309'], o: ['#fed7aa', '#9a3412', '#c2410c'], b: ['#bfdbfe', '#1e3a8a', '#1d4ed8'], v: ['#ddd6fe', '#4c1d95', '#6d28d9'],
+  g: ['#bbf7d0', '#14532d', '#15803d'], c: ['#a5f3fc', '#155e75', '#0e7490'], p: ['#fbcfe8', '#831843', '#be185d'], r: ['#fecaca', '#7f1d1d', '#b91c1c'], n: ['#e5e7eb', '#374151', '#4b5563'] };
+const CARDS = [
+  ['croissant', 'Un 2x1 en tu panadería', 'Ofertas del barrio con cupón', 'y'],
+  ['coffee', 'Café + tostada a precio de oferta', 'Ofertas flash de hoy', 'o'],
+  ['wrench', 'Fontanero sin buscar en Google', 'Pide presupuesto gratis', 'b'],
+  ['paint-roller', '3 presupuestos para pintar tu piso', 'Gratis y sin compromiso', 'v'],
+  ['briefcase', 'Trabajo a 5 minutos de casa', 'Bolsa de empleo del barrio', 'g'],
+  ['umbrella', 'Descubrir una terraza escondida', 'Busca por etiquetas', 'c'],
+  ['footprints', '-30 % en zapatillas', 'Tu tienda favorita te avisa', 'p'],
+  ['scissors', 'Pedir cita en la pelu de abajo', 'Comercios de tu calle', 'v'],
+  ['apple', 'Fruta de temporada del mercado', 'Productos de aquí', 'g'],
+  ['coffee', 'Invitar al café a quien te pasó este vídeo', 'Sin excusas', 'o'],
+  ['heart', 'Hacerte fan de 3 comercios nuevos', 'Guarda tus favoritos', 'r'],
+  ['bell-ring', 'Enterarte la primera de las ofertas', 'Avisos de tus favoritos', 'y'],
+  ['shopping-basket', 'Hacer la compra en tu barrio', 'Todo Cornellà en una app', 'g'],
+  ['sofa', 'Comparar precios sin moverte del sofá', 'Presupuestos del barrio', 'b'],
+  ['star', 'Reseñar tu bar favorito', 'Reseñas de vecinos de verdad', 'y'],
+  ['rotate-ccw', 'Nada… ¡vuelve a intentarlo!', 'Desliza hacia atrás', 'n'],
+  ['instagram', 'Seguir a @cornellalocal', 'Ahí avisamos del día que abrimos', 'p'],
+  ['store', 'Dar de alta tu negocio gratis', '¿Tienes negocio?', 'b'],
+  ['chart-column', 'Ver cuánta gente mira tu tienda', 'Para negocios', 'c'],
+  ['users', 'Encontrar personal cerca', 'Para negocios', 'v'],
+  ['zap', 'Un electricista de confianza', 'Profesionales del barrio', 'y'],
+  ['tag', 'Todas las ofertas en un solo sitio', 'Ofertas y cupones', 'r'],
+  ['party-popper', 'Celebrarlo en un bar del barrio', 'Busca por categoría', 'o'],
+];
+const PRIZE = ['trophy', '¡PREMIO!', 'Comenta PREMIO y te avisamos el primero cuando abramos', 'gold'];
+// calendario: cada 2 fotogramas hasta el 450; luego frena; tarjeta final desde el 516
+let seed = 20261101; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const SCHED = []; // [desde, hasta, índice | 'prize' | 'brand']
+let f = 0, last = -1, bag = [];
+const next = () => { if (!bag.length) { bag = CARDS.map((_, i) => i); for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; } if (bag[bag.length - 1] === last) bag.unshift(bag.pop()); } last = bag.pop(); return last; };
+let slot = 0;
+while (f < 450) { SCHED.push([f, f + 2, slot === 140 ? 'prize' : next()]); f += 2; slot++; }
+for (const d of [3, 3, 4, 4, 5, 6, 7, 9, 11, 14]) { SCHED.push([f, f + d, next()]); f += d; }
+SCHED.push([f, TOTAL, 'brand']);
+window.SCHED = SCHED;
+const card = document.getElementById('card');
+function svg(n, color) { return ICONS[n].replace('<svg', `<svg style="color:${color}"`); }
+function setCard(k) {
+  if (k === 'brand') {
+    card.className = 'brand';
+    card.innerHTML = `<div class="pill" style="background:#dbe6fb;color:#2f57c9">A todos nos toca</div><img class="logo" src="img/icon-512x512.png"><img class="word" src="img/logo.png">
+      <div class="title" style="font-size:60px">Muy pronto en tu barrio</div><div class="desc" style="color:#2f57c9;font-weight:800">@cornellalocal</div>`;
+    return;
+  }
+  const [ic, title, desc, col] = k === 'prize' ? PRIZE : CARDS[k];
+  if (k === 'prize') {
+    card.className = 'gold';
+    card.innerHTML = `<div class="pill" style="background:#5b3a00;color:#ffe38a">Te ha tocado…</div><div class="ico" style="background:rgba(255,255,255,.55)">${svg(ic, '#7a4f00')}</div>
+      <div class="title" style="font-size:120px">${title}</div><div class="desc">${desc}</div><div class="brandline" style="color:#5b3a00">Cornellà Local</div>`;
+    return;
+  }
+  const [bg, fg, acc] = C[col];
+  card.className = '';
+  const fs = title.length > 34 ? 66 : title.length > 26 ? 72 : 80;
+  card.innerHTML = `<div class="pill" style="background:${bg};color:${fg}">Te toca…</div><div class="ico" style="background:${bg}">${svg(ic, acc)}</div>
+    <div class="title" style="font-size:${fs}px">${title}</div><div class="desc">${desc}</div><div class="brandline">Cornellà Local</div>`;
+}
+window.load = async () => {
+  await Promise.all(NAMES.map(async n => { const r = await fetch(`node_modules/lucide-static/icons/${n}.svg`); ICONS[n] = (await r.text()).replace(/<!--.*?-->/gs, '').trim(); }));
+  await document.fonts.load('900 90px Inter'); await document.fonts.load('650 40px Inter');
+  document.getElementById('hand').innerHTML = ICONS.hand;
+  document.getElementById('cta').innerHTML = ICONS['message-circle'] + 'Comenta qué te ha tocado';
+  document.getElementById('hint').innerHTML = ICONS.trophy + 'Hay 1 premio escondido';
+  await Promise.all([...document.images].map(i => i.decode().catch(() => { })));
+};
+let lastKey = null;
+window.draw = (fr) => {
+  const s = SCHED.find(([a, b]) => fr >= a && fr < b) || SCHED[SCHED.length - 1];
+  if (s[2] !== lastKey || s[0] === fr) { setCard(s[2]); lastKey = s[2]; }
+  const t = fr / FPS, brand = s[2] === 'brand';
+  document.getElementById('stop').style.transform = `scale(${(1 + 0.035 * Math.sin(t * Math.PI * 2 * 2)).toFixed(4)})`;
+  document.getElementById('stoptxt').textContent = brand ? '¿QUÉ TE HA TOCADO?' : 'PARA EL VÍDEO';
+  document.getElementById('stop').style.fontSize = brand ? '64px' : '92px';
+  document.getElementById('sub').textContent = brand ? 'Cuéntanoslo en comentarios' : 'y mira qué te toca hoy en Cornellà';
+  document.getElementById('dots').style.transform = `translate(${(t * 18) % 64}px, ${(t * 12) % 64}px)`;
+  const kick = brand ? Math.max(0, 1 - (fr - s[0]) / 8) : 0;
+  card.style.transform = `scale(${(1 + 0.04 * kick).toFixed(4)})`;
+  return s[2];
+};
+window.ready = true;
+</script>
+</body></html>

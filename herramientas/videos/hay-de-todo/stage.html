@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;src:url(fonts/inter-latin-wght-normal.woff2) format('woff2');font-weight:100 900;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215}
+@font-face{font-family:Inter;src:url(fonts/inter-latin-ext-wght-normal.woff2) format('woff2');font-weight:100 900;unicode-range:U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased;background:#2f57c9}
+.bg{position:absolute;inset:0;opacity:0}
+#dots{position:absolute;inset:-200px;background-image:radial-gradient(rgba(255,255,255,.09) 3px,transparent 3.6px);background-size:60px 60px}
+#counter{position:absolute;top:170px;left:0;right:0;text-align:center;color:rgba(255,255,255,.85);font-size:30px;font-weight:800;letter-spacing:.24em}
+.head{position:absolute;left:50px;right:50px;top:228px;text-align:center;color:#fff}
+.ln{overflow:hidden;padding:0 10px 8px;margin:0 -10px}
+.ln span{display:block;font-size:88px;line-height:1.03;font-weight:850;letter-spacing:-.04em;text-shadow:0 6px 30px rgba(0,0,0,.18)}
+.ln.k span{font-size:42px;font-weight:700;letter-spacing:-.01em;opacity:.92;margin-bottom:4px}
+#phone{position:absolute;left:0;top:0;width:827px;height:1719px;transform-origin:50% 0}
+#screen{position:absolute;overflow:hidden;background:#fff}
+#screen .pg{position:absolute;left:0;top:0;width:100%;height:100%;background:#fff}
+#screen .pg img.app{position:absolute;left:0;top:73px;width:100%}
+.sb{position:absolute;left:0;right:0;top:0;height:73px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:6px 40px 0 44px;box-sizing:border-box;font-size:27px;font-weight:650;color:#111}
+.bat{width:42px;height:21px;border:2.5px solid #111;border-radius:6px;box-sizing:border-box;padding:2px;opacity:.85}
+.bat i{display:block;width:72%;height:100%;background:#111;border-radius:2px}
+.sig{width:30px;height:20px;background:#111;clip-path:polygon(0 100%,100% 0,100% 100%)}
+#hole{position:absolute;width:21px;height:21px;border-radius:50%;background:#060606}
+#frame{position:absolute;left:0;top:0;width:827px;height:1719px}
+#glare{position:absolute;left:65px;top:64px;width:688px;height:1562px;border-radius:72px;pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,255,255,0) 35%,rgba(255,255,255,.12) 45%,rgba(255,255,255,0) 56%)}
+.tap{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;background:rgba(20,30,50,.25);opacity:0}
+#bub{position:absolute;left:0;top:0;width:240px;height:240px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 30px 70px rgba(0,0,0,.3)}
+#bub svg{width:128px;height:128px;stroke-width:1.8}
+.chip{position:absolute;left:0;top:0;display:flex;align-items:center;gap:14px;background:#fff;color:#0f1b3d;border-radius:999px;padding:20px 32px 20px 22px;font-size:38px;font-weight:800;
+  white-space:nowrap;box-shadow:0 18px 50px rgba(0,0,0,.3);transform-origin:50% 50%;opacity:0}
+.chip svg{width:42px;height:42px;stroke-width:2.4}
+.sticker{position:absolute;left:0;top:0;width:150px;height:150px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 18px 40px rgba(0,0,0,.25);opacity:0}
+.sticker svg{width:82px;height:82px;stroke-width:2}
+#end{position:absolute;inset:0;background:#fff;opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#end > *{will-change:transform}
+#end .icon{width:290px;height:290px}
+#end .word{width:700px;margin:8px 0 42px}
+#end h2{margin:0;font-size:90px;font-weight:850;letter-spacing:-.045em;color:#0f1b3d;line-height:1.02}
+#end h3{margin:24px 0 48px;font-size:46px;font-weight:700;color:#2f57c9}
+#end .ig{display:inline-flex;align-items:center;gap:16px;background:#2f57c9;color:#fff;font-size:46px;font-weight:800;padding:22px 42px 22px 30px;border-radius:999px;box-shadow:0 20px 50px rgba(47,87,201,.35)}
+#end .ig svg{width:50px;height:50px;stroke-width:2.2}
+#end .free{margin-top:30px;font-size:34px;color:#5b6478;font-weight:650}
+</style></head><body>
+<div id="bgs"></div><div id="dots"></div>
+<div id="counter"></div>
+<div id="heads"></div>
+<div id="stickers"></div>
+<div id="phone"><div id="screen"></div><div id="hole"></div><img id="frame" src="img/phone-frame.png"><div id="glare"></div></div>
+<div id="bub"></div>
+<div id="chips"></div>
+<div id="end"><img class="icon" src="img/icon-512x512.png"><img class="word" src="img/logo.png"><h2>Todo Cornellà<br>en una app</h2><h3>Muy pronto · gratis para todos</h3><div class="ig" id="ig"></div><div class="free">Comercios, oficios y ofertas de tu barrio</div></div>
+<script>
+const W = 1080, H = 1920;
+const BAR = 2.6, G0 = 3.5;
+const at = (i, n = 1) => ({ t0: G0 + i * BAR, t1: G0 + (i + n) * BAR });
+const BEATS = [
+  { ...at(0), icon: 'beef', k: '¿Buscas…', l1: 'una buena', l2: 'carnicería?', bg: ['#c2262b', '#7a1517'], ac: '#c2262b', pages: ['t02-carniceria'], chips: [['star', '4,9 · 31 reseñas'], ['clock', 'Abierto ahora']] },
+  { ...at(1), icon: 'fish', k: '¿Buscas…', l1: 'pescado fresco', l2: 'de verdad?', bg: ['#0f7f96', '#0b4457'], ac: '#0f7f96', pages: ['t03-pescaderia'], chips: [['badge-check', 'Pescado de lonja'], ['star', '4,8 · 22 reseñas']] },
+  { ...at(2), icon: 'apple', k: '¿Buscas…', l1: 'fruta de', l2: 'temporada?', bg: ['#1f8f45', '#0f4d26'], ac: '#1f8f45', pages: ['t04-fruteria'], chips: [['map-pin', 'Producto local'], ['badge-check', 'A domicilio']] },
+  { ...at(3), icon: 'utensils-crossed', k: '¿Buscas…', l1: 'un menú del día', l2: 'cerca del curro?', bg: ['#d4520f', '#7a2a08'], ac: '#d4520f', pages: ['t06-restaurante'], chips: [['badge-check', 'Menú del día'], ['star', '4,8 · 41 reseñas']] },
+  { ...at(4), icon: 'beer', k: '¿Buscas…', l1: 'una terraza', l2: 'para el vermut?', bg: ['#c27012', '#6e3a06'], ac: '#b45309', pages: ['t07-bares'], chips: [['map-pin', 'Con terraza'], ['clock', 'Abierto ahora']] },
+  { ...at(5), icon: 'scissors', k: '¿Buscas…', l1: 'peluquería', l2: 'en tu calle?', bg: ['#a52bb5', '#5c1666'], ac: '#a21caf', pages: ['t09-peluqueria'], chips: [['clock', 'Cita previa'], ['star', '4,9 · 18 reseñas']] },
+  { ...at(6), icon: 'sparkles', k: '¿Buscas…', l1: 'uñas, cejas', l2: 'o un facial?', bg: ['#d9367a', '#7a1440'], ac: '#db2777', pages: ['t10-estetica'], chips: [['badge-check', 'Facial y depilación'], ['star', '4,9 · 16 reseñas']] },
+  { ...at(7), icon: 'paint-roller', k: '¿Necesitas…', l1: 'un pintor', l2: 'de confianza?', bg: ['#4c47d6', '#272480'], ac: '#4338ca', pages: ['t12-pintor'], chips: [['badge-check', 'Presupuesto gratis'], ['star', 'Compara 3 precios']] },
+  { ...at(8), icon: 'droplets', k: '¿Una fuga…', l1: 'un domingo', l2: 'por la tarde?', bg: ['#0b72b5', '#073e63'], ac: '#0369a1', pages: ['t13-fontanero'], chips: [['clock', 'Urgencias'], ['map-pin', 'Fontaneros del barrio']] },
+  { ...at(9), icon: 'spray-can', k: '¿Necesitas…', l1: 'una limpieza', l2: 'a fondo?', bg: ['#11877a', '#0a4a43'], ac: '#0f766e', pages: ['t14-limpieza'], chips: [['badge-check', 'Pisos y fin de obra'], ['star', '4,8 · 12 reseñas']] },
+  { ...at(10, 2), icon: 'tag', k: 'Y además…', l1: 'sus ofertas,', l2: 'con tu cupón.', bg: ['#e0294f', '#8a0f2c'], ac: '#e11d48', pages: ['x05-ofertas', 'x07-zapas-codigo'], chips: [['tag', '-30 % en zapatillas'], ['tag', '2x1 en croissants']] },
+  { ...at(12, 2), icon: 'store', k: '¿Tienes negocio?', l1: 'Alta gratis', l2: 'y ves tus visitas.', bg: ['#3560d4', '#1c3a8a'], ac: '#2f57c9', pages: ['x12-panel', 'x13-stats'], chips: [['badge-check', 'Alta gratis'], ['star', '1.248 visitas']] },
+];
+const END = G0 + 14 * BAR;   // 39.9
+const TOTAL = 44.0;
+window.TIMES = { G0, BAR, END, TOTAL, beats: BEATS.map(b => [b.t0, b.t1]) };
+
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const ss = p => p * p * (3 - 2 * p);
+const eio = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+const eout = p => 1 - Math.pow(1 - p, 3);
+const eback = p => { const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); };
+const el = (tag, cls, html, parent) => { const d = document.createElement(tag); if (cls) d.className = cls; if (html != null) d.innerHTML = html; (parent || document.body).appendChild(d); return d; };
+const ICONS = {};
+const NAMES = [...new Set([...BEATS.flatMap(b => [b.icon, ...b.chips.map(c => c[0])]), 'instagram'])];
+
+// móvil
+const FR = { sx: 65, sy: 64, sw: 688, sh: 1562, r: 72 };
+const PS = 1160 / 1719;                 // escala del móvil
+const PX = (W - 827 * PS) / 2, PY = 640;
+const phone = document.getElementById('phone'), screen = document.getElementById('screen');
+Object.assign(screen.style, { left: FR.sx + 'px', top: FR.sy + 'px', width: FR.sw + 'px', height: FR.sh + 'px', borderRadius: FR.r + 'px' });
+Object.assign(document.getElementById('hole').style, { left: (FR.sx + FR.sw / 2 - 10.5) + 'px', top: (FR.sy + 24) + 'px' });
+const SB = `<div class="sb"><span>10:20</span><span style="display:flex;gap:12px;align-items:center"><i class="sig"></i><i class="bat"><i></i></i></span></div>`;
+const pages = {};
+for (const name of ['v01-inicio', ...BEATS.flatMap(b => b.pages)]) {
+  const d = el('div', 'pg', `<img class="app" src="img/${name}.jpg">${SB}`, screen); d.style.visibility = 'hidden'; pages[name] = d;
+}
+const tap = el('div', 'tap', '', screen);
+// fondos y titulares
+const bgs = document.getElementById('bgs');
+const bgEls = [['#3560d4', '#1c3a8a'], ...BEATS.map(b => b.bg)].map(([a, b]) => { const d = el('div', 'bg', '', bgs); d.style.background = `radial-gradient(1300px 1000px at 50% 28%, ${a} 0%, ${b} 100%)`; return d; });
+const heads = document.getElementById('heads');
+const HEADS = [{ t0: 0.25, t1: 3.45, k: '', l1: 'En Cornellà', l2: 'hay de todo.' }, ...BEATS.map(b => ({ t0: b.t0 + 0.04, t1: b.t1 - 0.02, k: b.k, l1: b.l1, l2: b.l2 }))];
+for (const h of HEADS) {
+  h.el = el('div', 'head', `${h.k ? `<div class="ln k"><span>${h.k}</span></div>` : ''}<div class="ln"><span>${h.l1}</span></div><div class="ln"><span>${h.l2}</span></div>`, heads);
+  h.spans = [...h.el.querySelectorAll('.ln > span')]; h.el.style.display = 'none';
+}
+const bub = document.getElementById('bub');
+const chipsBox = document.getElementById('chips');
+const sticksBox = document.getElementById('stickers');
+const STK = ['beef', 'fish', 'apple', 'utensils-crossed', 'beer', 'scissors', 'sparkles', 'paint-roller', 'droplets', 'spray-can', 'tag', 'store'];
+const STK_POS = [[120, 760], [930, 700], [190, 1090], [880, 1040], [110, 1420], [960, 1380], [300, 640], [770, 610], [260, 1640], [820, 1700], [540, 1200], [540, 820]];
+const STK_COL = ['#c2262b', '#0f7f96', '#1f8f45', '#d4520f', '#b45309', '#a21caf', '#db2777', '#4338ca', '#0369a1', '#0f766e', '#e11d48', '#2f57c9'];
+const end = document.getElementById('end');
+
+window.load = async () => {
+  await Promise.all(NAMES.map(async n => { const r = await fetch(`node_modules/lucide-static/icons/${n}.svg`); ICONS[n] = (await r.text()).replace(/<!--.*?-->/gs, '').trim(); }));
+  await document.fonts.load('850 90px Inter'); await document.fonts.load('700 40px Inter');
+  STK.forEach((n, i) => { const d = el('div', 'sticker', ICONS[n].replace('<svg', `<svg style="color:${STK_COL[i]}"`), sticksBox); d.dataset.i = i; });
+  BEATS.forEach(b => { b.chipEls = b.chips.map(([ic, txt]) => el('div', 'chip', ICONS[ic].replace('<svg', `<svg style="color:${b.ac}"`) + txt, chipsBox)); });
+  document.getElementById('ig').innerHTML = ICONS.instagram + '@cornellalocal';
+  await Promise.all([...document.images].map(i => i.decode().catch(() => { })));
+};
+
+let lastBub = '';
+window.draw = (t) => {
+  // índice del momento actual
+  let bi = -1; for (let i = 0; i < BEATS.length; i++) if (t >= BEATS[i].t0) bi = i;
+  // fondo
+  bgEls.forEach((d, i) => { let o = 0;
+    if (i === 0) o = bi < 0 ? 1 : 1 - ss(seg(t, BEATS[0].t0 - 0.1, BEATS[0].t0 + 0.2));
+    else { const b = BEATS[i - 1]; o = ss(seg(t, b.t0 - 0.1, b.t0 + 0.2)) * (i - 1 === BEATS.length - 1 ? 1 : 1 - ss(seg(t, BEATS[i].t0 - 0.1, BEATS[i].t0 + 0.2))); }
+    d.style.opacity = o.toFixed(3); });
+  document.getElementById('dots').style.transform = `translate(${(t * 20) % 60}px, ${(t * 14) % 60}px)`;
+  // contador
+  const cnt = document.getElementById('counter');
+  cnt.textContent = bi >= 0 && bi < 10 ? `${bi + 1} / 10` : '';
+  // titulares
+  for (const h of HEADS) {
+    const on = t > h.t0 - 0.05 && t < h.t1 + 0.02; h.el.style.display = on ? 'block' : 'none'; if (!on) continue;
+    const out = eio(seg(t, h.t1 - 0.22, h.t1));
+    h.spans.forEach((sp, i) => { const p = eout(seg(t, h.t0 + i * 0.07, h.t0 + i * 0.07 + 0.38));
+      sp.style.transform = `translateY(${((1 - p) * 110 - out * 110).toFixed(1)}%)`; });
+  }
+  // stickers del gancho: explotan alrededor y se van
+  [...sticksBox.children].forEach((d, i) => {
+    const t0 = 0.5 + i * 0.12, p = seg(t, t0, t0 + 0.45), out = seg(t, 3.0 + i * 0.02, 3.45);
+    const [x, y] = STK_POS[i]; const fl = Math.sin(t * 2 + i) * 10;
+    d.style.opacity = (clamp(p * 3) * (1 - out)).toFixed(3);
+    d.style.transform = `translate(${x - 75}px, ${y - 75 + fl - out * 120}px) scale(${(eback(p) * (1 - 0.4 * out)).toFixed(3)}) rotate(${((1 - p) * -30 + Math.sin(t * 1.5 + i) * 6).toFixed(1)}deg)`;
+  });
+  // móvil: entra en el gancho, flota, sale al final
+  const pin = eout(seg(t, 2.3, 3.4)), pout = eio(seg(t, END - 0.5, END + 0.1));
+  const py = PY + (1 - pin) * 1400 + pout * 1500 + Math.sin(t * 1.4) * 8;
+  const rot = Math.sin(t * 0.9) * 2.2;
+  phone.style.transform = `translate(${PX}px, ${py.toFixed(1)}px) scale(${PS}) perspective(2400px) rotateY(${rot.toFixed(2)}deg) rotateZ(${(Math.sin(t * 0.7) * 0.6).toFixed(2)}deg)`;
+  document.getElementById('glare').style.backgroundPosition = `${(Math.sin(t * 0.6) * 300).toFixed(0)}px 0`;
+  // pantallas: cada momento entra deslizando desde la derecha
+  const seq = [['v01-inicio', 0]]; BEATS.forEach(b => b.pages.forEach((pg, j) => seq.push([pg, b.t0 + j * BAR])));
+  let cur = 0; for (let i = 0; i < seq.length; i++) if (t >= seq[i][1]) cur = i;
+  for (const k in pages) pages[k].style.visibility = 'hidden';
+  const [pgName, pt0] = seq[cur]; const pp = eio(seg(t, pt0, pt0 + 0.28));
+  const curEl = pages[pgName]; curEl.style.visibility = 'visible'; curEl.style.zIndex = 2;
+  curEl.style.transform = `translateX(${((1 - pp) * 100).toFixed(2)}%)`;
+  curEl.querySelector('img.app').style.transform = `translateY(${(-seg(t, pt0 + 0.5, pt0 + 2.5) * 0).toFixed(1)}px)`;
+  if (cur > 0 && pp < 1) { const prev = pages[seq[cur - 1][0]]; prev.style.visibility = 'visible'; prev.style.zIndex = 1; prev.style.transform = `translateX(${(-pp * 30).toFixed(2)}%)`; }
+  // toque en la primera tarjeta de la lista
+  const tp = seg(t, pt0 + 0.9, pt0 + 1.3);
+  tap.style.opacity = (tp > 0 && tp < 1 && cur > 0 ? Math.sin(tp * Math.PI) : 0).toFixed(3);
+  tap.style.left = '50%'; tap.style.top = '340px'; tap.style.transform = `scale(${(0.6 + tp * 0.8).toFixed(3)})`;
+  // burbuja con el icono
+  if (bi >= 0 && t < END) {
+    const b = BEATS[bi], p = seg(t, b.t0, b.t0 + 0.45), out = seg(t, b.t1 - 0.15, b.t1);
+    if (lastBub !== b.icon) { bub.innerHTML = ICONS[b.icon].replace('<svg', `<svg style="color:${b.ac}"`); lastBub = b.icon; }
+    bub.style.opacity = (1 - out).toFixed(3);
+    bub.style.transform = `translate(${70}px, ${(560 + Math.sin(t * 2) * 8).toFixed(1)}px) scale(${(eback(p) * (1 - 0.3 * out)).toFixed(3)}) rotate(${((1 - p) * -25).toFixed(1)}deg)`;
+  } else bub.style.opacity = 0;
+  // chips
+  BEATS.forEach((b, i) => b.chipEls.forEach((c, j) => {
+    const t0 = b.t0 + 0.55 + j * 0.3, p = seg(t, t0, t0 + 0.4), out = seg(t, b.t1 - 0.15, b.t1);
+    const on = t > t0 && t < b.t1; c.style.opacity = on ? (clamp(p * 3) * (1 - out)).toFixed(3) : 0; if (!on) return;
+    const w = c.offsetWidth, x = j === 0 ? W - w - 40 : 40, y = j === 0 ? 1010 : 1290;
+    c.style.transform = `translate(${x}px, ${(y + Math.sin(t * 2.2 + j) * 7).toFixed(1)}px) scale(${(0.6 + 0.4 * eback(p)).toFixed(3)})`;
+  }));
+  // cierre
+  const eo = seg(t, END - 0.15, END + 0.35); end.style.opacity = ss(eo).toFixed(3);
+  [...end.children].forEach((e, i) => { const p = eout(seg(t, END + 0.1 + i * 0.12, END + 0.7 + i * 0.12)); e.style.transform = `translateY(${((1 - p) * 50).toFixed(1)}px) scale(${i === 0 ? (0.7 + 0.3 * eback(p)).toFixed(3) : 1})`; e.style.opacity = p.toFixed(3); });
+  return bi;
+};
+window.ready = true;
+</script>
+</body></html>

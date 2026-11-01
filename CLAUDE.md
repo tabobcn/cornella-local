@@ -397,6 +397,9 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
 - `herramientas/videos/reto-para-el-video/`: reto viral de 19 s («Para el vídeo y mira qué te toca»), tarjetas que
   cambian 15 veces por segundo, 1 premio escondido y final en «Muy pronto». La maqueta tiene 4 músicas más en
   `maqueta-3d/music_fondo.py` (alegre, lo-fi, funky, tropical).
+- `herramientas/videos/hay-de-todo/`: «En Cornellà hay de todo» (44 s): un compás por comercio u oficio
+  (carnicería, pescadería, frutería, restaurante, bar, peluquería, estética, pintor, fontanero, limpieza), luego
+  ofertas con cupón y alta del negocio con estadísticas. Capturas con `vecino/capture-todo.cjs` (22 negocios inventados).
 
 ---
 

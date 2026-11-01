@@ -1,0 +1,8 @@
+{
+  "name": "cornella-hay-de-todo",
+  "private": true,
+  "description": "Vídeo «En Cornellà hay de todo» de Cornellà Local (solo herramienta local)",
+  "dependencies": {
+    "lucide-static": "0.460.0"
+  }
+}

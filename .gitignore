@@ -73,3 +73,11 @@ herramientas/videos/reto-para-el-video/stills/
 herramientas/videos/reto-para-el-video/sched.json
 herramientas/videos/reto-para-el-video/*.mp4
 herramientas/videos/reto-para-el-video/*.wav
+herramientas/videos/hay-de-todo/node_modules/
+herramientas/videos/hay-de-todo/package-lock.json
+herramientas/videos/hay-de-todo/img/
+herramientas/videos/hay-de-todo/fonts/
+herramientas/videos/hay-de-todo/stills/
+herramientas/videos/hay-de-todo/times.json
+herramientas/videos/hay-de-todo/*.mp4
+herramientas/videos/hay-de-todo/*.wav

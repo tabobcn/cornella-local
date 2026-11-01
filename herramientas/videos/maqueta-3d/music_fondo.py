@@ -12,7 +12,7 @@ STYLE = os.environ.get('STYLE', 'alegre')
 SR = 44100
 TOTAL = 44.0
 N = int(round(TOTAL * SR))
-BPM = 104.0 if STYLE == 'alegre' else 86.0
+BPM = {'alegre': 104.0, 'lofi': 86.0, 'funky': 118.0, 'tropical': 104.0}[STYLE]
 BEAT = 60.0 / BPM
 BAR = 4 * BEAT
 G0 = 6.6
@@ -104,6 +104,56 @@ def ding(base=88):
     a = bell(mtof(base), 1.3); b2 = bell(mtof(base + 5), 1.5); out = np.zeros(int(1.8 * SR))
     out[:len(a)] += a; i = int(0.12 * SR); out[i:i + len(b2)] += b2[: len(out) - i]; return out
 
+# --- instrumentos de las versiones animadas ---
+def muted(f, dur=0.16):
+    y = ks(f, dur + 0.05, 0.7, 0.982)[: int(dur * SR)]; e = np.exp(-tt(dur) * 14); return y * e * 1.4
+def funk_chord(notes, t0, g, dst, ghost=False):
+    if ghost:
+        t = tt(0.05); n = rng.normal(0, 1, len(t)); add(dst, bp(n, 900, 3200) * np.exp(-t * 90) * 0.12 * g, t0, 0.25); return
+    for j, n in enumerate(notes): add(dst, muted(mtof(n)), t0 + j * 0.006, 0.35 + (j - 1.5) * 0.08, g)
+def stab(notes, dur=0.28):
+    t = tt(dur); s = np.zeros_like(t)
+    for f in [mtof(n) for n in notes]:
+        for det in (-0.01, -0.004, 0.004, 0.01): ph = (f * (1 + det) * t) % 1.0; s += 2 * ph - 1
+    k = np.exp(-t * 14); s = lp(s, 4200) * k + lp(s, 900) * (1 - k)
+    env = np.minimum(1, t / 0.006) * np.exp(-t * 4) * np.minimum(1, np.maximum(0, dur - t) / 0.04)
+    return s * env * 0.03
+def lead_sq(f, dur, f_prev=None):
+    t = tt(dur); vib = 1 + 0.005 * np.sin(2 * np.pi * 5.8 * t) * np.minimum(1, t / 0.2)
+    glide = 1.0 if f_prev is None else (f_prev / f) ** np.exp(-t * 30)
+    ph = 2 * np.pi * np.cumsum(f * vib * glide) / SR; s = np.zeros_like(t)
+    for k in (1, 3, 5, 7): s += np.sin(k * ph) / k
+    env = np.minimum(1, t / 0.01) * (0.8 + 0.2 * np.exp(-t * 6)) * np.minimum(1, np.maximum(0, dur - t) / 0.05)
+    return lp(s, 3800) * env * 0.09
+def slap(f, dur):
+    t = tt(dur); s = np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * 2 * f * t) * np.exp(-t * 18) + 0.3 * lp(((f * t) % 1.0) * 2 - 1, 1200)
+    env = np.minimum(1, t / 0.004) * np.exp(-t * 5) * np.minimum(1, np.maximum(0, dur - t) / 0.02)
+    return s * env * 0.42
+def clap2():
+    t = tt(0.3); n = rng.normal(0, 1, len(t)); env = np.zeros_like(t)
+    for d in (0.0, 0.009, 0.018): env += (t >= d) * np.exp(-(t - d).clip(0) * 75) * 0.55
+    env += (t >= 0.025) * np.exp(-(t - 0.025).clip(0) * 13)
+    return bp(n, 1000, 6000) * env * 0.32
+def ohat(g=1.0):
+    t = tt(0.22); n = rng.normal(0, 1, len(t)); return hp(n, 7500) * np.exp(-t * 12) * 0.07 * g
+def marimba(f, dur=0.9):
+    t = tt(dur)
+    s = np.sin(2 * np.pi * f * t) * np.exp(-t * 4.5) + 0.3 * np.sin(2 * np.pi * f * 3.93 * t) * np.exp(-t * 14) + 0.08 * np.sin(2 * np.pi * f * 9.9 * t) * np.exp(-t * 30)
+    s[:80] += rng.normal(0, 0.15, 80) * np.linspace(1, 0, 80)
+    return s * np.minimum(1, t / 0.002) * 0.2
+def conga(hi=True):
+    t = tt(0.25); f = (330 if hi else 220) * (1 + 0.15 * np.exp(-t * 40))
+    return (np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 16) + bp(rng.normal(0, 1, len(t)), 1500, 5000) * np.exp(-t * 80) * 0.3) * 0.22
+def vox(f, dur, vowel='o', f_prev=None):
+    """«Vocal chop» sintético: diente de sierra con formantes."""
+    t = tt(dur); glide = 1.0 if f_prev is None else (f_prev / f) ** np.exp(-t * 25)
+    vib = 1 + 0.007 * np.sin(2 * np.pi * 5.2 * t) * np.minimum(1, t / 0.15)
+    ph = np.cumsum(f * vib * glide) / SR; s = 2 * (ph % 1.0) - 1
+    F = {'o': (450, 800, 2830), 'a': (750, 1150, 2800), 'e': (480, 1900, 2600)}[vowel]
+    y = bp(s, F[0] * 0.85, F[0] * 1.15) * 1.0 + bp(s, F[1] * 0.88, F[1] * 1.12) * 0.6 + bp(s, F[2] * 0.9, F[2] * 1.1) * 0.15
+    env = np.minimum(1, t / 0.02) * np.minimum(1, np.maximum(0, dur - t) / 0.06)
+    return y * env * 0.5
+
 mus, drums, fx = buf(), buf(), buf()
 kick_times = []
 
@@ -148,6 +198,92 @@ if STYLE == 'alegre':
     strum('C', FIN, True, 0.9, mus, 3.2); add(mus, bass(mtof(36), 3.0), FIN, 0, 1.0)
     add(mus, pad([mtof(n) for n in (60, 64, 67, 72)], TOTAL - FIN, 1800, 0.1, 2.5), FIN, 0, 1.2)
     for k, n in enumerate((84, 88, 91, 96)): add(mus, bell(mtof(n), 2.0), FIN + 0.1 + k * 0.12, (k - 1.5) * 0.3, 0.45)
+    add(drums, kick(0.8, True), FIN)
+elif STYLE == 'funky':
+    PROG = [(43, [59, 62, 66, 67]), (40, [59, 62, 64, 67]), (36, [60, 64, 67, 71]), (38, [60, 62, 66, 69])]   # Gmaj7 Em7 Cmaj7 D7
+    # gancho: guitarra apagada sola, con filtro
+    for k in range(int(3.1 / (BEAT / 4))):
+        root, notes = PROG[(k // 16) % 4]
+        if k % 16 in (0, 3, 6, 10, 13): funk_chord(notes, 0.1 + k * BEAT / 4, 0.55, mus)
+        elif k % 2: funk_chord(notes, 0.1 + k * BEAT / 4, 0.5, mus, ghost=True)
+    for k in range(3): add(drums, hat(0.7), 0.1 + k * BEAT * 2 + BEAT, 0.2)
+    # sale la ciudad: guitarra + palmas que se aceleran
+    t = 3.2; k = 0
+    while t < G0 - 0.05:
+        root, notes = PROG[3 if t > 5 else 2]; funk_chord(notes, t, 0.6 + 0.3 * (t - 3.2) / 3.4, mus, ghost=(k % 4 == 2)); t += BEAT / 4; k += 1
+    for tc in np.concatenate([np.arange(3.2, 5.2, BEAT), np.arange(5.2, 6.2, BEAT / 2), np.arange(6.2, G0 - 0.02, BEAT / 4)]): add(drums, clap2() * 0.7, tc, 0.05)
+    add(fx, riser(2.6, 0.06), G0 - 2.6, 0, 1.0)
+    NB = int(np.ceil((FIN - G0) / BAR))
+    MEL = [(0, 74), (0.5, 76), (1, 79), (1.5, 78), (2, 76), (3, 74), (3.5, 71), (4, 74), (5, 76), (5.5, 74), (6, 71), (7, 69),
+           (8, 74), (8.5, 76), (9, 79), (9.5, 81), (10, 83), (11, 81), (11.5, 79), (12, 78), (13, 76), (14, 74)]
+    for b in range(NB):
+        t0 = G0 + b * BAR
+        if t0 >= FIN - 0.4: break
+        root, notes = PROG[b % 4]; soft = 20.0 <= t0 < 22.0 or t0 >= 37.4
+        add(mus, pad([mtof(n) for n in notes], BAR + 0.3, 1500), t0, 0, 0.7)
+        for k in range(16):
+            if k in (0, 3, 6, 8, 10, 13, 14): funk_chord(notes, t0 + k * BEAT / 4, 0.45 if soft else 0.7, mus)
+            elif not soft: funk_chord(notes, t0 + k * BEAT / 4, 0.6, mus, ghost=True)
+        if soft: continue
+        for beat, iv, d in ((0, 0, 0.6), (0.75, 12, 0.25), (1.5, 0, 0.4), (2, 7, 0.5), (2.5, 12, 0.25), (3.25, 0, 0.3), (3.5, 10, 0.4)):
+            add(mus, slap(mtof(root - 12 + iv), d * BEAT * 1.5), t0 + beat * BEAT, 0, 0.9)
+        for beat in range(4): kt = t0 + beat * BEAT; add(drums, kick(0.85), kt); kick_times.append(kt)
+        for beat in (1, 3): add(drums, clap2(), t0 + beat * BEAT, 0.05)
+        for e in range(16): add(drums, hat(1.0 if e % 4 == 2 else 0.5), t0 + e * BEAT / 4, 0.3)
+        for beat in (0.5, 1.5, 2.5, 3.5): add(drums, ohat(0.6), t0 + beat * BEAT, -0.3)
+        if b % 2 == 1:
+            for beat in (1.5, 3.5): add(mus, stab([n + 12 for n in notes[:3]]), t0 + beat * BEAT, 0, 1.0)
+        if b % 4 == 2:
+            prev = None
+            for i, (beat, n) in enumerate(MEL):
+                nxt = MEL[i + 1][0] if i + 1 < len(MEL) else beat + 1
+                add(mus, lead_sq(mtof(n), (nxt - beat) * BEAT * 0.9, prev), t0 + beat * BEAT, 0.12, 1.0); prev = mtof(n)
+    for k in range(4): funk_chord(PROG[2][1], 37.6 + k * BEAT, 0.4, mus)
+    add(fx, riser(2.4, 0.06), FIN - 2.4, 0, 1.0)
+    for tc in np.arange(FIN - 1.0, FIN - 0.02, BEAT / 4): add(drums, clap2() * 0.6, tc, 0.05)
+    add(mus, stab([67, 71, 74, 79], 1.6) * 1.4, FIN, 0, 1.0); add(mus, slap(mtof(31), 2.0), FIN, 0, 1.0)
+    add(mus, pad([mtof(n) for n in (55, 59, 62, 66, 69)], TOTAL - FIN, 2000, 0.1, 2.5), FIN, 0, 1.2)
+    for k, n in enumerate((79, 83, 86, 91)): add(mus, bell(mtof(n), 2.0), FIN + 0.1 + k * 0.12, (k - 1.5) * 0.3, 0.45)
+    add(drums, kick(0.9), FIN)
+elif STYLE == 'tropical':
+    PROG = [(45, [57, 60, 64]), (41, [57, 60, 65]), (36, [55, 60, 64]), (43, [55, 59, 62])]   # Am F C G
+    POS = (0, 3, 6, 8, 11, 14)
+    # gancho: marimba sola
+    for k in range(int(3.1 / (BEAT / 4))):
+        if k % 16 in POS: root, notes = PROG[(k // 16) % 4]; add(mus, marimba(mtof(notes[(k % 16) % 3] + 12)), 0.1 + k * BEAT / 4, 0.25, 0.7)
+    # sale la ciudad: marimba que sube + conga
+    for k, tp in enumerate(np.arange(3.2, G0 - 0.05, BEAT / 4)):
+        n = [69, 72, 76, 79, 81, 84, 88, 91][k % 8]; add(mus, marimba(mtof(n), 0.6), tp, 0.3 * np.sin(k), 0.5 + 0.4 * k / 24)
+    for tc in np.arange(4.4, G0 - 0.05, BEAT / 2): add(drums, conga(True), tc, 0.3)
+    add(fx, riser(2.4, 0.06), G0 - 2.4, 0, 1.0)
+    NB = int(np.ceil((FIN - G0) / BAR))
+    MEL = [(0, 76), (0.75, 74), (1.5, 72), (2.5, 69), (3, 72), (4, 76), (4.75, 74), (5.5, 72), (6.5, 74),
+           (8, 76), (8.75, 79), (9.5, 76), (10.5, 74), (11, 72), (12, 74), (12.75, 72), (13.5, 69)]
+    VOW = 'oaoeoaoeoaoeoaoeo'
+    for b in range(NB):
+        t0 = G0 + b * BAR
+        if t0 >= FIN - 0.4: break
+        root, notes = PROG[b % 4]; soft = 20.0 <= t0 < 22.0 or t0 >= 37.4
+        add(mus, pad([mtof(n) for n in notes], BAR + 0.3, 1300), t0, 0, 0.75)
+        for k in POS: add(mus, marimba(mtof(notes[POS.index(k) % 3] + 12)), t0 + k * BEAT / 4, 0.2, 0.55 if soft else 0.8)
+        if soft: continue
+        for beat, d in ((0, 0.7), (0.75, 0.3), (1.5, 0.5), (2, 0.7), (2.75, 0.3), (3.5, 0.4)): add(mus, bass(mtof(root - 12), d * BEAT * 1.6), t0 + beat * BEAT, 0, 1.0)
+        for beat in range(4): kt = t0 + beat * BEAT; add(drums, kick(0.8, True), kt); kick_times.append(kt)
+        for beat in (1, 3): add(drums, snap() * 1.2, t0 + beat * BEAT, 0.15)
+        for e in range(16): add(drums, shaker(1.0 if e % 2 else 0.5), t0 + e * BEAT / 4, -0.3)
+        for beat, hi in ((1.5, True), (2.5, False), (3.0, True), (3.5, True)): add(drums, conga(hi), t0 + beat * BEAT, 0.35)
+        if b % 4 == 1:
+            prev = None
+            for i, (beat, n) in enumerate(MEL):
+                nxt = MEL[i + 1][0] if i + 1 < len(MEL) else beat + 1
+                add(mus, vox(mtof(n), (nxt - beat) * BEAT * 0.85, VOW[i], prev), t0 + beat * BEAT, -0.1, 1.0); prev = mtof(n)
+        elif b % 4 == 3:
+            for k, n in enumerate((84, 81, 79, 76)): add(mus, bell(mtof(n), 0.7), t0 + (k * 0.75 + 2) * BEAT, 0.3, 0.3)
+    for k in range(6): add(mus, marimba(mtof([72, 76, 79][k % 3])), 37.6 + k * BEAT / 2, 0.2, 0.6)
+    add(fx, riser(2.4, 0.06), FIN - 2.4, 0, 1.0)
+    for k, n in enumerate((60, 64, 67, 72, 76)): add(mus, marimba(mtof(n), 2.0), FIN + k * 0.04, (k - 2) * 0.2, 0.9)
+    add(mus, bass(mtof(36), 3.0), FIN, 0, 1.0); add(mus, vox(mtof(76), 1.6, 'o'), FIN + 0.1, 0, 0.8)
+    add(mus, pad([mtof(n) for n in (60, 64, 67, 72)], TOTAL - FIN, 1800, 0.1, 2.5), FIN, 0, 1.2)
     add(drums, kick(0.8, True), FIN)
 else:  # lofi
     PROG = [(53, [57, 60, 64, 65 + 12 - 12]), (52, [55, 59, 62, 64]), (50, [53, 57, 60, 64]), (48, [55, 59, 60, 64])]   # Fmaj7 Em7 Dm7 Cmaj7
@@ -207,7 +343,7 @@ def reverb(x, secs=2.0, mix=0.25):
 
 music = reverb(mus, 2.2, 0.28) + reverb(drums, 1.0, 0.12) * 0.9
 if STYLE == 'lofi': music = lp(music.T, 7500).T
-music = hp(music.T, 35).T
+music = hp(music.T, 50 if STYLE in ('funky', 'tropical') else 35).T
 fade = np.ones(N); nf = int(2.4 * SR); fade[-nf:] = np.linspace(1, 0, nf) ** 1.4
 fi = int(0.05 * SR); fade[:fi] = np.linspace(0, 1, fi)
 music *= fade[:, None]

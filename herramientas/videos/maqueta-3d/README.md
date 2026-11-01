@@ -20,7 +20,8 @@ app pasa en la ciudad, con ventanas que enseñan las pantallas reales:
   están en `SHOTS` (un corte entre plano y plano); `window.__cam = [x,y,z, mx,my,mz, fov]` y `window.__noTS = true`
   sirven para probar encuadres. Los edificios, sus nombres y colores están en `BLD`.
 - `render.cjs`, `build.sh` y `music.py`: igual que en `../anuncio-3d` (8 trozos repartidos en 2 procesos).
-- `music_fondo.py`: otras dos músicas más de fondo (`STYLE=alegre` ukelele y silbido, `STYLE=lofi` piano eléctrico)
+- `music_fondo.py`: otras cuatro músicas (`STYLE=alegre` ukelele y silbido, `STYLE=lofi` piano eléctrico,
+  `STYLE=funky` guitarra rítmica y metales, `STYLE=tropical` marimba y voz sintética)
   con los efectos más bajos: `STYLE=lofi python3 music_fondo.py audio.wav`.
 - Unos 5 s por fotograma en un procesador de 2 núcleos sin GPU (≈ 1 h el vídeo entero).
 

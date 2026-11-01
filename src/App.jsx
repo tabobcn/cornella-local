@@ -2295,6 +2295,131 @@ const takeAuthRedirect = () => {
   }
 };
 
+// ==============================================
+// HISTORIAL (gesto / botón «atrás» del móvil)
+// Cada pantalla es una entrada del historial del navegador con su posición (idx). Guardamos una copia
+// de la pila para saber qué hay detrás: así el «atrás» del móvil retrocede pantalla a pantalla hasta
+// Inicio (y desde Inicio sale de la app), las flechas «atrás» de la app vuelven a la pantalla anterior
+// en vez de apilarla otra vez, y las pestañas de abajo dejan la pila en [Inicio, pestaña].
+// Nunca se añaden entradas desde el evento popstate: Chrome se salta las entradas añadidas sin que
+// el usuario toque la pantalla y la app se cerraba de golpe.
+// ==============================================
+
+// URL que se ve en la barra para cada pantalla. Los detalles compartibles usan los mismos
+// parámetros (?oferta, ?negocio, ?empleo) que los enlaces que la app ya sabe abrir. Siempre desde
+// la raíz: si no, al pasar de ?negocio=81 a #offers quedaba «/?negocio=81#offers» y al recargar
+// volvía a abrirse el comercio.
+const buildUrlFor = (page, params = {}) => {
+  if (page === 'coupon' && params.id) return `/?oferta=${params.id}`;
+  if (page === 'business' && params.id) return `/?negocio=${params.id}`;
+  if (page === 'job-detail' && params.id) return `/?empleo=${params.id}`;
+  return `/#${page}`;
+};
+
+const NAV_TABS = new Set(['home', 'budget-request', 'offers', 'favorites', 'profile']);
+const NAV_STACK_KEY = 'nav-stack';
+
+// Clave de una pantalla (mismos parámetros en cualquier orden = misma pantalla)
+const navKey = (page, params = {}) => {
+  const clean = {};
+  Object.keys(params || {}).sort().forEach((k) => { if (params[k] !== undefined) clean[k] = params[k]; });
+  return `${page}|${JSON.stringify(clean)}`;
+};
+
+const navStack = {
+  list: (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem(NAV_STACK_KEY)) || [];
+    } catch (err) {
+      console.error('No se pudo leer la pila de navegación:', err);
+      return [];
+    }
+  })(),
+  pending: null, // qué hacer al llegar tras un history.go()
+  jumping: false, // hay un history.go() en marcha (llega con popstate)
+  jumpTimer: null,
+
+  idx() {
+    const i = window.history.state?.idx;
+    return Number.isInteger(i) && i >= 0 ? i : 0;
+  },
+  save() {
+    try {
+      sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify(this.list));
+    } catch (err) {
+      console.error('No se pudo guardar la pila de navegación:', err);
+    }
+  },
+  sync(state) {
+    if (!state?.page) return;
+    const idx = Number.isInteger(state.idx) ? state.idx : 0;
+    this.list[idx] = { page: state.page, params: state.params || {} };
+    this.save();
+  },
+  push(page, params = {}, url = buildUrlFor(page, params)) {
+    const idx = this.idx() + 1;
+    window.history.pushState({ page, params, idx }, '', url);
+    this.list.length = idx;
+    this.list[idx] = { page, params };
+    this.save();
+  },
+  replace(page, params = {}, url = buildUrlFor(page, params)) {
+    const idx = this.idx();
+    window.history.replaceState({ page, params, idx }, '', url);
+    this.list.length = idx;
+    this.list[idx] = { page, params };
+    this.save();
+  },
+  // Salta hacia atrás «steps» entradas; al llegar, popstate aplica «then» (si lo hay).
+  // Si ya hay un salto en marcha se ignora el nuevo: dos saltos seguidos (p. ej. el aviso de sesión
+  // iniciada y la pantalla de «Entrar» mandando a Inicio a la vez) sacarían al usuario de la app.
+  go(steps, then = null) {
+    if (this.jumping) return;
+    this.jumping = true;
+    clearTimeout(this.jumpTimer);
+    this.jumpTimer = setTimeout(() => { this.jumping = false; }, 1500);
+    this.pending = then ? { ...then, idx: this.idx() + steps } : null;
+    window.history.go(steps);
+  },
+  landed() {
+    this.jumping = false;
+    clearTimeout(this.jumpTimer);
+  },
+  // Deja el historial en una sola pantalla (tras iniciar o cerrar sesión, etc.)
+  reset(page, params = {}) {
+    const idx = this.idx();
+    if (idx === 0) this.replace(page, params);
+    else this.go(-idx, { page, params });
+  },
+  // Vuelve a la pantalla si ya está detrás; si no, la pone en lugar de la actual
+  returnOrReplace(page, params = {}) {
+    const key = navKey(page, params);
+    const idx = this.idx();
+    for (let k = idx - 1; k >= 0; k--) {
+      if (this.list[k] && navKey(this.list[k].page, this.list[k].params) === key) { this.go(k - idx); return; }
+    }
+    this.replace(page, params);
+  },
+  // Qué hacer al ir a una pantalla desde la app:
+  // { go, then } salto atrás · { op: 'push' | 'replace' | 'root-push' } · { op: null } ya estás ahí
+  plan(page, params = {}) {
+    const idx = this.idx();
+    const key = navKey(page, params);
+    const at = (k) => (this.list[k] ? navKey(this.list[k].page, this.list[k].params) : null);
+    if (at(idx) === key) return { op: null };
+    if (NAV_TABS.has(page)) {
+      if (page === 'home') return idx === 0 ? { op: 'replace' } : { go: -idx, then: { page, params } };
+      if (idx === 0) return { op: this.list[0]?.page === 'home' ? 'push' : 'root-push' };
+      if (idx === 1) return { op: 'replace' };
+      return { go: 1 - idx, then: { page, params } };
+    }
+    for (let k = idx - 1; k >= 0; k--) {
+      if (at(k) === key) return { go: k - idx };
+    }
+    return { op: 'push' };
+  },
+};
+
 // La web del negocio se pide en el alta pero no se muestra en la ficha pública.
 // Poner a true si se ofrece como ventaja de un plan premium.
 export const SHOW_BUSINESS_WEBSITE = false;
@@ -12226,7 +12351,7 @@ export default function App() {
     // Timeout de seguridad (15s) — si onAuthStateChange no dispara, mostrar login
     const authTimeout = setTimeout(() => {
       setLoadingAuth(false);
-      if (currentPageRef.current === 'login') setCurrentPage('home');
+      if (currentPageRef.current === 'login') { setCurrentPage('home'); navStack.reset('home'); }
     }, 15000);
 
     // Helper: cargar o crear perfil a partir de una sesión
@@ -12260,6 +12385,7 @@ export default function App() {
               supabase.auth.signOut();
               setUser(null);
               setCurrentPage('login');
+              navStack.reset('login');
               showToast(
                 `Tu cuenta está suspendida${data.ban_reason ? `. Motivo: ${data.ban_reason}` : ''}. Si no estás de acuerdo, escríbenos a cornellalocal@gmail.com y lo revisaremos (también puedes acudir a los tribunales).`,
                 'error'
@@ -12302,11 +12428,13 @@ export default function App() {
             if (redirect) {
               setCurrentPage(redirect.page);
               setPageParams(redirect.params || {});
-              window.history.replaceState({ page: redirect.page, params: redirect.params || {} }, '', buildUrlFor(redirect.page, redirect.params || {}));
+              // Si esa pantalla ya está detrás (el invitado venía de ella) se vuelve a ella; si no, sustituye a «Entrar»
+              navStack.returnOrReplace(redirect.page, redirect.params || {});
             } else if (authOnlyPages.includes(currentPageRef.current)) {
               // Solo navegar a home si estamos en una página de autenticación
               // Evita interrumpir al usuario si está navegando dentro de la app
               setCurrentPage('home');
+              navStack.reset('home'); // sin «Entrar» detrás: el gesto «atrás» desde Inicio sale de la app
             }
           } else if (event === 'INITIAL_SESSION') {
             // Sin sesión: se entra como invitado (listados visibles, detalles piden cuenta).
@@ -12314,7 +12442,7 @@ export default function App() {
             const wantsLogin = INITIAL_URL_WANTS_LOGIN;
             if (currentPageRef.current === 'login' && !wantsLogin) {
               setCurrentPage('home');
-              window.history.replaceState({ page: 'home', params: {} }, '', window.location.pathname === '/' ? '/' : window.location.pathname);
+              navStack.replace('home', {}, window.location.pathname === '/' ? '/' : window.location.pathname);
             }
           }
           // Si SIGNED_IN sin sesión (no debería pasar), no hacer nada
@@ -12329,9 +12457,11 @@ export default function App() {
             });
             if (authOnlyPages.includes(currentPageRef.current)) {
               setCurrentPage('home');
+              navStack.reset('home');
             }
           } else if (currentPageRef.current === 'login') {
             setCurrentPage('home');
+            navStack.reset('home');
           }
         } finally {
           clearTimeout(authTimeout);
@@ -12341,9 +12471,11 @@ export default function App() {
         clearTimeout(authTimeout);
         setLoadingAuth(false);
         setCurrentPage('reset-password');
+        navStack.reset('reset-password');
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('home');
+        navStack.reset('home');
         setLoadingAuth(false);
       }
       // TOKEN_REFRESHED: ignorar
@@ -13607,21 +13739,21 @@ export default function App() {
       setCurrentPage('business');
       setPageParams(params);
       // Mantenemos la URL ?negocio=ID en la barra para que sea compartible
-      window.history.replaceState({ page: 'business', params }, '', `?negocio=${negocioId}`);
+      navStack.replace('business', params, `?negocio=${negocioId}`);
     } else if (ofertaId) {
       const params = { id: ofertaId };
       setCurrentPage('coupon');
       setPageParams(params);
-      window.history.replaceState({ page: 'coupon', params }, '', `?oferta=${ofertaId}`);
+      navStack.replace('coupon', params, `?oferta=${ofertaId}`);
     } else if (empleoId) {
       const params = { id: empleoId };
       setCurrentPage('job-detail');
       setPageParams(params);
-      window.history.replaceState({ page: 'job-detail', params }, '', `?empleo=${empleoId}`);
+      navStack.replace('job-detail', params, `?empleo=${empleoId}`);
     } else if (navTo) {
       setCurrentPage(navTo);
       setPageParams({});
-      window.history.replaceState({ page: navTo, params: {} }, '', `#${navTo}`);
+      navStack.replace(navTo, {}, `#${navTo}`);
     }
   }, []);
 
@@ -13789,17 +13921,17 @@ export default function App() {
     }
   };
 
-  // Construye la URL a mostrar para una página dada. Para detalles
-  // compartibles usamos query params canónicos (?oferta, ?negocio, ?empleo)
-  // que coinciden con los deep links que la app ya sabe abrir.
-  const buildUrlFor = (page, params = {}) => {
-    if (page === 'coupon' && params.id) return `?oferta=${params.id}`;
-    if (page === 'business' && params.id) return `?negocio=${params.id}`;
-    if (page === 'job-detail' && params.id) return `?empleo=${params.id}`;
-    return `#${page}`;
-  };
-
+  // addToHistory = false solo desde popstate (el navegador ya ha cambiado de entrada)
   const navigate = (page, params = {}, addToHistory = true) => {
+    let op = null;
+    if (addToHistory) {
+      const plan = navStack.plan(page, params);
+      // La pantalla ya está detrás (flecha «atrás» de la app, Inicio, fin de un formulario):
+      // se vuelve a ella y popstate la pinta, así el gesto «atrás» no la repite después
+      if (plan.go) { navStack.go(plan.go, plan.then); return; }
+      op = plan.op;
+    }
+
     // Activar animación de salida
     setIsPageTransitioning(true);
 
@@ -13809,10 +13941,9 @@ export default function App() {
       setPageParams(params);
       scrollToTop();
 
-      // Añadir al historial del navegador para que funcione el botón atrás
-      if (addToHistory) {
-        window.history.pushState({ page, params }, '', buildUrlFor(page, params));
-      }
+      if (op === 'push') navStack.push(page, params);
+      else if (op === 'replace') navStack.replace(page, params);
+      else if (op === 'root-push') { navStack.replace('home', {}); navStack.push(page, params); }
 
       // Desactivar transición para mostrar la nueva página
       setIsPageTransitioning(false);
@@ -13825,34 +13956,42 @@ export default function App() {
   // Manejar botón atrás del navegador/móvil
   useEffect(() => {
     const AUTH_PAGES = ['login', 'register', 'forgot-password', 'reset-password'];
-    const MAIN_TABS = ['home', 'map', 'offers', 'favorites', 'profile'];
 
+    // Aquí nunca se añaden entradas (pushState): solo se pinta la pantalla de la entrada a la que
+    // ha vuelto el navegador o se reescribe esa entrada (ver «HISTORIAL» arriba)
     const handlePopState = (event) => {
-      if (event.state && event.state.page) {
-        const targetPage = event.state.page;
+      const state = event.state;
+      // Sin estado (file pickers nativos en iOS/Android): ignorar
+      if (!state || !state.page) return;
 
-        // Si hay usuario logueado y la página target es de auth → bloquear
-        if (AUTH_PAGES.includes(targetPage) && userRef.current) {
-          window.history.pushState({ page: 'home', params: {} }, '', '#home');
-          return;
-        }
-
-        // Si la página target es un tab principal y hay usuario → no navegar (ya estamos en raíz)
-        if (MAIN_TABS.includes(targetPage) && userRef.current) {
-          window.history.replaceState({ page: targetPage, params: {} }, '', `#${targetPage}`);
-          return;
-        }
-
-        // Navegar a la página anterior sin añadir al historial
-        navigate(targetPage, event.state.params || {}, false);
+      // Llegada tras un salto de la app (pestaña, Inicio, sesión): se reescribe esta entrada
+      const pending = navStack.pending;
+      navStack.pending = null;
+      navStack.landed();
+      if (pending && pending.idx === navStack.idx()) {
+        navStack.replace(pending.page, pending.params);
+        navigate(pending.page, pending.params, false);
+        return;
       }
-      // Si no hay estado (file pickers nativos en iOS/Android), ignorar
+      navStack.sync(state);
+
+      // Con la sesión ya iniciada no se vuelve a «Entrar» / «Crear cuenta»: se salta esa pantalla
+      if (AUTH_PAGES.includes(state.page) && userRef.current) {
+        if (navStack.idx() > 0) { window.history.back(); return; }
+        navStack.replace('home', {});
+        navigate('home', {}, false);
+        return;
+      }
+
+      // Pintar la pantalla anterior sin añadir al historial
+      navigate(state.page, state.params || {}, false);
     };
 
-    // Añadir estado inicial al historial sólo si aún no hay state
-    // (el deep link useEffect ya pudo dejar un state válido con su URL canónica)
+    // Estado inicial (el useEffect de los enlaces directos ya pudo dejar uno con su URL)
     if (!window.history.state || !window.history.state.page) {
-      window.history.replaceState({ page: currentPage, params: pageParams }, '', `#${currentPage}`);
+      navStack.replace(currentPage, pageParams, `#${currentPage}`);
+    } else {
+      navStack.sync(window.history.state);
     }
 
     window.addEventListener('popstate', handlePopState);

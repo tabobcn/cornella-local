@@ -401,6 +401,14 @@ Push solo funciona en HTTPS. Producción: https://www.cornellalocal.es (Vercel).
   (carnicería, pescadería, frutería, restaurante, bar, peluquería, estética, pintor, fontanero, limpieza), luego
   ofertas con cupón y alta del negocio con estadísticas. Capturas con `vecino/capture-todo.cjs` (22 negocios inventados).
 
+### Gesto «atrás» de Android (2026-11-01)
+- En el móvil, el gesto atrás cerraba la app: al volver a una pestaña principal con sesión iniciada no se pintaba
+  la pantalla y se añadía una entrada desde `popstate`, que Chrome se salta (entrada sin toque del usuario).
+- Ahora `navStack` (en App.jsx, sección «HISTORIAL») guarda la pila con su posición (`idx`) en cada entrada:
+  atrás retrocede pantalla a pantalla hasta Inicio y desde Inicio sale; las flechas de la app vuelven a la pantalla
+  si ya está detrás (no la repiten); las pestañas dejan la pila en [Inicio, pestaña]; tras entrar o salir de la
+  sesión se queda solo Inicio.
+
 ---
 
 ## Reglas de Negocio Importantes
@@ -594,6 +602,7 @@ Custom colors en `tailwind.config.js`:
 - NUNCA dejar queries de Supabase sin `.limit()` en tablas que pueden crecer (businesses, offers, jobs, reviews, notifications) — usar límites razonables (50–500)
 - NUNCA exponer `error.message` de Supabase al usuario — usar mensajes genéricos en español + `console.error` para debugging
 - NUNCA usar `[user]` como dependencia de useEffect si solo se usa `user.id` dentro — usar `[user?.id]` para evitar re-renders innecesarios y re-suscripciones de canales realtime
+- NUNCA llamar a `window.history.pushState/replaceState` directamente: usar `navigate()` o `navStack` (push, replace, reset) para que cada entrada lleve su `idx`. Y NUNCA añadir entradas desde `popstate` (Chrome las salta y la app se cierra)
 - NUNCA dejar `catch {}` vacíos — siempre `console.error` mínimo; si afecta al usuario, también `showToast`
 - En tabla `businesses` el propietario se identifica con `owner_id` (NO `user_id`)
 - `showToast` debe pasarse como prop explícitamente a cada componente que lo necesite (no es global)
